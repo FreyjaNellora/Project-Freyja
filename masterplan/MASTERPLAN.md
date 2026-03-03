@@ -18,7 +18,7 @@ Freyja is the teacher. Odin is the student. Freyja prioritizes truth (accurate m
 ### 1.1 Core Architecture
 
 ```
-MCTS (Max^n backpropagation, NNUE leaf eval)
+MCTS (Max^n backpropagation, Gumbel root selection, Progressive History)
   │  Strategic exploration + diverse training data generation
   │
 Max^n Search (depth 7-8, NNUE-guided beam search)
@@ -79,16 +79,25 @@ The engine gets deeper as the NNUE gets smarter. Beam width is a tunable paramet
 Freyja plays self-play games (Max^n, accurate multi-player evals)
   │
   ▼
-Positions + evaluations + zone control features exported
+Observer captures per-move protocol logs + structured game JSON
+(protocol logging via `setoption name LogFile value <path>`)
   │
   ▼
-Odin's NNUE training pipeline consumes Freyja's data
+Per-position eval 4-vectors extracted from game JSON
+(each position annotated with score, depth, component breakdown)
+  │
+  ▼
+Training data pipeline converts game JSON → NNUE training format
+(FEN4 + eval 4-vector + game result + zone control features)
+  │
+  ▼
+Odin's NNUE training pipeline consumes the data
   │
   ▼
 Odin becomes stronger, plays Freyja, generates new training signal
 ```
 
-This integration is a future milestone, not an initial stage deliverable.
+The observer pipeline (Stage 4 LogFile + Stage 12 runner) is the concrete implementation of this flow. Training data is a VIEW of observer game JSON, not a separate export format. This approach was proven in Odin v1's observer infrastructure.
 
 ---
 
@@ -444,6 +453,8 @@ From Odin's lesson — when a player is eliminated, EVERY function that calls `g
 - Turn events: `info string nextturn <color>`
 - Bestmove output: `bestmove <move>`
 - Game mode configuration: `setoption name GameMode value <mode>`
+- **LogFile toggle (from Odin v1 observer protocol):** `setoption name LogFile value <path>` enables per-line protocol logging. `setoption name LogFile value none` disables. Zero overhead when off. Logs `> incoming_command` and `< outgoing_response` with timestamps.
+- **MaxRounds auto-stop:** `setoption name MaxRounds value <n>` stops game after N rounds (diagnostic use).
 
 **Protocol version header:**
 ```
@@ -457,7 +468,9 @@ freyja v1.0 maxn-beam-mcts
 4. Bestmove output
 5. Info string output (depth, score as 4-vector, nodes, nps, pv)
 6. Option handling (game mode, beam width)
-7. Protocol integration test: send position + go, receive bestmove
+7. **LogFile toggle implementation** (file I/O, zero-cost when disabled)
+8. **MaxRounds auto-stop implementation**
+9. Protocol integration test: send position + go, receive bestmove
 
 **Acceptance criteria:**
 - Engine responds to `isready` with `readyok`
@@ -466,6 +479,9 @@ freyja v1.0 maxn-beam-mcts
 - Info strings correctly formatted
 - Unknown commands produce `info string error: unknown command '<cmd>'`, not a crash
 - Parser handles extra whitespace, trailing newlines
+- **LogFile toggle: enable/disable works, log format is `> incoming` / `< outgoing`**
+- **LogFile off = zero overhead (no file I/O, no string formatting)**
+- **MaxRounds stops game after N rounds**
 - **Protocol conformance test: every message format has a round-trip test**
 
 **What you DON'T need:**
@@ -765,6 +781,8 @@ The score is a 4-vector, not a scalar. TT flag semantics:
 - No hash collision corruption (key verification on probe)
 - Performance: NPS improvement of at least 30% over no-TT baseline
 
+**Downstream requirement (ADR-007):** The history heuristic table must be extractable after search completes. Stage 11's hybrid controller needs to pass the history table to MctsSearcher for Progressive History warm-start. Expose a `pub fn history_table(&self)` accessor on the Max^n searcher.
+
 **What you DON'T need:**
 - MCTS integration (Stage 10)
 - Multi-threaded TT access (Stage 20)
@@ -776,118 +794,137 @@ The score is a 4-vector, not a scalar. TT flag semantics:
 
 ---
 
-### Stage 10: MCTS
+### Stage 10: MCTS (Gumbel MCTS)
 
-**The problem:** Max^n handles tactical depth (7-8 plies). MCTS handles strategic breadth — exploring diverse continuations and finding moves that lead to better long-term positions.
+**ADRs:** [[ADR-006]] (Gumbel MCTS over UCB1), [[ADR-007]] (Progressive History)
+
+**The problem:** Max^n handles tactical depth (7-8 plies). MCTS handles strategic breadth — exploring diverse continuations and finding moves that lead to better long-term positions. Standard UCB1 optimizes cumulative regret but needs 16+ simulations to converge; Gumbel MCTS optimizes simple regret (quality of the chosen move) and works with as few as 2 simulations — critical for Phase 2 residual budgets.
 
 **What you're building:**
-- Monte Carlo Tree Search with Max^n-style backpropagation
-- Each MCTS node stores: visit count, score sums `[f64; 4]`, children, prior move
-- Selection: UCB1 adapted for 4 players — each player maximizes their own UCB component
+- Monte Carlo Tree Search with Max^n-style backpropagation and Gumbel root selection
+- Each MCTS node stores: visit count, score sums `[f64; 4]`, children, prior `f32`, gumbel noise `f32`
+- **Root selection:** Gumbel-Top-k sampling + Sequential Halving. Sample `g(a) ~ Gumbel(0,1)` per move, compute `g(a) + log(pi(a))` to select Top-k candidates (default k=16). Sequential Halving progressively eliminates candidates by comparing `sigma(g(a) + log(pi(a)) - Q(a))`.
+- **Non-root selection:** `Q(node)[player] / N(node) + C_PRIOR * pi(a) / (1 + N(node)) + PH(a)` where `PH(a) = PROGRESSIVE_HISTORY_WEIGHT * H(a) / (N(a) + 1)` is the progressive history term.
+- **Prior policy (pre-NNUE):** `pi(a) = softmax(ordering_score(a) / PRIOR_TEMPERATURE)` using Max^n move ordering scores (TT hint, MVV-LVA, killers, history). Temperature default: 50.
 - Expansion: create child nodes for legal moves
 - Evaluation: NNUE (or bootstrap eval) at leaf nodes — NOT a full Max^n search (too slow per simulation)
 - Backpropagation: update all 4 score components up the tree
-- Progressive widening at deeper nodes (optional: limit children to K initially, add more as visits increase)
-
-**UCB1 for multi-player:**
-```
-UCB(node, player) = Q(node)[player] / N(node) + C * sqrt(ln(N(parent)) / N(node))
-```
-Where `Q(node)[player]` is the accumulated score for `player` and `C` is the exploration constant.
-
-At each node, the current player selects the child with the highest UCB for themselves.
+- Progressive widening at deeper nodes (limit children to K initially, add more as visits increase)
+- Additional methods: `set_prior_policy(&mut self, priors: &[f32])` and `set_history_table(&mut self, history: &HistoryTable)` for hybrid controller injection
 
 **Build order:**
-1. MCTS node struct (arena-allocated or Vec-based tree)
-2. Selection phase (UCB1 traversal)
-3. Expansion phase (add one child per simulation)
-4. Evaluation phase (call eval_4vec at leaf)
-5. Backpropagation phase (update score sums and visit counts)
-6. Root move selection (highest visit count, not highest average — more robust)
-7. Search time management (run simulations until time limit)
-8. Info output (simulations/second, top moves by visit count)
-9. Progressive widening (optional enhancement)
+1. MCTS node struct (with `prior: f32` and `gumbel: f32` fields)
+2. Prior policy computation (softmax over ordering scores)
+3. Gumbel noise sampling at root
+4. Sequential Halving framework (rounds, elimination)
+5. Non-root tree policy (Q + prior + progressive history)
+6. Expansion phase (add one child per simulation)
+7. Evaluation phase (call eval_4vec at leaf)
+8. Backpropagation phase (update score sums and visit counts, Max^n style)
+9. Root move selection (Sequential Halving winner)
+10. Progressive widening
+11. Search time management (run simulations until time limit)
+12. `set_prior_policy()` and `set_history_table()` methods
+13. Info output (simulations/second, top moves by visit count, halving rounds)
 
 **Acceptance criteria:**
-- MCTS converges: with enough simulations, consistently picks the same best move
-- MCTS finds mate-in-1 (even without full search, simulations should discover it)
-- Simulations per second > 10,000 with bootstrap eval (fast playouts)
-- Memory bounded: tree does not grow without limit (node recycling or cap)
-- Handles eliminated players correctly in simulations
-- Score vectors backpropagate correctly (each player's component updated independently)
+- AC1: Gumbel MCTS finds reasonable moves with only 2 simulations (the UCB1 failure case)
+- AC2: With 100+ simulations, results match or beat UCB1 quality
+- AC3: MCTS finds mate-in-1 (simulations should discover it)
+- AC4: Simulations per second > 10,000 with bootstrap eval
+- AC5: Memory bounded: tree does not grow without limit (node recycling or cap)
+- AC6: Handles eliminated players correctly in simulations
+- AC7: Score vectors backpropagate correctly (each player's component updated independently)
+- AC8: Progressive history warm-start measurably reduces wasted simulations vs cold start
+- AC9: Sequential Halving correctly eliminates weaker candidates across rounds
 
 **What you DON'T need:**
 - Max^n search integration (Stage 11)
 - RAVE or AMAF (not applicable to multi-player — move permutation assumptions fail)
 - Parallel MCTS (Stage 20)
+- Persistent tree between moves (Stage 13 measurement)
 
 **Tracing points:**
-- `tracing::info!` on MCTS complete: simulations, top 3 moves with visit counts
-- `tracing::debug!` on selection: path from root to leaf
+- `tracing::info!` on MCTS complete: simulations, top 3 moves with visit counts, halving rounds
+- `tracing::debug!` on Gumbel root: Top-k candidates with `g(a) + log(pi(a))` scores, elimination rounds
+- `tracing::debug!` on selection: path from root to leaf, Q + prior + PH scores
 - `tracing::trace!` on backpropagation: score update per node
 
 ---
 
 ### Stage 11: Max^n → MCTS Integration
 
-**The problem:** Max^n and MCTS are separate systems. Need a controller that runs Max^n first (for tactical grounding), then MCTS (for strategic exploration).
+**ADRs:** [[ADR-006]] (Gumbel MCTS), [[ADR-007]] (Progressive History)
+
+**The problem:** Max^n and MCTS are separate systems. Need a controller that runs Max^n first (for tactical grounding), then extracts knowledge (history table, ordering scores) to warm-start MCTS for strategic exploration.
 
 **What you're building:**
 - Hybrid controller implementing the `Searcher` trait
 - Phase 1: Run Max^n to depth 7-8 with iterative deepening
-- Phase 2: Run MCTS with remaining time budget
+- **History handoff:** After Max^n completes, extract the history heuristic table and pass it to MctsSearcher via `set_history_table()` for Progressive History warm-start
+- **Prior policy computation:** Compute `pi(a) = softmax(ordering_score(a) / PRIOR_TEMPERATURE)` for surviving moves using Max^n's move ordering infrastructure, pass to MctsSearcher via `set_prior_policy()` for Gumbel root selection
+- Phase 2: Run MCTS with remaining time budget (Gumbel root selection + Progressive History at non-root)
 - MCTS uses NNUE (not Max^n) as leaf evaluator — Max^n is too slow per simulation
-- MCTS root move ordering informed by Max^n results (most-visited children initialized with Max^n scores)
-- Final move selection: MCTS's highest visit count, but if MCTS and Max^n disagree on best move, flag for review (tracing)
+- Final move selection: MCTS's Sequential Halving winner, but if MCTS and Max^n disagree on best move, flag for review (tracing)
 
 **Build order:**
 1. Hybrid controller struct holding both `MaxnSearcher` and `MctsSearcher`
 2. Time allocation: Max^n gets N seconds, MCTS gets the rest
 3. Max^n runs, produces best move + score vector + PV
-4. MCTS runs, initialized with Max^n's move ordering at root
-5. Final move selection logic
-6. Info output: report both Max^n and MCTS perspectives
-7. Disagreement detection and logging
+4. History table extraction from MaxnSearcher (expose `pub fn history_table(&self)`)
+5. Prior policy computation (softmax over ordering scores for root moves)
+6. `set_history_table()` and `set_prior_policy()` calls before MCTS search
+7. MCTS runs with Gumbel root + Progressive History warm-start
+8. Final move selection logic
+9. Info output: report both Max^n and MCTS perspectives
+10. Disagreement detection and logging
 
 **Acceptance criteria:**
-- Controller correctly sequences Max^n → MCTS
-- MCTS receives remaining time (not total time)
-- MCTS root moves ordered by Max^n scores
-- If Max^n found mate, MCTS skipped (no need to explore)
-- Disagreement rate logged (Max^n best ≠ MCTS best)
-- Total time usage within budget
+- AC1: Controller correctly sequences Max^n → MCTS
+- AC2: MCTS receives remaining time (not total time)
+- AC3: History table successfully transfers from Max^n to MCTS (nonzero entries, measurable via tracing)
+- AC4: Prior policy computed and passed to MCTS root (entropy logged)
+- AC5: If Max^n found mate, MCTS skipped (no need to explore)
+- AC6: Disagreement rate logged (Max^n best ≠ MCTS best)
+- AC7: Total time usage within budget
+- AC8: MCTS with Progressive History warm-start outperforms cold-start MCTS (measurable via A/B self-play)
 
 **What you DON'T need:**
 - Adaptive time splitting (Stage 13)
 - Training data export (future Odin integration)
+- Persistent history across moves (measure in Stage 13)
 
 ---
 
 ### Stage 12: Self-Play Framework
 
-**The problem:** Can't improve what you can't measure. Need automated self-play to validate changes.
+**The problem:** Can't improve what you can't measure. Need automated self-play to validate changes, compare configurations, and generate training data for Odin's NNUE.
 
 **What you're building:**
-- Self-play runner: engine plays against itself in all 4 seats
-- Game recording: full move history + positions + evaluations
+- Self-play runner using the observer protocol: single engine instance, all 4 seats via protocol (NOT 4 separate engine instances). Uses Stage 4 LogFile toggle to capture all engine I/O.
+- Structured game JSON: per-move FEN4, eval 4-vector, depth, component breakdown, selected move. Captured by observer pipeline.
+- Behavioral metrics: pawn ratio, queen activation round, captures per N rounds, king safety, piece shuffling index. Compared against human baselines.
 - Statistics: win rate, average score, average game length
-- A/B comparison: play version A vs version B, measure win rate difference
+- A/B comparison: two engine configs, observer runs both, compare behavioral metrics + win rate
 - SPRT (Sequential Probability Ratio Test) for statistical significance
-- Training data export: positions + eval vectors for NNUE training
+- Training data extraction: filter game JSON -> NNUE format (FEN4 + eval 4-vector + game result + zone control features). This is a VIEW of observer data, not a separate export format.
 
 **Build order:**
-1. Self-play game loop (4 instances of engine, one per player seat)
-2. Game result recording
-3. Statistics computation (win rate, score distribution)
-4. A/B framework (two different engine configs, measure head-to-head)
-5. SPRT implementation for early stopping
-6. Training data export format (position FEN4 + eval 4-vector + game result)
+1. Observer runner (Node.js or Rust CLI, spawns engine, plays via protocol, captures JSON)
+2. Protocol logging (built-in from Stage 4 LogFile)
+3. Structured game JSON output (per-move: FEN4, eval 4-vec, depth, component breakdown)
+4. Behavioral metrics computation (pawn ratio, queen activation, captures, king safety)
+5. Multi-game aggregation (N games per config, statistical summary)
+6. A/B framework (two configs, paired comparison)
+7. SPRT implementation for early stopping
+8. Training data extraction (filter game JSON -> NNUE format)
 
 **Acceptance criteria:**
 - Self-play completes 100 games without crash
+- Behavioral metrics computed and compared against baselines
 - Statistics match expected distribution (roughly equal win rates for identical engines)
 - A/B comparison detects a known-good improvement (e.g., deeper search beats shallower)
-- Training data export produces valid, parseable files
+- Training data extraction produces valid, parseable files from game JSON
 - SPRT correctly identifies improvement vs regression at 95% confidence
 
 ---
@@ -903,19 +940,26 @@ At each node, the current player selects the child with the highest UCB for them
 - Node budget enforcement: hard cap at 7-8M nodes for Max^n
 - Iterative deepening time management: stop deepening when time/nodes nearly exhausted
 
+**Gumbel MCTS tunable parameters (ADR-006, ADR-007):**
+- `GUMBEL_K` (default 16): Number of root candidates retained by Gumbel-Top-k sampling. Lower = more focused but may miss surprise moves.
+- `PROGRESSIVE_HISTORY_WEIGHT` (default 1.0): Scales history influence in MCTS non-root selection. Higher = more BRS bias, lower = more MCTS independence.
+- `PRIOR_TEMPERATURE` (default 50): Controls softmax sharpness for prior policy from ordering scores. Lower = sharper (more exploitation), higher = flatter (more exploration).
+
 **Build order:**
 1. Time allocation parameters
 2. Node budget enforcement in Max^n
 3. Beam width configuration (per-depth schedule)
 4. Self-play experiments: measure depth achieved vs beam width
 5. Adaptive beam width based on position complexity (number of captures available)
-6. Document optimal beam width schedule for bootstrap eval
+6. Gumbel parameter tuning: GUMBEL_K, PROGRESSIVE_HISTORY_WEIGHT, PRIOR_TEMPERATURE
+7. Document optimal beam width schedule for bootstrap eval
 
 **Acceptance criteria:**
 - Max^n stays within 7-8M node budget
 - Beam width tuning documented with self-play results
 - Depth 7-8 achieved with mature beam settings
 - Time allocation between Max^n and MCTS is configurable
+- Gumbel parameters tuned via self-play A/B testing (documented)
 
 ---
 
@@ -997,14 +1041,14 @@ At each node, the current player selects the child with the highest UCB for them
 
 **What you're building:**
 - Python training pipeline in `freyja-nnue/`
-- Training data loader (reads self-play export from Stage 12)
+- Training data loader (reads structured game JSON from observer pipeline, extracts FEN4 + eval 4-vectors)
 - Network architecture in PyTorch (mirrors Rust inference architecture)
 - Loss function: MSE on 4-vector eval output vs search result
 - Weight export to `.fnnue` binary format
 - Training script with configurable hyperparameters
 
 **Build order:**
-1. Training data format parser (Python)
+1. Training data format parser (Python, reads observer game JSON from Stage 12)
 2. PyTorch network definition (matching Rust architecture exactly)
 3. Training loop with MSE loss
 4. Validation on held-out positions
@@ -1172,6 +1216,11 @@ See `AGENT_CONDUCT.md` Section 2 for the comprehensive 26-point audit checklist.
 | **SPRT** | Sequential Probability Ratio Test. Statistical test for determining if a change is an improvement. |
 | **EBF** | Effective Branching Factor. The actual average branching observed in search, after pruning and beam restriction. |
 | **Bootstrap eval** | The temporary hand-tuned evaluation function used before NNUE is trained. |
+| **Gumbel MCTS** | MCTS variant that samples Gumbel(0,1) noise at the root and uses Sequential Halving to select the best move. Optimizes simple regret (quality of chosen move) rather than cumulative regret. Works with as few as 2 simulations. See ADR-006. |
+| **Sequential Halving** | Root selection algorithm used with Gumbel MCTS. Allocates simulations in rounds, eliminates the bottom half of candidates after each round by comparing `sigma(g(a) + log(pi(a)) - Q(a))`. |
+| **Progressive History** | Technique for warm-starting MCTS using history heuristic scores from a prior search (Max^n Phase 1). Formula: `PH(a) = H(a) / (N(a) + 1)` — dominates when visits are low, fades as MCTS accumulates data. See ADR-007. |
+| **Simple regret** | The quality of the final chosen action (what matters when you play one move). Contrast with cumulative regret (overall exploration quality, what UCB1 optimizes). |
+| **Prior policy** | Probability distribution over moves used to guide MCTS selection. Pre-NNUE: `pi(a) = softmax(ordering_score(a) / T)`. Post-NNUE: from the NNUE policy head. |
 
 ---
 
@@ -1193,6 +1242,8 @@ See Section 3.1.
 | 8 | Freyja ↔ Odin training data format mismatch | Low | Medium | Define format in Stage 12, document thoroughly. |
 | 9 | Clone cost in hot paths | Low (mitigated by design) | High | Fixed-size data structures from Stage 1. No Vec in Board or GameState. |
 | 10 | Deferred debt accumulation | Medium | Medium | 2-stage escalation rule from Odin's AGENT_CONDUCT (Section 1.16). |
+| 11 | Weak prior policy pre-NNUE degrades Gumbel MCTS | Medium | Medium | Ordering scores are a rough proxy for move quality. Gumbel noise provides exploration, Sequential Halving corrects via Q-values. Monitor 2-sim test closely. Improves automatically when NNUE policy head lands (Stage 17). |
+| 12 | Progressive History staleness hurts MCTS | Low | Low | History is per-search (not persistent), so staleness is bounded. The `1/(N+1)` decay ensures MCTS overrides stale history quickly. Measure via A/B self-play in Stage 13. |
 
 ---
 

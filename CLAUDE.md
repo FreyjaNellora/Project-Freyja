@@ -67,6 +67,16 @@ NNUE Evaluation
 
 **Key difference from Odin:** No BRS. No Paranoid. Pure Max^n with NNUE-guided beam search. The NNUE IS the pruning strategy — smarter eval → tighter beam → deeper search.
 
+## Lessons from Odin v1 (Stages 10-19)
+
+7. **EP uses board scan, not player.prev().** `player.prev()` returns eliminated players in 4PC. Use `find_ep_captured_pawn_sq()` pattern. (ADR-009)
+8. **ArrayVec movegen from Stage 2.** `generate_legal_into(&mut ArrayVec<Move, 256>)` via MoveBuffer trait. (ADR-010)
+9. **LTO + codegen-units=1 from Stage 0.** Free 10-20% release performance. (ADR-011)
+10. **SIMD planned into NNUE design.** Weight transpose at load time, `align(32)` accumulators, runtime AVX2 detection. (ADR-012)
+11. **Bitboards: skip.** 14x14 board makes them impractical. Attack query API is sufficient. (ADR-013)
+12. **Strategy profiles for training data diversity.** Target selection + play style as independent axes. (ADR-014)
+13. **Stress test: volume over depth.** 10K games at depth 2 finds more bugs than 500 at depth 8. (ADR-015)
+
 ## Critical Rules (Never Forget)
 
 1. **Fixed-size data structures in hot paths.** No `Vec<T>` in Board, GameState, or MoveUndo.
@@ -77,12 +87,12 @@ NNUE Evaluation
 
 ## Relationship to Project Odin
 
-Freyja is the teacher. Odin is the student.
+Freyja and Odin are independent engines with separate training pipelines.
 
-- Freyja generates accurate training data via Max^n (truthful multi-player evaluations)
-- Odin consumes it for NNUE training
-- Freyja prioritizes accuracy; Odin prioritizes speed
-- Together they cover both philosophies of multi-player game tree search
+- Freyja uses Max^n (accurate, slower). Odin uses BRS/Paranoid hybrid (fast, approximate).
+- Each trains its own NNUE via its own self-play data — no shared training sets.
+- When both are complete, they compete against each other to pressure-test both approaches.
+- Together they cover both philosophies of multi-player game tree search.
 
 ## At Session End
 

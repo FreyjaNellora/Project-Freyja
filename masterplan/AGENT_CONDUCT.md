@@ -596,6 +596,36 @@ RUST_LOG=freyja_engine=info     # Normal operation
 RUST_LOG=freyja_engine=trace    # Verbose debugging
 ```
 
+### 3.3 Diagnostic Gameplay Observer Protocol
+
+**Who runs diagnostics:** ONLY the top-level orchestrating agent may start the engine, build the project, or run diagnostic games. Subagents MUST NOT independently start/stop the engine, run `cargo build`, spawn the engine binary, or modify engine state while another agent is working.
+
+**Engine protocol logging (Stage 4+):**
+- Enable: `setoption name LogFile value <path>`
+- Disable: `setoption name LogFile value none`
+- Format: `> incoming_command` and `< outgoing_response` per line, timestamped
+- Zero overhead when disabled
+
+**Max Rounds auto-stop (Stage 4+):**
+- `setoption name MaxRounds value <n>` stops the game after N rounds
+- 20 rounds (80 ply) is usually enough to see behavioral patterns
+
+**Diagnostic workflow:**
+1. Build engine: `cargo build --release`
+2. Configure observer: set depth, game mode, eval profile, ply limit
+3. Run observer: spawns engine, plays game via protocol, captures outputs
+4. Review outputs: protocol log, structured game JSON, summary markdown
+5. Compare behavioral metrics against baselines (pawn ratio, queen activation, captures)
+6. If regression detected: create issue in `masterplan/issues/`, investigate, fix, re-run
+
+**Log naming convention:** `{mode}_{profile}_d{depth}_{games}games_{timestamp}.log`
+
+**When to run diagnostics:**
+- After any eval change (zone control features, weight adjustments)
+- After any search change (beam width, pruning, MCTS parameters)
+- Before and after stage completion (before/after baselines)
+- When a user reports unexpected behavior
+
 ---
 
 ## 4. WHAT AUTOMATED TRACING CANNOT CATCH
