@@ -1,47 +1,50 @@
 # Project Freyja — HANDOFF
 
-**Session Date:** 2026-02-25
-**Session Number:** 1 (Initial Scaffolding)
+**Session Date:** 2026-03-03
+**Session Number:** 2
 
 ---
 
 ## What Stage Are We On?
 
-**Pre-Stage 0:** Project scaffolding and document creation. No code has been written yet beyond `cargo init`.
+**Stage 0: Project Skeleton — Implementation complete, awaiting user green light.**
+
+All acceptance criteria pass. Audit and downstream logs complete. Ready for user verification and tagging.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Project folder structure created** at `C:\Users\N8_Da\OneDrive\Desktop\Project_Freyja\`
-   - `freyja-engine/src/`, `freyja-engine/tests/`
-   - `freyja-ui/src/`
-   - `freyja-nnue/`
-   - `masterplan/` with all subdirectories
-2. **`cargo init --name freyja`** — basic Rust project compiles
-3. **MASTERPLAN.md written** (v1.0) — 21 stages across 6 tiers, full architecture spec, maintenance invariants, risk register
-4. **AGENT_CONDUCT.md written** (v1.0) — carried forward all Odin rules + 7 new sections addressing Odin's gaps
-5. **4PC_RULES_REFERENCE.md written** (v1.0) — exact board geometry, all 36 invalid corner indices, all 4 player starting positions with square indices, all 8 castling paths, pawn directions, promotion ranks, scoring system, verification matrix template
-6. **CLAUDE.md written** — agent orientation document
-7. **STATUS.md written** — project state tracker
-8. **HANDOFF.md written** (this file)
-9. **DECISIONS.md written** — initial ADRs for core architectural choices
-10. **Vault structure created** — templates, MOCs, indexes, wikilink registry
+1. **Committed pending Session 1 document updates** (ADR-006 through ADR-015, MASTERPLAN Gumbel MCTS, CLAUDE.md Odin lessons)
+2. **Stage 0 fully implemented:**
+   - Cargo workspace manifest with `freyja-engine` member, release profile (ADR-011)
+   - `freyja-engine` crate: `lib.rs` (7 pub modules), `main.rs` (protocol header), `Cargo.toml` (tracing dep)
+   - 7 placeholder modules: `board`, `movegen`, `gamestate`, `eval`, `search`, `mcts`, `protocol`
+   - `freyja-ui` scaffolded: Vite v7.3.1 + React + TypeScript
+   - `.gitignore` updated (Cargo.lock no longer ignored)
+3. **All 6 acceptance criteria verified:**
+   - `cargo build` — zero warnings
+   - `cargo test` — harness runs (0 tests)
+   - `cargo fmt --check` — passes
+   - `cargo clippy` — passes
+   - `npm install && npm run dev` — starts on localhost:5173
+   - All modules importable
+4. **Pre-audit and post-audit completed** in `audit_log_stage_00.md`
+5. **Downstream log filled** in `downstream_log_stage_00.md`
+6. **Vault updated:** Wikilink Registry, MOC-Tier-1-Foundation, MOC-Sessions, Session-002 note
 
 ---
 
 ## What Was NOT Completed
 
-- **Stage 0 implementation** — Cargo workspace not yet set up (just a basic `cargo init`). Need workspace manifest, `freyja-engine` crate, UI project, placeholder modules.
-- **Git repository** — not yet initialized (should be done after all scaffolding is in place)
+- **User green light and tagging:** Stage 0 needs user verification. After green light, tag `stage-00-complete` and `v1.0`.
 
 ---
 
 ## Open Issues / Discoveries
 
-- **Athena coordinate system differs from Freyja:** Athena uses `rank * 16 + file` (padded) with 1-indexed coordinates. Freyja uses `rank * 14 + file` with 0-indexed internals. Do NOT copy Athena constants directly.
-- **Capture point values (Section 9 of 4PC_RULES_REFERENCE):** Carried forward from Odin. Should be verified against chess.com's current implementation when UI testing begins.
-- **Blue/Yellow King-Queen swap:** Both have K before Q in their arrangement (vs Red/Green which have Q before K). This is correctly documented but is a classic source of bugs — pay extra attention in Stage 1.
+- **`movegen` vs `move_gen` naming:** MASTERPLAN Section 6 example uses `move_gen` but Stage 0 build order says `movegen`. Currently using `movegen`. If Stage 2 needs a different name, rename then. (NOTE severity)
+- **Carry-forward from Session 1:** Athena coordinate system incompatible (don't copy constants), Blue/Yellow K-Q swap is bug-prone, capture point values need verification against chess.com.
 
 ---
 
@@ -49,39 +52,43 @@
 
 | File | Action |
 |------|--------|
-| `Cargo.toml` | Created (cargo init) |
-| `src/main.rs` | Created (cargo init) |
-| `masterplan/MASTERPLAN.md` | Created |
-| `masterplan/AGENT_CONDUCT.md` | Created |
-| `masterplan/4PC_RULES_REFERENCE.md` | Created |
-| `masterplan/STATUS.md` | Created |
-| `masterplan/HANDOFF.md` | Created |
-| `masterplan/DECISIONS.md` | Created |
-| `CLAUDE.md` | Created |
-| `masterplan/_index/*` | Created (MOCs, Wikilink Registry) |
-| `masterplan/_templates/*` | Created (issue, component, connection, pattern, session) |
+| `Cargo.toml` (root) | Rewritten to workspace |
+| `.gitignore` | Removed Cargo.lock line |
+| `src/main.rs` | Deleted |
+| `freyja-engine/Cargo.toml` | Created |
+| `freyja-engine/src/lib.rs` | Created |
+| `freyja-engine/src/main.rs` | Created |
+| `freyja-engine/src/board.rs` | Created |
+| `freyja-engine/src/movegen.rs` | Created |
+| `freyja-engine/src/gamestate.rs` | Created |
+| `freyja-engine/src/eval.rs` | Created |
+| `freyja-engine/src/search.rs` | Created |
+| `freyja-engine/src/mcts.rs` | Created |
+| `freyja-engine/src/protocol.rs` | Created |
+| `freyja-ui/*` | Created (Vite scaffold) |
+| `masterplan/audit_log_stage_00.md` | Created |
+| `masterplan/downstream_log_stage_00.md` | Created |
+| `masterplan/sessions/Session-002.md` | Created |
+| `masterplan/_index/Wikilink-Registry.md` | Updated |
+| `masterplan/_index/MOC-Tier-1-Foundation.md` | Updated |
+| `masterplan/_index/MOC-Sessions.md` | Updated |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. **Read this HANDOFF** (done if you're reading this)
-2. **Initialize git repo** — `git init`, create `.gitignore`, initial commit with all scaffolding
-3. **Begin Stage 0: Project Skeleton**
-   - Convert to Cargo workspace (workspace manifest in root, `freyja-engine` as member)
-   - Create `freyja-engine/src/lib.rs` and `freyja-engine/src/main.rs`
-   - Create placeholder modules: `board`, `movegen`, `gamestate`, `eval`, `search`, `mcts`, `protocol`
-   - Create React UI project (`freyja-ui`) with Vite + React + TypeScript
-   - Verify: `cargo build`, `cargo test`, `cargo fmt --check`, `cargo clippy` all pass
-   - Get user green light before tagging `stage-00-complete`
+1. **Get user green light on Stage 0.** Ask user to verify: `cargo build`, `cargo run`, `cd freyja-ui && npm run dev`.
+2. **After green light:** Tag `stage-00-complete` and `v1.0`.
+3. **Begin Stage 1: Board Representation** (AGENT_CONDUCT Stage Entry Protocol):
+   - Read `audit_log_stage_00.md` and `downstream_log_stage_00.md`
+   - Read `4PC_RULES_REFERENCE.md` for exact board geometry (36 invalid corners, all 4 player positions)
+   - Read MASTERPLAN Stage 1 spec
+   - `cargo build && cargo test` — verify passing
+   - Create `audit_log_stage_01.md` pre-audit
+   - Start with Square/coordinate types, validity checking, corner enumeration
 
 ---
 
-## Architecture Decisions Made This Session
+## Deferred Debt
 
-See `DECISIONS.md` for full ADRs:
-- ADR-001: Pure Max^n (no BRS, no Paranoid)
-- ADR-002: NNUE-guided beam search
-- ADR-003: Freyja as training data generator for Odin
-- ADR-004: Fixed-size data structures from day one
-- ADR-005: `rank * 14 + file` coordinate system (no padding)
+None.

@@ -1,15 +1,15 @@
 # Project Freyja — STATUS
 
-**Last Updated:** 2026-02-25
-**Updated By:** Initial scaffolding session
+**Last Updated:** 2026-03-03
+**Updated By:** Session 2
 
 ---
 
 ## Current Stage
 
-**Stage:** Pre-Stage 0 (Project Scaffolding)
-**Build-Order Step:** N/A — scaffolding documents being created
-**Status:** In Progress
+**Stage:** 0 (Project Skeleton)
+**Build-Order Step:** All 5 steps complete
+**Status:** Implementation complete — awaiting user green light
 
 ---
 
@@ -17,7 +17,7 @@
 
 | Stage | Name | Status | Tag | Date |
 |-------|------|--------|-----|------|
-| 0 | Project Skeleton | Not Started | — | — |
+| 0 | Project Skeleton | Awaiting green light | — | — |
 | 1 | Board Representation | Not Started | — | — |
 | 2 | Move Generation | Not Started | — | — |
 | 3 | Game State | Not Started | — | — |
@@ -43,7 +43,7 @@
 
 ## Blocking Issues
 
-None — project has not started implementation yet.
+None.
 
 ---
 
@@ -56,18 +56,14 @@ No baselines established yet. First baseline will be set after Stage 2 (perft NP
 ## What the Next Session Should Do First
 
 1. Read `HANDOFF.md` for full context
-2. Begin Stage 0: Project Skeleton
-   - Set up Cargo workspace (`freyja-engine` crate)
-   - Create React UI project (`freyja-ui`)
-   - Create placeholder modules
-   - Set up `.gitignore` and CI basics
-3. After Stage 0 passes acceptance criteria, get user green light
+2. Get user green light on Stage 0, then tag `stage-00-complete` / `v1.0`
+3. Begin Stage 1: Board Representation per AGENT_CONDUCT Stage Entry Protocol
 
 ---
 
 ## Deferred Debt
 
-None — project is new.
+None.
 
 ---
 
@@ -76,7 +72,7 @@ None — project is new.
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | — |
-| Stages complete | 0 | — |
+| Stages complete | 0 (Stage 0 awaiting green light) | — |
 | Open blocking issues | 0 | — |
 | Open warning issues | 0 | — |
 | NPS baseline | Not set | — |
