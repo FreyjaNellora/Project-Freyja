@@ -1,0 +1,12 @@
+[package]
+name = "freyja-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "freyja"
+path = "src/main.rs"
+
+[dependencies]
+tracing = "0.1"

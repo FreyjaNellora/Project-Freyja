@@ -1,6 +1,13 @@
-[package]
-name = "freyja"
+[workspace]
+members = ["freyja-engine"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
-[dependencies]
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
