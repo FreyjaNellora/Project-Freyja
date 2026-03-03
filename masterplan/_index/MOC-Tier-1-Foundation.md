@@ -8,7 +8,7 @@
 
 | Stage | Name | Status | Key Deliverable |
 |-------|------|--------|-----------------|
-| 0 | Project Skeleton | Complete (pending user green light) | Compilable workspace, placeholder modules |
+| 0 | Project Skeleton | **Complete** | Compilable workspace, placeholder modules |
 | 1 | Board Representation | Not Started | Board struct, Zobrist, FEN4, attacks |
 | 2 | Move Generation | Not Started | Legal moves, make/unmake, perft |
 | 3 | Game State | Not Started | Turns, elimination, DKW, scoring |
