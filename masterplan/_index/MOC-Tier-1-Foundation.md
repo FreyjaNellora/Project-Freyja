@@ -8,7 +8,7 @@
 
 | Stage | Name | Status | Key Deliverable |
 |-------|------|--------|-----------------|
-| 0 | Project Skeleton | Not Started | Compilable workspace, placeholder modules |
+| 0 | Project Skeleton | Complete (pending user green light) | Compilable workspace, placeholder modules |
 | 1 | Board Representation | Not Started | Board struct, Zobrist, FEN4, attacks |
 | 2 | Move Generation | Not Started | Legal moves, make/unmake, perft |
 | 3 | Game State | Not Started | Turns, elimination, DKW, scoring |
@@ -51,7 +51,7 @@ Before starting Tier 2 (Stage 6), a full tier boundary review is required (AGENT
 
 ## Components (populated as built)
 
-*None yet — Stage 0 not started.*
+*None yet — Stage 0 has no components (skeleton only).*
 
 ## Connections (populated as built)
 

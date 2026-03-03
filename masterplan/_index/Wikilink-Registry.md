@@ -2,7 +2,7 @@
 
 > Single source of truth for all `[[wikilink]]` targets in the vault.
 
-**Last Updated:** 2026-02-25
+**Last Updated:** 2026-03-03
 
 ---
 
@@ -41,6 +41,16 @@
 | Wikilink | File | Description |
 |----------|------|-------------|
 | [[Session-001]] | `masterplan/sessions/Session-001.md` | Initial scaffolding session |
+| [[Session-002]] | `masterplan/sessions/Session-002.md` | Stage 0 implementation |
+
+---
+
+## Audit & Downstream Logs
+
+| Wikilink | File | Description |
+|----------|------|-------------|
+| [[audit_log_stage_00]] | `masterplan/audit_log_stage_00.md` | Stage 0 audit log |
+| [[downstream_log_stage_00]] | `masterplan/downstream_log_stage_00.md` | Stage 0 downstream log |
 
 ---
 
