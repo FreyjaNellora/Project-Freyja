@@ -42,6 +42,7 @@
 |----------|------|-------------|
 | [[Session-001]] | `masterplan/sessions/Session-001.md` | Initial scaffolding session |
 | [[Session-002]] | `masterplan/sessions/Session-002.md` | Stage 0 implementation |
+| [[Session-003]] | `masterplan/sessions/Session-003.md` | Stage 0 closure + Stage 1 Board Representation |
 
 ---
 
@@ -51,12 +52,16 @@
 |----------|------|-------------|
 | [[audit_log_stage_00]] | `masterplan/audit_log_stage_00.md` | Stage 0 audit log |
 | [[downstream_log_stage_00]] | `masterplan/downstream_log_stage_00.md` | Stage 0 downstream log |
+| [[audit_log_stage_01]] | `masterplan/audit_log_stage_01.md` | Stage 1 audit log |
+| [[downstream_log_stage_01]] | `masterplan/downstream_log_stage_01.md` | Stage 1 downstream log |
 
 ---
 
 ## Components
 
-*None yet — populated as components are built.*
+| Wikilink | File | Description |
+|----------|------|-------------|
+| [[Component-Board]] | `masterplan/components/Component-Board.md` | Board representation (Stage 1) |
 
 ---
 
@@ -68,7 +73,10 @@
 
 ## Patterns
 
-*None yet — populated as patterns are discovered.*
+| Wikilink | File | Description |
+|----------|------|-------------|
+| [[Pattern-Fixed-Size-Piece-List]] | `masterplan/patterns/Pattern-Fixed-Size-Piece-List.md` | Swap-remove array for O(1) piece list ops |
+| [[Pattern-Zobrist-Incremental-Update]] | `masterplan/patterns/Pattern-Zobrist-Incremental-Update.md` | XOR-based incremental hash updates |
 
 ---
 

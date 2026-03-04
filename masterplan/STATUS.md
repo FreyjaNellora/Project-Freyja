@@ -7,9 +7,9 @@
 
 ## Current Stage
 
-**Stage:** 1 (Board Representation) — IN PROGRESS
-**Build-Order Step:** 1 (Square and coordinate types, validity checking)
-**Status:** Stage entry protocol complete. Implementation starting.
+**Stage:** 1 (Board Representation) — IMPLEMENTATION COMPLETE, AWAITING USER GREEN LIGHT
+**Build-Order Step:** All steps complete (1-9)
+**Status:** 89 tests pass, 0 clippy warnings, post-audit done. Waiting for user verification.
 
 ---
 
@@ -18,7 +18,7 @@
 | Stage | Name | Status | Tag | Date |
 |-------|------|--------|-----|------|
 | 0 | Project Skeleton | Complete | `stage-00-complete` / `v1.0` | 2026-03-03 |
-| 1 | Board Representation | In Progress | — | — |
+| 1 | Board Representation | Awaiting Green Light | — | — |
 | 2 | Move Generation | Not Started | — | — |
 | 3 | Game State | Not Started | — | — |
 | 4 | Freyja Protocol | Not Started | — | — |
@@ -56,8 +56,8 @@ No baselines established yet. First baseline will be set after Stage 2 (perft NP
 ## What the Next Session Should Do First
 
 1. Read `HANDOFF.md` for full context
-2. Continue Stage 1 from current build-order step
-3. Reference `4PC_RULES_REFERENCE.md` for all board geometry
+2. Get user green light for Stage 1
+3. After green light: tag `stage-01-complete` / `v1.1`, begin Stage 2
 
 ---
 

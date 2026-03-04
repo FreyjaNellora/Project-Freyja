@@ -9,7 +9,7 @@
 | Stage | Name | Status | Key Deliverable |
 |-------|------|--------|-----------------|
 | 0 | Project Skeleton | **Complete** | Compilable workspace, placeholder modules |
-| 1 | Board Representation | Not Started | Board struct, Zobrist, FEN4, attacks |
+| 1 | Board Representation | **Implementation Complete** (awaiting user green light) | Board struct, Zobrist, FEN4, attacks |
 | 2 | Move Generation | Not Started | Legal moves, make/unmake, perft |
 | 3 | Game State | Not Started | Turns, elimination, DKW, scoring |
 | 4 | Freyja Protocol | Not Started | Engine ↔ UI communication |
@@ -51,7 +51,7 @@ Before starting Tier 2 (Stage 6), a full tier boundary review is required (AGENT
 
 ## Components (populated as built)
 
-*None yet — Stage 0 has no components (skeleton only).*
+- [[Component-Board]] — Board representation, Zobrist hashing, FEN4, attack queries
 
 ## Connections (populated as built)
 
