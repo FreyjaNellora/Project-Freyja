@@ -94,3 +94,12 @@
 3. **Blue/Yellow K-Q swap:** Mitigated. Starting position tests verify exact squares for all 4 players.
 4. **FEN4 format:** Multi-digit empty count parsing bug found and fixed during implementation. Now covered by round-trip tests.
 5. **Zobrist quality:** All 4,688 keys verified unique and nonzero.
+
+---
+
+## User Verification Addendum
+
+**Date:** 2026-03-04
+**Session:** 4
+
+User green light received. Stage 1 tagged `stage-01-complete` / `v1.1`.

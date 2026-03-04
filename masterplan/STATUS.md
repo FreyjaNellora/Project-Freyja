@@ -7,9 +7,9 @@
 
 ## Current Stage
 
-**Stage:** 1 (Board Representation) — IMPLEMENTATION COMPLETE, AWAITING USER GREEN LIGHT
-**Build-Order Step:** All steps complete (1-9)
-**Status:** 89 tests pass, 0 clippy warnings, post-audit done. Waiting for user verification.
+**Stage:** 2 (Move Generation) — IN PROGRESS
+**Build-Order Step:** Entry protocol
+**Status:** Stage 1 tagged complete. Beginning Stage 2.
 
 ---
 
@@ -18,8 +18,8 @@
 | Stage | Name | Status | Tag | Date |
 |-------|------|--------|-----|------|
 | 0 | Project Skeleton | Complete | `stage-00-complete` / `v1.0` | 2026-03-03 |
-| 1 | Board Representation | Awaiting Green Light | — | — |
-| 2 | Move Generation | Not Started | — | — |
+| 1 | Board Representation | Complete | `stage-01-complete` / `v1.1` | 2026-03-04 |
+| 2 | Move Generation | In Progress | — | — |
 | 3 | Game State | Not Started | — | — |
 | 4 | Freyja Protocol | Not Started | — | — |
 | 5 | UI Shell | Not Started | — | — |
@@ -55,9 +55,8 @@ No baselines established yet. First baseline will be set after Stage 2 (perft NP
 
 ## What the Next Session Should Do First
 
-1. Read `HANDOFF.md` for full context
-2. Get user green light for Stage 1
-3. After green light: tag `stage-01-complete` / `v1.1`, begin Stage 2
+1. Continue Stage 2 implementation (move generation)
+2. Follow 12-step build order in MASTERPLAN
 
 ---
 
@@ -72,7 +71,7 @@ None.
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | — |
-| Stages complete | 1 (Stage 0) | 2026-03-03 |
+| Stages complete | 2 (Stages 0-1) | 2026-03-04 |
 | Open blocking issues | 0 | — |
 | Open warning issues | 0 | — |
 | NPS baseline | Not set | — |

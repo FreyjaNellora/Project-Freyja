@@ -10,3 +10,4 @@ path = "src/main.rs"
 
 [dependencies]
 tracing = "0.1"
+arrayvec = "0.7"

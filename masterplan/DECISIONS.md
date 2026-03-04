@@ -355,4 +355,33 @@ Adopt the observer protocol approach proven in Odin v1:
 
 ---
 
+## ADR-016: Snake_Case Module Naming Consistency
+
+**Date:** 2026-03-04
+**Status:** Accepted
+**Stage:** Stage 2 (Move Generation)
+
+**Context:**
+Stage 0 created stub modules with inconsistent naming: `movegen` and `gamestate` are compound words without underscores, while Rust convention and MASTERPLAN Section 6 specify snake_case for modules (e.g., `move_gen`, `board_repr`). Single-word modules (`board`, `eval`, `mcts`, `protocol`, `search`) are already correct.
+
+**Decision:**
+Rename compound modules to snake_case:
+- `movegen.rs` → `move_gen.rs`
+- `gamestate.rs` → `game_state.rs`
+
+All module names now follow Rust snake_case convention uniformly.
+
+**Rationale:**
+- Consistency: all modules follow the same naming convention
+- MASTERPLAN Section 6 explicitly uses `move_gen` as an example
+- Rust standard convention (clippy recommends snake_case for modules)
+- Early rename is cheap; late rename would require updating all imports across many stages
+
+**Consequences:**
+- `mod movegen` → `mod move_gen` in lib.rs
+- `mod gamestate` → `mod game_state` in lib.rs
+- No downstream impact (both modules are stubs with no consumers yet)
+
+---
+
 *New ADRs should be added below this line, following the same format.*
