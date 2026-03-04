@@ -1,15 +1,15 @@
 # Project Freyja — STATUS
 
-**Last Updated:** 2026-03-03
-**Updated By:** Session 3
+**Last Updated:** 2026-03-04
+**Updated By:** Session 4
 
 ---
 
 ## Current Stage
 
-**Stage:** 2 (Move Generation) — IN PROGRESS
-**Build-Order Step:** Entry protocol
-**Status:** Stage 1 tagged complete. Beginning Stage 2.
+**Stage:** 2 (Move Generation) — AWAITING USER GREEN LIGHT
+**Build-Order Step:** Complete
+**Status:** All 12 build-order steps done. 149 tests pass, 4PC matrix complete. Awaiting user green light to tag.
 
 ---
 
@@ -49,14 +49,17 @@ None.
 
 ## Performance Baselines
 
-No baselines established yet. First baseline will be set after Stage 2 (perft NPS).
+| Metric | Value | Notes |
+|--------|-------|-------|
+| perft(4) | 152,050 nodes | Starting position, debug build ~0.7s |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Continue Stage 2 implementation (move generation)
-2. Follow 12-step build order in MASTERPLAN
+1. Get user green light for Stage 2
+2. Tag `stage-02-complete` / `v1.2`
+3. Begin Stage 3: Game State
 
 ---
 
