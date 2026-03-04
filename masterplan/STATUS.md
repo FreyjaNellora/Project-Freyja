@@ -1,15 +1,15 @@
 # Project Freyja — STATUS
 
 **Last Updated:** 2026-03-03
-**Updated By:** Session 2
+**Updated By:** Session 3
 
 ---
 
 ## Current Stage
 
-**Stage:** 0 (Project Skeleton) — COMPLETE
-**Build-Order Step:** All 5 steps complete
-**Status:** Complete. Tagged `stage-00-complete` / `v1.0`. Ready for Stage 1.
+**Stage:** 1 (Board Representation) — IN PROGRESS
+**Build-Order Step:** 1 (Square and coordinate types, validity checking)
+**Status:** Stage entry protocol complete. Implementation starting.
 
 ---
 
@@ -18,7 +18,7 @@
 | Stage | Name | Status | Tag | Date |
 |-------|------|--------|-----|------|
 | 0 | Project Skeleton | Complete | `stage-00-complete` / `v1.0` | 2026-03-03 |
-| 1 | Board Representation | Not Started | — | — |
+| 1 | Board Representation | In Progress | — | — |
 | 2 | Move Generation | Not Started | — | — |
 | 3 | Game State | Not Started | — | — |
 | 4 | Freyja Protocol | Not Started | — | — |
@@ -56,8 +56,8 @@ No baselines established yet. First baseline will be set after Stage 2 (perft NP
 ## What the Next Session Should Do First
 
 1. Read `HANDOFF.md` for full context
-2. Begin Stage 1: Board Representation per AGENT_CONDUCT Stage Entry Protocol
-3. Read `audit_log_stage_00.md`, `downstream_log_stage_00.md`, `4PC_RULES_REFERENCE.md`
+2. Continue Stage 1 from current build-order step
+3. Reference `4PC_RULES_REFERENCE.md` for all board geometry
 
 ---
 

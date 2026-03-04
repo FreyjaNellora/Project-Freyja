@@ -77,3 +77,13 @@ No upstream stages exist.
 
 ### Maintenance Invariant #1 Established
 - **Prior-stage tests never deleted:** Baseline established (0 tests). All future stages accumulate tests.
+
+---
+
+## Addendum: User Verification
+
+**Date:** 2026-03-03
+**Verified By:** User (green light)
+**Tags Applied:** `stage-00-complete`, `v1.0`
+
+Stage 0 accepted by user after interactive verification. All deliverables confirmed working. Stage is now formally closed.
