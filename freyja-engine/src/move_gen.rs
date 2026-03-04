@@ -1345,6 +1345,254 @@ mod tests {
         assert_eq!(promos.len(), 4, "Green should have 4 promotion choices");
     }
 
+    // ── Pawn captures per player ──
+
+    #[test]
+    fn test_pawn_capture_red() {
+        let mut board = Board::empty();
+        let pawn_sq = Square::new(4, 5).unwrap();
+        board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Red));
+        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        // Enemy pieces on Red's capture diagonals: (+1,+1) and (+1,-1)
+        board.set_piece(Square::new(5, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
+        board.set_piece(Square::new(5, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
+        assert_eq!(captures.len(), 2, "Red pawn should capture on both diagonals");
+    }
+
+    #[test]
+    fn test_pawn_capture_blue() {
+        let mut board = Board::empty();
+        let pawn_sq = Square::new(5, 4).unwrap();
+        board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Blue));
+        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        // Blue captures: (+1,+1) and (-1,+1)
+        board.set_piece(Square::new(6, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
+        board.set_piece(Square::new(4, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
+        assert_eq!(captures.len(), 2, "Blue pawn should capture on both diagonals");
+    }
+
+    #[test]
+    fn test_pawn_capture_yellow() {
+        let mut board = Board::empty();
+        let pawn_sq = Square::new(9, 5).unwrap();
+        board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        // Yellow captures: (-1,+1) and (-1,-1)
+        board.set_piece(Square::new(8, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
+        board.set_piece(Square::new(8, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Green));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
+        assert_eq!(captures.len(), 2, "Yellow pawn should capture on both diagonals");
+    }
+
+    #[test]
+    fn test_pawn_capture_green() {
+        let mut board = Board::empty();
+        let pawn_sq = Square::new(5, 9).unwrap();
+        board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Green));
+        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        // Green captures: (+1,-1) and (-1,-1)
+        board.set_piece(Square::new(6, 8).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
+        board.set_piece(Square::new(4, 8).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
+        board.set_side_to_move(Player::Green);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
+        assert_eq!(captures.len(), 2, "Green pawn should capture on both diagonals");
+    }
+
+    // ── Knight moves per player ──
+
+    #[test]
+    fn test_knight_red() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(3, 5).unwrap(), Piece::new(PieceType::Knight, Player::Red));
+        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
+        assert_eq!(knight_moves.len(), 8, "Red knight at (3,5) should have 8 moves");
+    }
+
+    #[test]
+    fn test_knight_blue() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(5, 3).unwrap(), Piece::new(PieceType::Knight, Player::Blue));
+        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
+        assert_eq!(knight_moves.len(), 8, "Blue knight at (5,3) should have 8 moves");
+    }
+
+    #[test]
+    fn test_knight_yellow() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(10, 8).unwrap(), Piece::new(PieceType::Knight, Player::Yellow));
+        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
+        assert_eq!(knight_moves.len(), 8, "Yellow knight at (10,8) should have 8 moves");
+    }
+
+    #[test]
+    fn test_knight_green() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(8, 10).unwrap(), Piece::new(PieceType::Knight, Player::Green));
+        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_side_to_move(Player::Green);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
+        assert_eq!(knight_moves.len(), 8, "Green knight at (8,10) should have 8 moves");
+    }
+
+    // ── Slider orientation per player ──
+
+    #[test]
+    fn test_rook_red() {
+        let mut board = Board::empty();
+        let rook_sq = Square::new(4, 7).unwrap();
+        board.set_piece(rook_sq, Piece::new(PieceType::Rook, Player::Red));
+        board.set_piece(Square::new(0, 3).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let rook_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Rook).collect();
+        // Rook on open board at (4,7): can slide in 4 directions
+        assert!(rook_moves.len() > 10, "Red rook should have many moves on open board");
+    }
+
+    #[test]
+    fn test_bishop_blue() {
+        let mut board = Board::empty();
+        let bishop_sq = Square::new(7, 4).unwrap();
+        board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Blue));
+        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let bishop_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Bishop).collect();
+        assert!(bishop_moves.len() > 5, "Blue bishop should have many moves on open board");
+    }
+
+    #[test]
+    fn test_queen_yellow() {
+        let mut board = Board::empty();
+        let queen_sq = Square::new(7, 7).unwrap();
+        board.set_piece(queen_sq, Piece::new(PieceType::Queen, Player::Yellow));
+        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let queen_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Queen).collect();
+        // Queen at center of board should have many moves in all 8 directions
+        assert!(queen_moves.len() > 20, "Yellow queen at center should have many moves");
+    }
+
+    #[test]
+    fn test_rook_green() {
+        let mut board = Board::empty();
+        let rook_sq = Square::new(7, 10).unwrap();
+        board.set_piece(rook_sq, Piece::new(PieceType::Rook, Player::Green));
+        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_side_to_move(Player::Green);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let rook_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Rook).collect();
+        assert!(rook_moves.len() > 10, "Green rook should have many moves on open board");
+    }
+
+    // ── King moves per player ──
+
+    #[test]
+    fn test_king_red() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
+    }
+
+    #[test]
+    fn test_king_blue() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
+    }
+
+    #[test]
+    fn test_king_yellow() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(8, 8).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
+    }
+
+    #[test]
+    fn test_king_green() {
+        let mut board = Board::empty();
+        board.set_piece(Square::new(8, 8).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_side_to_move(Player::Green);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
+    }
+
+    // ── make/unmake stress test: all move types from starting position ──
+
+    #[test]
+    fn test_make_unmake_all_starting_moves() {
+        let mut board = Board::starting_position();
+        let original = board.clone();
+        let original_hash = board.zobrist_hash();
+
+        let moves = generate_legal_moves(&mut board);
+        for mv in &moves {
+            let undo = make_move(&mut board, *mv);
+            unmake_move(&mut board, &undo);
+            assert_eq!(board, original, "Board not restored after make/unmake of {:?}", mv);
+            assert_eq!(board.zobrist_hash(), original_hash, "Zobrist not restored after {:?}", mv);
+            board.assert_piece_list_sync();
+        }
+    }
+
     // ── Perft ──
 
     #[test]
