@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-06
-**Updated By:** Session 6
+**Updated By:** Session 7
 
 ---
 
 ## Current Stage
 
-**Stage:** 4 (Freyja Protocol) -- AWAITING USER GREEN LIGHT
+**Stage:** 5 (UI Shell) -- COMPLETE
 **Build-Order Step:** Complete
-**Status:** All 9 build-order steps done. 275 total tests pass. Clippy/fmt clean. Post-audit complete. Awaiting user green light to tag.
+**Status:** Tauri v2 desktop app with 14×14 board, engine IPC, auto-play. 275 engine tests + 48 frontend tests pass. Tagged `stage-05-complete` / `v1.5`. Pushed to GitHub.
 
 ---
 
@@ -21,8 +21,8 @@
 | 1 | Board Representation | Complete | `stage-01-complete` / `v1.1` | 2026-03-04 |
 | 2 | Move Generation | Complete | `stage-02-complete` / `v1.2` | 2026-03-05 |
 | 3 | Game State | Complete | `stage-03-complete` / `v1.3` | 2026-03-06 |
-| 4 | Freyja Protocol | Awaiting Green Light | -- | -- |
-| 5 | UI Shell | Not Started | -- | -- |
+| 4 | Freyja Protocol | Complete | `stage-04-complete` / `v1.4` | 2026-03-06 |
+| 5 | UI Shell | Complete | `stage-05-complete` / `v1.5` | 2026-03-06 |
 | 6 | Bootstrap Evaluation | Not Started | -- | -- |
 | 7 | Max^n Search | Not Started | -- | -- |
 | 8 | Quiescence Search | Not Started | -- | -- |
@@ -59,9 +59,8 @@ None.
 
 ## What the Next Session Should Do First
 
-1. Get user green light for Stage 4
-2. Tag `stage-04-complete` / `v1.4`
-3. Begin Stage 5 or 6
+1. Read HANDOFF.md and STATUS.md
+2. Begin Stage 6 (Bootstrap Evaluation) or Stage 7 (Max^n Search)
 
 ---
 
@@ -76,7 +75,7 @@ None.
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 4 (Stages 0-3) | 2026-03-06 |
+| Stages complete | 6 (Stages 0-5) | 2026-03-06 |
 | Open blocking issues | 0 | -- |
 | Open warning issues | 0 | -- |
 | NPS baseline | Not set | -- |
