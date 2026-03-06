@@ -9,10 +9,10 @@
 | Stage | Name | Status | Key Deliverable |
 |-------|------|--------|-----------------|
 | 0 | Project Skeleton | **Complete** | Compilable workspace, placeholder modules |
-| 1 | Board Representation | **Implementation Complete** (awaiting user green light) | Board struct, Zobrist, FEN4, attacks |
-| 2 | Move Generation | Not Started | Legal moves, make/unmake, perft |
-| 3 | Game State | Not Started | Turns, elimination, DKW, scoring |
-| 4 | Freyja Protocol | Not Started | Engine ↔ UI communication |
+| 1 | Board Representation | **Complete** | Board struct, Zobrist, FEN4, attacks |
+| 2 | Move Generation | **Complete** | Legal moves, make/unmake, perft |
+| 3 | Game State | **Complete** | Turns, elimination, DKW, scoring |
+| 4 | Freyja Protocol | **Awaiting Green Light** | Engine ↔ UI communication |
 | 5 | UI Shell | Not Started | Visual board, click-to-move |
 
 ---
@@ -52,14 +52,25 @@ Before starting Tier 2 (Stage 6), a full tier boundary review is required (AGENT
 ## Components (populated as built)
 
 - [[Component-Board]] — Board representation, Zobrist hashing, FEN4, attack queries
+- [[Component-MoveGen]] — Legal move generation, make/unmake, perft
+- [[Component-GameState]] — Game state, turns, elimination, DKW, scoring
+- [[Component-Protocol]] — Engine-UI protocol, command parsing, info output
 
 ## Connections (populated as built)
 
-*None yet.*
+- [[Connection-Board-to-MoveGen]] — Board → MoveGen interface
+- [[Connection-GameState-to-Protocol]] — GameState → Protocol interface
+
+## Patterns
+
+- [[Pattern-4PC-Pawn-Orientation]] — Per-player direction tables
+- [[Pattern-Elimination-Chain]] — Loop-until-stable cascade
+- [[Pattern-DKW-Processing]] — Dead King Walking random moves
+- [[Pattern-Protocol-Status-Diffing]] — Before/after event detection
 
 ## Issues (populated as discovered)
 
-*None yet.*
+*None open.*
 
 ---
 

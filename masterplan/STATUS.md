@@ -61,16 +61,13 @@ None.
 
 1. Get user green light for Stage 4
 2. Tag `stage-04-complete` / `v1.4`
-3. Address deferred vault notes (Stage 2 at 3rd deferral — escalation)
-4. Begin Stage 5 or 6
+3. Begin Stage 5 or 6
 
 ---
 
 ## Deferred Debt
 
-- **Vault notes for Stage 2** — 3rd consecutive deferral. Per AGENT_CONDUCT 1.16, this is now a mandatory escalation. Severity promoted NOTE → WARNING.
-- Vault notes for Stage 3 — 2nd deferral
-- Vault notes for Stage 4 — 1st deferral
+None.
 
 ---
 
@@ -81,5 +78,5 @@ None.
 | Total stages | 21 (0-20) | -- |
 | Stages complete | 4 (Stages 0-3) | 2026-03-06 |
 | Open blocking issues | 0 | -- |
-| Open warning issues | 1 (vault notes deferred) | 2026-03-06 |
+| Open warning issues | 0 | -- |
 | NPS baseline | Not set | -- |

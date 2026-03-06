@@ -2,7 +2,7 @@
 
 > Single source of truth for all `[[wikilink]]` targets in the vault.
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-06
 
 ---
 
@@ -43,6 +43,8 @@
 | [[Session-001]] | `masterplan/sessions/Session-001.md` | Initial scaffolding session |
 | [[Session-002]] | `masterplan/sessions/Session-002.md` | Stage 0 implementation |
 | [[Session-003]] | `masterplan/sessions/Session-003.md` | Stage 0 closure + Stage 1 Board Representation |
+| [[Session-005]] | `masterplan/sessions/Session-005.md` | Stage 2 closure + Stage 3 Game State |
+| [[Session-006]] | `masterplan/sessions/Session-006.md` | Stage 3 closure + Stage 4 Protocol |
 
 ---
 
@@ -54,6 +56,12 @@
 | [[downstream_log_stage_00]] | `masterplan/downstream_log_stage_00.md` | Stage 0 downstream log |
 | [[audit_log_stage_01]] | `masterplan/audit_log_stage_01.md` | Stage 1 audit log |
 | [[downstream_log_stage_01]] | `masterplan/downstream_log_stage_01.md` | Stage 1 downstream log |
+| [[audit_log_stage_02]] | `masterplan/audit_log_stage_02.md` | Stage 2 audit log |
+| [[downstream_log_stage_02]] | `masterplan/downstream_log_stage_02.md` | Stage 2 downstream log |
+| [[audit_log_stage_03]] | `masterplan/audit_log_stage_03.md` | Stage 3 audit log |
+| [[downstream_log_stage_03]] | `masterplan/downstream_log_stage_03.md` | Stage 3 downstream log |
+| [[audit_log_stage_04]] | `masterplan/audit_log_stage_04.md` | Stage 4 audit log |
+| [[downstream_log_stage_04]] | `masterplan/downstream_log_stage_04.md` | Stage 4 downstream log |
 
 ---
 
@@ -62,12 +70,18 @@
 | Wikilink | File | Description |
 |----------|------|-------------|
 | [[Component-Board]] | `masterplan/components/Component-Board.md` | Board representation (Stage 1) |
+| [[Component-MoveGen]] | `masterplan/components/Component-MoveGen.md` | Move generation (Stage 2) |
+| [[Component-GameState]] | `masterplan/components/Component-GameState.md` | Game state management (Stage 3) |
+| [[Component-Protocol]] | `masterplan/components/Component-Protocol.md` | Engine-UI protocol (Stage 4) |
 
 ---
 
 ## Connections
 
-*None yet — populated as connections are documented.*
+| Wikilink | File | Description |
+|----------|------|-------------|
+| [[Connection-Board-to-MoveGen]] | `masterplan/connections/Connection-Board-to-MoveGen.md` | Board → MoveGen interface |
+| [[Connection-GameState-to-Protocol]] | `masterplan/connections/Connection-GameState-to-Protocol.md` | GameState → Protocol interface |
 
 ---
 
@@ -77,6 +91,10 @@
 |----------|------|-------------|
 | [[Pattern-Fixed-Size-Piece-List]] | `masterplan/patterns/Pattern-Fixed-Size-Piece-List.md` | Swap-remove array for O(1) piece list ops |
 | [[Pattern-Zobrist-Incremental-Update]] | `masterplan/patterns/Pattern-Zobrist-Incremental-Update.md` | XOR-based incremental hash updates |
+| [[Pattern-4PC-Pawn-Orientation]] | `masterplan/patterns/Pattern-4PC-Pawn-Orientation.md` | Per-player direction tables for pawn movement |
+| [[Pattern-Elimination-Chain]] | `masterplan/patterns/Pattern-Elimination-Chain.md` | Loop-until-stable elimination cascade |
+| [[Pattern-DKW-Processing]] | `masterplan/patterns/Pattern-DKW-Processing.md` | Dead King Walking random move processing |
+| [[Pattern-Protocol-Status-Diffing]] | `masterplan/patterns/Pattern-Protocol-Status-Diffing.md` | Before/after status diff for event detection |
 
 ---
 

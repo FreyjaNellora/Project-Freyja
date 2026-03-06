@@ -78,13 +78,10 @@ All code written, 275 total tests pass (244 unit + 25 protocol integration + 5 p
 1. Read this HANDOFF and STATUS.md
 2. Get user green light for Stage 4
 3. After green light: `git tag stage-04-complete && git tag v1.4`
-4. Address deferred vault notes (3rd deferral for Stage 2 — escalation per 1.16)
-5. Begin Stage 5: UI Shell (or Stage 6: Bootstrap Eval — can run in parallel)
+4. Begin Stage 5: UI Shell (or Stage 6: Bootstrap Eval — can run in parallel)
 
 ---
 
 ## Deferred Debt
 
-- **Vault notes for Stage 2** (Component-MoveGen, patterns) — **3rd consecutive deferral, ESCALATION required per AGENT_CONDUCT 1.16**
-- Vault notes for Stage 3 (Component-GameState, patterns) — 2nd deferral
-- Vault notes for Stage 4 (Component-Protocol, patterns) — 1st deferral
+None. Vault notes for Stages 2-4 were completed this session.
