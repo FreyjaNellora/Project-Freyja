@@ -242,6 +242,16 @@ impl Player {
         }
     }
 
+    /// Get the previous player in turn order (wraps Red -> Green).
+    pub fn prev(self) -> Self {
+        match self {
+            Player::Red => Player::Green,
+            Player::Blue => Player::Red,
+            Player::Yellow => Player::Blue,
+            Player::Green => Player::Yellow,
+        }
+    }
+
     /// All players in turn order.
     pub fn all() -> [Player; PLAYERS] {
         [Player::Red, Player::Blue, Player::Yellow, Player::Green]

@@ -6,7 +6,9 @@
 use arrayvec::ArrayVec;
 
 use crate::board::types::*;
-use crate::board::{Board, ALL_DIRS, DIAGONAL_DIRS, KNIGHT_OFFSETS, ORTHOGONAL_DIRS, PAWN_CAPTURE_DELTAS};
+use crate::board::{
+    ALL_DIRS, Board, DIAGONAL_DIRS, KNIGHT_OFFSETS, ORTHOGONAL_DIRS, PAWN_CAPTURE_DELTAS,
+};
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -468,36 +470,44 @@ fn gen_pawn_moves(
 
     // Single push
     if let Some(target) = try_square(rank + dr, file + df)
-        && board.piece_at(target).is_none() {
-            if is_promotion_square(target, player) {
-                for &promo in &PROMOTION_PIECES {
-                    moves.push(Move::new_promotion(sq, target, None, promo));
-                }
-            } else {
-                moves.push(Move::new(sq, target, PieceType::Pawn));
+        && board.piece_at(target).is_none()
+    {
+        if is_promotion_square(target, player) {
+            for &promo in &PROMOTION_PIECES {
+                moves.push(Move::new_promotion(sq, target, None, promo));
+            }
+        } else {
+            moves.push(Move::new(sq, target, PieceType::Pawn));
 
-                // Double push
-                if is_pawn_start(sq, player)
-                    && let Some(double_target) = try_square(rank + 2 * dr, file + 2 * df)
-                        && board.piece_at(double_target).is_none() {
-                            moves.push(Move::double_push(sq, double_target));
-                        }
+            // Double push
+            if is_pawn_start(sq, player)
+                && let Some(double_target) = try_square(rank + 2 * dr, file + 2 * df)
+                && board.piece_at(double_target).is_none()
+            {
+                moves.push(Move::double_push(sq, double_target));
             }
         }
+    }
 
     // Captures
     for &(cr, cf) in &PAWN_CAPTURE_DELTAS[player.index()] {
         if let Some(target) = try_square(rank + cr, file + cf)
             && let Some(piece) = board.piece_at(target)
-                && piece.player != player {
-                    if is_promotion_square(target, player) {
-                        for &promo in &PROMOTION_PIECES {
-                            moves.push(Move::new_promotion(sq, target, Some(piece.piece_type), promo));
-                        }
-                    } else {
-                        moves.push(Move::capture(sq, target, PieceType::Pawn, piece.piece_type));
-                    }
+            && piece.player != player
+        {
+            if is_promotion_square(target, player) {
+                for &promo in &PROMOTION_PIECES {
+                    moves.push(Move::new_promotion(
+                        sq,
+                        target,
+                        Some(piece.piece_type),
+                        promo,
+                    ));
                 }
+            } else {
+                moves.push(Move::capture(sq, target, PieceType::Pawn, piece.piece_type));
+            }
+        }
     }
 }
 
@@ -515,7 +525,12 @@ fn gen_knight_moves(
             match board.piece_at(target) {
                 None => moves.push(Move::new(sq, target, PieceType::Knight)),
                 Some(piece) if piece.player != player => {
-                    moves.push(Move::capture(sq, target, PieceType::Knight, piece.piece_type));
+                    moves.push(Move::capture(
+                        sq,
+                        target,
+                        PieceType::Knight,
+                        piece.piece_type,
+                    ));
                 }
                 _ => {}
             }
@@ -632,9 +647,11 @@ fn gen_en_passant_moves(board: &Board, player: Player, moves: &mut ArrayVec<Move
         let pawn_file = ep_sq.file() as i8 - cf;
         if let Some(pawn_sq) = try_square(pawn_rank, pawn_file)
             && let Some(piece) = board.piece_at(pawn_sq)
-                && piece.player == player && piece.piece_type == PieceType::Pawn {
-                    moves.push(Move::en_passant(pawn_sq, ep_sq));
-                }
+            && piece.player == player
+            && piece.piece_type == PieceType::Pawn
+        {
+            moves.push(Move::en_passant(pawn_sq, ep_sq));
+        }
     }
 }
 
@@ -676,7 +693,9 @@ pub fn make_move(board: &mut Board, mv: Move) -> MoveUndo {
         MoveFlags::Castle => {
             let def = CASTLE_DEFS
                 .iter()
-                .find(|d| d.player == player && d.king_from == from.index() && d.king_to == to.index())
+                .find(|d| {
+                    d.player == player && d.king_from == from.index() && d.king_to == to.index()
+                })
                 .expect("Invalid castle move");
 
             // Move king
@@ -800,7 +819,9 @@ pub fn unmake_move(board: &mut Board, undo: &MoveUndo) {
         MoveFlags::Castle => {
             let def = CASTLE_DEFS
                 .iter()
-                .find(|d| d.player == player && d.king_from == from.index() && d.king_to == to.index())
+                .find(|d| {
+                    d.player == player && d.king_from == from.index() && d.king_to == to.index()
+                })
                 .expect("Invalid castle unmake");
 
             // Unmove king
@@ -1026,7 +1047,11 @@ mod tests {
                 "Zobrist mismatch after make/unmake of {:?}",
                 mv
             );
-            assert_eq!(board, original_board, "Board mismatch after make/unmake of {:?}", mv);
+            assert_eq!(
+                board, original_board,
+                "Board mismatch after make/unmake of {:?}",
+                mv
+            );
             board.assert_piece_list_sync();
         }
     }
@@ -1043,9 +1068,19 @@ mod tests {
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let targets: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn).map(|m| m.to_sq()).collect();
-        assert!(targets.contains(&Square::new(2, 4).unwrap()), "Red pawn should push to e3");
-        assert!(targets.contains(&Square::new(3, 4).unwrap()), "Red pawn should double push to e4");
+        let targets: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn)
+            .map(|m| m.to_sq())
+            .collect();
+        assert!(
+            targets.contains(&Square::new(2, 4).unwrap()),
+            "Red pawn should push to e3"
+        );
+        assert!(
+            targets.contains(&Square::new(3, 4).unwrap()),
+            "Red pawn should double push to e4"
+        );
     }
 
     #[test]
@@ -1059,9 +1094,19 @@ mod tests {
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let targets: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn).map(|m| m.to_sq()).collect();
-        assert!(targets.contains(&Square::new(4, 2).unwrap()), "Blue pawn should push east");
-        assert!(targets.contains(&Square::new(4, 3).unwrap()), "Blue pawn should double push east");
+        let targets: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn)
+            .map(|m| m.to_sq())
+            .collect();
+        assert!(
+            targets.contains(&Square::new(4, 2).unwrap()),
+            "Blue pawn should push east"
+        );
+        assert!(
+            targets.contains(&Square::new(4, 3).unwrap()),
+            "Blue pawn should double push east"
+        );
     }
 
     #[test]
@@ -1075,9 +1120,19 @@ mod tests {
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let targets: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn).map(|m| m.to_sq()).collect();
-        assert!(targets.contains(&Square::new(11, 4).unwrap()), "Yellow pawn should push south");
-        assert!(targets.contains(&Square::new(10, 4).unwrap()), "Yellow pawn should double push south");
+        let targets: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn)
+            .map(|m| m.to_sq())
+            .collect();
+        assert!(
+            targets.contains(&Square::new(11, 4).unwrap()),
+            "Yellow pawn should push south"
+        );
+        assert!(
+            targets.contains(&Square::new(10, 4).unwrap()),
+            "Yellow pawn should double push south"
+        );
     }
 
     #[test]
@@ -1091,9 +1146,19 @@ mod tests {
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let targets: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn).map(|m| m.to_sq()).collect();
-        assert!(targets.contains(&Square::new(4, 11).unwrap()), "Green pawn should push west");
-        assert!(targets.contains(&Square::new(4, 10).unwrap()), "Green pawn should double push west");
+        let targets: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn)
+            .map(|m| m.to_sq())
+            .collect();
+        assert!(
+            targets.contains(&Square::new(4, 11).unwrap()),
+            "Green pawn should push west"
+        );
+        assert!(
+            targets.contains(&Square::new(4, 10).unwrap()),
+            "Green pawn should double push west"
+        );
     }
 
     // ── Castling per player ──
@@ -1106,7 +1171,10 @@ mod tests {
         board.set_castling_rights(1);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(9));
     }
@@ -1119,7 +1187,10 @@ mod tests {
         board.set_castling_rights(2);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(5));
     }
@@ -1133,7 +1204,10 @@ mod tests {
         board.set_side_to_move(Player::Blue);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(56));
     }
@@ -1147,7 +1221,10 @@ mod tests {
         board.set_side_to_move(Player::Blue);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(112));
     }
@@ -1161,7 +1238,10 @@ mod tests {
         board.set_side_to_move(Player::Yellow);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(186));
     }
@@ -1175,7 +1255,10 @@ mod tests {
         board.set_side_to_move(Player::Yellow);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(190));
     }
@@ -1189,7 +1272,10 @@ mod tests {
         board.set_side_to_move(Player::Green);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(139));
     }
@@ -1203,7 +1289,10 @@ mod tests {
         board.set_side_to_move(Player::Green);
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 1);
         assert_eq!(castles[0].to_sq(), Square(83));
     }
@@ -1215,66 +1304,111 @@ mod tests {
         let mut board = Board::empty();
         let pawn_sq = Square::new(5, 5).unwrap();
         board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         let ep_sq = Square::new(6, 6).unwrap();
         board.set_en_passant(Some(ep_sq), Some(Player::Yellow));
         // Yellow pushes south (-1,0), pawn at (6+(-1),6+0) = (5,6)
-        board.set_piece(Square::new(5, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_piece(
+            Square::new(5, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let ep_moves: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::EnPassant).collect();
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
         assert_eq!(ep_moves.len(), 1, "Red should have 1 EP move");
     }
 
     #[test]
     fn test_en_passant_blue() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
-        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(6, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         let ep_sq = Square::new(6, 6).unwrap();
         board.set_en_passant(Some(ep_sq), Some(Player::Green));
         // Green pushes west (0,-1), pawn at (6+0,6+(-1)) = (6,5)
-        board.set_piece(Square::new(6, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Green));
+        board.set_piece(
+            Square::new(6, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let ep_moves: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::EnPassant).collect();
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
         assert_eq!(ep_moves.len(), 1, "Blue should have 1 EP move");
     }
 
     #[test]
     fn test_en_passant_yellow() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
-        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         let ep_sq = Square::new(4, 6).unwrap();
         board.set_en_passant(Some(ep_sq), Some(Player::Red));
         // Red pushes north (+1,0), pawn at (4+1,6+0) = (5,6)
-        board.set_piece(Square::new(5, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
+        board.set_piece(
+            Square::new(5, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let ep_moves: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::EnPassant).collect();
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
         assert_eq!(ep_moves.len(), 1, "Yellow should have 1 EP move");
     }
 
     #[test]
     fn test_en_passant_green() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Green));
-        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        board.set_piece(
+            Square::new(7, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         let ep_sq = Square::new(6, 4).unwrap();
         board.set_en_passant(Some(ep_sq), Some(Player::Blue));
         // Blue pushes east (0,+1), pawn at (6+0,4+1) = (6,5)
-        board.set_piece(Square::new(6, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
+        board.set_piece(
+            Square::new(6, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let ep_moves: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::EnPassant).collect();
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
         assert_eq!(ep_moves.len(), 1, "Green should have 1 EP move");
     }
 
@@ -1283,13 +1417,26 @@ mod tests {
     #[test]
     fn test_knight_center_8_moves() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(6, 6).unwrap(), Piece::new(PieceType::Knight, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(6, 6).unwrap(),
+            Piece::new(PieceType::Knight, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
-        assert_eq!(knight_moves.len(), 8, "Knight in center should have 8 moves");
+        let knight_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Knight)
+            .collect();
+        assert_eq!(
+            knight_moves.len(),
+            8,
+            "Knight in center should have 8 moves"
+        );
     }
 
     // ── Promotion per player ──
@@ -1297,8 +1444,14 @@ mod tests {
     #[test]
     fn test_promotion_red() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(7, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(7, 4).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
@@ -1309,8 +1462,14 @@ mod tests {
     #[test]
     fn test_promotion_blue() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(4, 7).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
-        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(4, 7).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(6, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
@@ -1322,8 +1481,14 @@ mod tests {
     #[test]
     fn test_promotion_yellow() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(6, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
-        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(6, 4).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
@@ -1335,8 +1500,14 @@ mod tests {
     #[test]
     fn test_promotion_green() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(4, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Green));
-        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(4, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        board.set_piece(
+            Square::new(7, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
@@ -1352,15 +1523,31 @@ mod tests {
         let mut board = Board::empty();
         let pawn_sq = Square::new(4, 5).unwrap();
         board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         // Enemy pieces on Red's capture diagonals: (+1,+1) and (+1,-1)
-        board.set_piece(Square::new(5, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
-        board.set_piece(Square::new(5, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_piece(
+            Square::new(5, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(5, 4).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
-        assert_eq!(captures.len(), 2, "Red pawn should capture on both diagonals");
+        let captures: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture())
+            .collect();
+        assert_eq!(
+            captures.len(),
+            2,
+            "Red pawn should capture on both diagonals"
+        );
     }
 
     #[test]
@@ -1368,16 +1555,32 @@ mod tests {
         let mut board = Board::empty();
         let pawn_sq = Square::new(5, 4).unwrap();
         board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Blue));
-        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(6, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         // Blue captures: (+1,+1) and (-1,+1)
-        board.set_piece(Square::new(6, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(4, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_piece(
+            Square::new(6, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(4, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
-        assert_eq!(captures.len(), 2, "Blue pawn should capture on both diagonals");
+        let captures: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture())
+            .collect();
+        assert_eq!(
+            captures.len(),
+            2,
+            "Blue pawn should capture on both diagonals"
+        );
     }
 
     #[test]
@@ -1385,16 +1588,32 @@ mod tests {
         let mut board = Board::empty();
         let pawn_sq = Square::new(9, 5).unwrap();
         board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Yellow));
-        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         // Yellow captures: (-1,+1) and (-1,-1)
-        board.set_piece(Square::new(8, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(8, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Green));
+        board.set_piece(
+            Square::new(8, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(8, 4).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
-        assert_eq!(captures.len(), 2, "Yellow pawn should capture on both diagonals");
+        let captures: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture())
+            .collect();
+        assert_eq!(
+            captures.len(),
+            2,
+            "Yellow pawn should capture on both diagonals"
+        );
     }
 
     #[test]
@@ -1402,16 +1621,32 @@ mod tests {
         let mut board = Board::empty();
         let pawn_sq = Square::new(5, 9).unwrap();
         board.set_piece(pawn_sq, Piece::new(PieceType::Pawn, Player::Green));
-        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(7, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         // Green captures: (+1,-1) and (-1,-1)
-        board.set_piece(Square::new(6, 8).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(4, 8).unwrap(), Piece::new(PieceType::Pawn, Player::Blue));
+        board.set_piece(
+            Square::new(6, 8).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(4, 8).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let captures: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture()).collect();
-        assert_eq!(captures.len(), 2, "Green pawn should capture on both diagonals");
+        let captures: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Pawn && m.is_capture())
+            .collect();
+        assert_eq!(
+            captures.len(),
+            2,
+            "Green pawn should capture on both diagonals"
+        );
     }
 
     // ── Knight moves per player ──
@@ -1419,52 +1654,104 @@ mod tests {
     #[test]
     fn test_knight_red() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(3, 5).unwrap(), Piece::new(PieceType::Knight, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(3, 5).unwrap(),
+            Piece::new(PieceType::Knight, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
-        assert_eq!(knight_moves.len(), 8, "Red knight at (3,5) should have 8 moves");
+        let knight_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Knight)
+            .collect();
+        assert_eq!(
+            knight_moves.len(),
+            8,
+            "Red knight at (3,5) should have 8 moves"
+        );
     }
 
     #[test]
     fn test_knight_blue() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 3).unwrap(), Piece::new(PieceType::Knight, Player::Blue));
-        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(5, 3).unwrap(),
+            Piece::new(PieceType::Knight, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(6, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
-        assert_eq!(knight_moves.len(), 8, "Blue knight at (5,3) should have 8 moves");
+        let knight_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Knight)
+            .collect();
+        assert_eq!(
+            knight_moves.len(),
+            8,
+            "Blue knight at (5,3) should have 8 moves"
+        );
     }
 
     #[test]
     fn test_knight_yellow() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(10, 8).unwrap(), Piece::new(PieceType::Knight, Player::Yellow));
-        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(10, 8).unwrap(),
+            Piece::new(PieceType::Knight, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
-        assert_eq!(knight_moves.len(), 8, "Yellow knight at (10,8) should have 8 moves");
+        let knight_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Knight)
+            .collect();
+        assert_eq!(
+            knight_moves.len(),
+            8,
+            "Yellow knight at (10,8) should have 8 moves"
+        );
     }
 
     #[test]
     fn test_knight_green() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(8, 10).unwrap(), Piece::new(PieceType::Knight, Player::Green));
-        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(8, 10).unwrap(),
+            Piece::new(PieceType::Knight, Player::Green),
+        );
+        board.set_piece(
+            Square::new(7, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let knight_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Knight).collect();
-        assert_eq!(knight_moves.len(), 8, "Green knight at (8,10) should have 8 moves");
+        let knight_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Knight)
+            .collect();
+        assert_eq!(
+            knight_moves.len(),
+            8,
+            "Green knight at (8,10) should have 8 moves"
+        );
     }
 
     // ── Slider orientation per player ──
@@ -1474,13 +1761,22 @@ mod tests {
         let mut board = Board::empty();
         let rook_sq = Square::new(4, 7).unwrap();
         board.set_piece(rook_sq, Piece::new(PieceType::Rook, Player::Red));
-        board.set_piece(Square::new(0, 3).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(0, 3).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let rook_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Rook).collect();
+        let rook_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Rook)
+            .collect();
         // Rook on open board at (4,7): can slide in 4 directions
-        assert!(rook_moves.len() > 10, "Red rook should have many moves on open board");
+        assert!(
+            rook_moves.len() > 10,
+            "Red rook should have many moves on open board"
+        );
     }
 
     #[test]
@@ -1488,13 +1784,22 @@ mod tests {
         let mut board = Board::empty();
         let bishop_sq = Square::new(7, 4).unwrap();
         board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Blue));
-        board.set_piece(Square::new(6, 0).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(6, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let bishop_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Bishop).collect();
-        assert!(bishop_moves.len() > 5, "Blue bishop should have many moves on open board");
+        let bishop_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Bishop)
+            .collect();
+        assert!(
+            bishop_moves.len() > 5,
+            "Blue bishop should have many moves on open board"
+        );
     }
 
     #[test]
@@ -1502,14 +1807,23 @@ mod tests {
         let mut board = Board::empty();
         let queen_sq = Square::new(7, 7).unwrap();
         board.set_piece(queen_sq, Piece::new(PieceType::Queen, Player::Yellow));
-        board.set_piece(Square::new(13, 7).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let queen_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Queen).collect();
+        let queen_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Queen)
+            .collect();
         // Queen at center of board should have many moves in all 8 directions
-        assert!(queen_moves.len() > 20, "Yellow queen at center should have many moves");
+        assert!(
+            queen_moves.len() > 20,
+            "Yellow queen at center should have many moves"
+        );
     }
 
     #[test]
@@ -1517,13 +1831,22 @@ mod tests {
         let mut board = Board::empty();
         let rook_sq = Square::new(7, 10).unwrap();
         board.set_piece(rook_sq, Piece::new(PieceType::Rook, Player::Green));
-        board.set_piece(Square::new(7, 13).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(7, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let rook_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::Rook).collect();
-        assert!(rook_moves.len() > 10, "Green rook should have many moves on open board");
+        let rook_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::Rook)
+            .collect();
+        assert!(
+            rook_moves.len() > 10,
+            "Green rook should have many moves on open board"
+        );
     }
 
     // ── King moves per player ──
@@ -1531,47 +1854,71 @@ mod tests {
     #[test]
     fn test_king_red() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        let king_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::King)
+            .collect();
         assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
     }
 
     #[test]
     fn test_king_blue() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::King, Player::Blue));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
         board.set_side_to_move(Player::Blue);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        let king_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::King)
+            .collect();
         assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
     }
 
     #[test]
     fn test_king_yellow() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(8, 8).unwrap(), Piece::new(PieceType::King, Player::Yellow));
+        board.set_piece(
+            Square::new(8, 8).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
         board.set_side_to_move(Player::Yellow);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        let king_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::King)
+            .collect();
         assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
     }
 
     #[test]
     fn test_king_green() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(8, 8).unwrap(), Piece::new(PieceType::King, Player::Green));
+        board.set_piece(
+            Square::new(8, 8).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
         board.set_side_to_move(Player::Green);
         board.set_castling_rights(0);
 
         let moves = generate_legal_moves(&mut board);
-        let king_moves: Vec<_> = moves.iter().filter(|m| m.piece_type() == PieceType::King).collect();
+        let king_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.piece_type() == PieceType::King)
+            .collect();
         assert_eq!(king_moves.len(), 8, "King in center should have 8 moves");
     }
 
@@ -1587,8 +1934,17 @@ mod tests {
         for mv in &moves {
             let undo = make_move(&mut board, *mv);
             unmake_move(&mut board, &undo);
-            assert_eq!(board, original, "Board not restored after make/unmake of {:?}", mv);
-            assert_eq!(board.zobrist_hash(), original_hash, "Zobrist not restored after {:?}", mv);
+            assert_eq!(
+                board, original,
+                "Board not restored after make/unmake of {:?}",
+                mv
+            );
+            assert_eq!(
+                board.zobrist_hash(),
+                original_hash,
+                "Zobrist not restored after {:?}",
+                mv
+            );
             board.assert_piece_list_sync();
         }
     }
@@ -1618,7 +1974,11 @@ mod tests {
         let _ = perft(&mut board, 3);
 
         assert_eq!(board, original, "Board should be unchanged after perft");
-        assert_eq!(board.zobrist_hash(), original_hash, "Zobrist should be unchanged after perft");
+        assert_eq!(
+            board.zobrist_hash(),
+            original_hash,
+            "Zobrist should be unchanged after perft"
+        );
         board.assert_piece_list_sync();
     }
 
@@ -1631,10 +1991,16 @@ mod tests {
         board.set_piece(Square(10), Piece::new(PieceType::Rook, Player::Red));
         board.set_castling_rights(1);
         // Enemy rook attacks h1
-        board.set_piece(Square::new(7, 7).unwrap(), Piece::new(PieceType::Rook, Player::Blue));
+        board.set_piece(
+            Square::new(7, 7).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
 
         let moves = generate_legal_moves(&mut board);
-        let castles: Vec<_> = moves.iter().filter(|m| m.flags() == MoveFlags::Castle).collect();
+        let castles: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::Castle)
+            .collect();
         assert_eq!(castles.len(), 0, "Cannot castle while in check");
     }
 
@@ -1643,7 +2009,11 @@ mod tests {
         let mut board = Board::starting_position();
         let moves = generate_legal_moves(&mut board);
         for mv in &moves {
-            assert!(mv.to_sq().is_valid(), "Move {:?} targets invalid square", mv);
+            assert!(
+                mv.to_sq().is_valid(),
+                "Move {:?} targets invalid square",
+                mv
+            );
             assert!(mv.from_sq().is_valid(), "Move {:?} from invalid square", mv);
         }
     }
@@ -1653,27 +2023,49 @@ mod tests {
     #[test]
     fn test_make_unmake_en_passant_roundtrip() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(5, 5).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(5, 5).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         let ep_sq = Square::new(6, 6).unwrap();
         board.set_en_passant(Some(ep_sq), Some(Player::Yellow));
-        board.set_piece(Square::new(5, 6).unwrap(), Piece::new(PieceType::Pawn, Player::Yellow));
+        board.set_piece(
+            Square::new(5, 6).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
         board.set_castling_rights(0);
 
         let original = board.clone();
         let original_hash = board.zobrist_hash();
 
         let moves = generate_legal_moves(&mut board);
-        let ep_mv = moves.iter().find(|m| m.flags() == MoveFlags::EnPassant).unwrap();
+        let ep_mv = moves
+            .iter()
+            .find(|m| m.flags() == MoveFlags::EnPassant)
+            .unwrap();
 
         let undo = make_move(&mut board, *ep_mv);
         // After EP: our pawn moved to (6,6), enemy pawn at (5,6) removed
-        assert!(board.piece_at(Square::new(5, 6).unwrap()).is_none(), "Captured pawn should be gone");
-        assert!(board.piece_at(Square::new(6, 6).unwrap()).is_some(), "Our pawn should be at EP target");
+        assert!(
+            board.piece_at(Square::new(5, 6).unwrap()).is_none(),
+            "Captured pawn should be gone"
+        );
+        assert!(
+            board.piece_at(Square::new(6, 6).unwrap()).is_some(),
+            "Our pawn should be at EP target"
+        );
 
         unmake_move(&mut board, &undo);
         assert_eq!(board, original, "Board should be restored after EP unmake");
-        assert_eq!(board.zobrist_hash(), original_hash, "Zobrist should be restored");
+        assert_eq!(
+            board.zobrist_hash(),
+            original_hash,
+            "Zobrist should be restored"
+        );
     }
 
     // ── make/unmake castle roundtrip ──
@@ -1689,15 +2081,25 @@ mod tests {
         let original_hash = board.zobrist_hash();
 
         let moves = generate_legal_moves(&mut board);
-        let castle_mv = moves.iter().find(|m| m.flags() == MoveFlags::Castle).unwrap();
+        let castle_mv = moves
+            .iter()
+            .find(|m| m.flags() == MoveFlags::Castle)
+            .unwrap();
 
         let undo = make_move(&mut board, *castle_mv);
         assert!(board.piece_at(Square(9)).is_some(), "King should be at j1");
         assert!(board.piece_at(Square(8)).is_some(), "Rook should be at i1");
 
         unmake_move(&mut board, &undo);
-        assert_eq!(board, original, "Board should be restored after castle unmake");
-        assert_eq!(board.zobrist_hash(), original_hash, "Zobrist should be restored");
+        assert_eq!(
+            board, original,
+            "Board should be restored after castle unmake"
+        );
+        assert_eq!(
+            board.zobrist_hash(),
+            original_hash,
+            "Zobrist should be restored"
+        );
     }
 
     // ── make/unmake promotion roundtrip ──
@@ -1705,8 +2107,14 @@ mod tests {
     #[test]
     fn test_make_unmake_promotion_roundtrip() {
         let mut board = Board::empty();
-        board.set_piece(Square::new(7, 4).unwrap(), Piece::new(PieceType::Pawn, Player::Red));
-        board.set_piece(Square::new(0, 7).unwrap(), Piece::new(PieceType::King, Player::Red));
+        board.set_piece(
+            Square::new(7, 4).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
         board.set_castling_rights(0);
 
         let original = board.clone();

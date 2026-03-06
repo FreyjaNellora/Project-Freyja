@@ -518,6 +518,11 @@ impl Board {
         }
     }
 
+    /// Set king square to ELIMINATED_KING_SENTINEL. Used by game_state on elimination.
+    pub(crate) fn set_king_eliminated(&mut self, player: Player) {
+        self.king_squares[player.index()] = ELIMINATED_KING_SENTINEL;
+    }
+
     /// Set side to move, updating Zobrist hash.
     pub fn set_side_to_move(&mut self, player: Player) {
         let keys = zobrist_keys();

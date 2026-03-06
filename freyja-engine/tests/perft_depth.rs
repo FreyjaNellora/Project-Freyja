@@ -39,6 +39,10 @@ fn perft_board_state_preserved() {
     let _ = perft(&mut board, 4);
 
     assert_eq!(board, original, "Board must be unchanged after perft");
-    assert_eq!(board.zobrist_hash(), original_hash, "Zobrist must be unchanged");
+    assert_eq!(
+        board.zobrist_hash(),
+        original_hash,
+        "Zobrist must be unchanged"
+    );
     board.assert_piece_list_sync();
 }

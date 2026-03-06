@@ -577,7 +577,7 @@ When eliminated:
 
 When a player resigns or times out (NOT checkmate/stalemate):
 1. Their pieces turn grey, worth **0 points** on capture
-2. Their king remains "live" and makes **random instant moves** (including captures, but earns 0 points)
+2. Their king remains "live" and makes **random instant moves** to empty squares only (no captures, no castling)
 3. DKW king moves happen **BETWEEN turns**, not as a full turn (timing critical)
 4. Checkmating a dead king still awards points to the checkmating player
 5. Dead kings cannot earn points
