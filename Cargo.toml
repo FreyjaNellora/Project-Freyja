@@ -1,5 +1,5 @@
 [workspace]
-members = ["freyja-engine"]
+members = ["freyja-engine", "freyja-ui/src-tauri"]
 resolver = "2"
 
 [workspace.package]
