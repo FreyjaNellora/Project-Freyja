@@ -13,8 +13,10 @@ pub mod parse;
 use std::io::{BufRead, Write};
 
 use crate::board::types::Player;
+use crate::eval::BootstrapEvaluator;
 use crate::game_state::{GameState, PlayerStatus};
 use crate::move_gen::Move;
+use crate::search::{MaxnSearcher, SearchConfig, SearchLimits, Searcher};
 
 use self::commands::Command;
 use self::logfile::LogFile;
@@ -132,8 +134,8 @@ impl<W: Write> Protocol<W> {
         }
     }
 
-    /// Handle `go` command — stub search returning first legal move.
-    fn handle_go(&mut self, _params: commands::GoParams) {
+    /// Handle `go` command — run Max^n search.
+    fn handle_go(&mut self, params: commands::GoParams) {
         if !self.position_set {
             let msg = format_error("no position set");
             self.send(&msg);
@@ -169,15 +171,29 @@ impl<W: Write> Protocol<W> {
             return;
         }
 
-        // Stub search: return first legal move
-        let best = legal[0];
+        // Run real search
+        let limits = SearchLimits {
+            max_depth: params.depth,
+            max_nodes: params.nodes,
+            max_time_ms: params.movetime,
+            infinite: params.infinite,
+        };
 
-        // Send info with current scores
-        let scores = self.game_state.scores();
-        let info = format_info(Some(1), Some(scores), Some(1), None, Some(&[best]));
+        let mut searcher = MaxnSearcher::new(BootstrapEvaluator::new(), SearchConfig::default());
+        let result = searcher.search(&mut self.game_state, &limits);
+
+        // Send info line
+        let pv_slice: &[Move] = &result.pv;
+        let info = format_info(
+            Some(result.depth),
+            Some(result.scores),
+            Some(result.nodes),
+            None,
+            Some(pv_slice),
+        );
         self.send(&info);
 
-        let bm = format_bestmove(Some(best));
+        let bm = format_bestmove(result.best_move);
         self.send(&bm);
     }
 

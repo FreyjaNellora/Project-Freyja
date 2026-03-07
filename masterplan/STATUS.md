@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-06
-**Updated By:** Session 8
+**Last Updated:** 2026-03-07
+**Updated By:** Session 10
 
 ---
 
 ## Current Stage
 
-**Stage:** 6 (Bootstrap Evaluation) -- IMPLEMENTATION COMPLETE, AWAITING USER GREEN LIGHT
-**Build-Order Step:** 9/9 (all steps complete)
-**Status:** Evaluator trait + BootstrapEvaluator with 6 components (material, PST, mobility, territory, king safety, pawn structure). 259 engine tests pass (244 prior + 15 new). Tier 1->2 boundary review passed.
+**Stage:** 7 (Max^n Search) -- IN PROGRESS
+**Build-Order Step:** 1/10
+**Status:** Stage 6 tagged complete. Beginning Stage 7 implementation.
 
 ---
 
@@ -23,8 +23,8 @@
 | 3 | Game State | Complete | `stage-03-complete` / `v1.3` | 2026-03-06 |
 | 4 | Freyja Protocol | Complete | `stage-04-complete` / `v1.4` | 2026-03-06 |
 | 5 | UI Shell | Complete | `stage-05-complete` / `v1.5` | 2026-03-06 |
-| 6 | Bootstrap Evaluation | Awaiting Green Light | -- | -- |
-| 7 | Max^n Search | Not Started | -- | -- |
+| 6 | Bootstrap Evaluation | Complete | `stage-06-complete` / `v1.6` | 2026-03-07 |
+| 7 | Max^n Search | In Progress | -- | -- |
 | 8 | Quiescence Search | Not Started | -- | -- |
 | 9 | TT + Move Ordering | Not Started | -- | -- |
 | 10 | MCTS | Not Started | -- | -- |
@@ -60,10 +60,8 @@ None.
 
 ## What the Next Session Should Do First
 
-1. Read HANDOFF.md and STATUS.md
-2. Get user green light on Stage 6
-3. Tag `stage-06-complete` / `v1.6`
-4. Begin Stage 7 (Max^n Search)
+1. Continue Stage 7 implementation (check HANDOFF.md for current step)
+2. Plan at `.claude/plans/binary-cuddling-rabin.md`
 
 ---
 
@@ -78,7 +76,7 @@ None.
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 6 (Stages 0-5) + Stage 6 awaiting green light | 2026-03-06 |
+| Stages complete | 7 (Stages 0-6) | 2026-03-07 |
 | Open blocking issues | 0 | -- |
 | Open warning issues | 0 | -- |
 | NPS baseline | Not set | -- |

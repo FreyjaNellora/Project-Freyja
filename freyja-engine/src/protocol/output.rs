@@ -16,7 +16,7 @@ pub fn format_bestmove(mv: Option<Move>) -> String {
 /// All fields are optional; only present fields are included.
 pub fn format_info(
     depth: Option<u32>,
-    scores: Option<[u16; 4]>,
+    scores: Option<[i16; 4]>,
     nodes: Option<u64>,
     nps: Option<u64>,
     pv: Option<&[Move]>,
