@@ -107,7 +107,10 @@ fn test_info_contains_pv() {
         .lines()
         .find(|l| l.starts_with("info depth"))
         .unwrap();
-    assert!(info_line.contains("pv "), "info should contain principal variation");
+    assert!(
+        info_line.contains("pv "),
+        "info should contain principal variation"
+    );
 }
 
 // ─── Unknown Commands ───────────────────────────────────────────────────────
@@ -122,7 +125,10 @@ fn test_unknown_command_produces_error() {
 fn test_unknown_command_does_not_crash() {
     // Multiple unknown commands in sequence
     let output = run_session("foo\nbar\nbaz\nisready\nquit\n");
-    assert!(output.contains("readyok"), "engine still functional after unknown commands");
+    assert!(
+        output.contains("readyok"),
+        "engine still functional after unknown commands"
+    );
 }
 
 // ─── Whitespace Robustness ──────────────────────────────────────────────────
@@ -187,8 +193,14 @@ fn test_logfile_enable_disable() {
 
     // Verify log file was written
     let contents = std::fs::read_to_string(&path).unwrap();
-    assert!(contents.contains("] > isready"), "log should contain incoming command");
-    assert!(contents.contains("] < readyok"), "log should contain outgoing response");
+    assert!(
+        contents.contains("] > isready"),
+        "log should contain incoming command"
+    );
+    assert!(
+        contents.contains("] < readyok"),
+        "log should contain outgoing response"
+    );
 
     let _ = std::fs::remove_file(&path);
 }
@@ -261,7 +273,10 @@ fn test_all_four_players_can_move_via_protocol() {
     );
     let output = run_session(&input);
     // Should not contain any errors
-    assert!(!output.contains("error:"), "no errors applying 4-player moves");
+    assert!(
+        !output.contains("error:"),
+        "no errors applying 4-player moves"
+    );
     // Should have nextturn events for Blue, Yellow, Green after Red/Blue/Yellow moves
     assert!(output.contains("nextturn Blue"));
     assert!(output.contains("nextturn Yellow"));
@@ -286,9 +301,7 @@ fn test_position_fen4_roundtrip() {
 
 #[test]
 fn test_all_output_lines_are_valid_protocol() {
-    let output = run_session(
-        "position startpos\ngo depth 1\nsetoption name Bogus value x\nquit\n",
-    );
+    let output = run_session("position startpos\ngo depth 1\nsetoption name Bogus value x\nquit\n");
 
     for line in output.lines() {
         let valid = line.starts_with("freyja ")
@@ -296,10 +309,7 @@ fn test_all_output_lines_are_valid_protocol() {
             || line.starts_with("bestmove ")
             || line.starts_with("info ")
             || line.is_empty();
-        assert!(
-            valid,
-            "unexpected protocol output line: '{line}'"
-        );
+        assert!(valid, "unexpected protocol output line: '{line}'");
     }
 }
 

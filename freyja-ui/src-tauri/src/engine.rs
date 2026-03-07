@@ -77,8 +77,7 @@ impl EngineManager {
             for line in reader.lines() {
                 match line {
                     Ok(line) => {
-                        let _ =
-                            app_handle.emit("engine-output", EngineOutputPayload { line, gen });
+                        let _ = app_handle.emit("engine-output", EngineOutputPayload { line, gen });
                     }
                     Err(_) => break,
                 }
