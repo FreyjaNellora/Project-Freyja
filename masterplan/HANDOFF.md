@@ -1,32 +1,25 @@
 # Project Freyja -- HANDOFF
 
-**Session Date:** 2026-03-06
-**Session Number:** 8
+**Session Date:** 2026-03-07
+**Session Number:** 9
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 6: Bootstrap Evaluation -- IMPLEMENTATION COMPLETE, AWAITING USER GREEN LIGHT**
+**Stage 6: Bootstrap Evaluation -- AWAITING USER GREEN LIGHT**
+**Stage 7: Max^n Search -- PLANNED, NOT STARTED**
 
 ---
 
 ## What Was Completed This Session
 
-1. **Tier 1 -> Tier 2 Boundary Review** — all invariants verified, 275 tests pass, no Vec in hot paths, no open issues. Recorded in `tier_boundary_review_2.md`.
-2. **Stage 6 fully implemented** — `freyja-engine/src/eval.rs`:
-   - **Evaluator trait** with `eval_scalar` and `eval_4vec` (stable interface for Stage 7+)
-   - **BootstrapEvaluator** with 6 components:
-     - Material counting (relative to opponents' average)
-     - Piece-square tables (6 tables, rotated per player orientation)
-     - Approximate mobility (piece-type heuristic)
-     - BFS Voronoi territory (multi-source BFS, ~160 squares)
-     - King safety (pawn shelter + attacker presence)
-     - Pawn structure (advancement bonus + doubled penalty)
-   - **15 tests** covering all acceptance criteria
-   - Bishop = 450cp (user override from MASTERPLAN's 350cp)
-3. **cargo fmt** fixes applied to protocol_integration.rs and engine.rs (whitespace only)
-4. **Audit log** and **downstream log** created for Stage 6
+1. **Stage 7 planning session** — full implementation plan created
+   - Read AGENT_CONDUCT.md, all upstream API contracts, existing codebase
+   - Identified critical issue: `make_move` doesn't update `king_squares` on king capture — search needs `piece_at` check for mid-tree elimination detection
+   - Designed 10-step build order, type definitions, algorithm structure
+   - User chose hybrid beam ordering (MVV-LVA pre-filter → eval_scalar on top 15)
+2. **Session note** created: `masterplan/sessions/Session-009.md`
 
 ---
 
@@ -34,14 +27,42 @@
 
 - User green light for Stage 6
 - Git tag `stage-06-complete` / `v1.6`
-- Stage 5 deferred: post-audit of audit_log_stage_05.md, downstream_log_stage_05.md, vault notes for Stage 5
-- Session note in `masterplan/sessions/`
+- Any Stage 7 code
+- Stage 5 deferred: post-audit, downstream_log, vault notes
+- Session notes for Sessions 7 and 8
+
+---
+
+## Stage 7 Implementation Plan
+
+**Full plan at:** `.claude/plans/binary-cuddling-rabin.md`
+
+**10-step build order (summary):**
+1. Searcher trait + types (SearchLimits, SearchResult, SearchConfig, MaxnSearcher)
+2. Score vector utilities + elimination detection helpers
+3. Basic Max^n (no beam, depth 1-3, all moves expanded)
+4. Beam search integration (hybrid MVV-LVA → eval_scalar ordering)
+5. Iterative deepening wrapper
+6. Shallow pruning (Korf 1991)
+7. Negamax fallback (2-player endgame, alpha-beta)
+8. PV tracking (triangular table)
+9. Time/node limits
+10. Protocol integration (replace handle_go stub)
+
+**Key design decisions:**
+- `Searcher` trait: `fn search(&self, state: &mut GameState, limits: &SearchLimits) -> SearchResult`
+- `MaxnSearcher<E: Evaluator>` generic, owns evaluator
+- Mid-search elimination: check `board.piece_at(Square(board.king_square(p)))` since `make_move` doesn't update `king_squares`
+- Depth NOT decremented for eliminated player skip
+- `format_info` signature changes from `[u16; 4]` to `[i16; 4]`
+
+**Files to modify:** `search.rs` (primary), `protocol/mod.rs`, `protocol/output.rs`
 
 ---
 
 ## Open Issues / Discoveries
 
-- **S06-F01 (NOTE):** Mobility uses piece-type heuristic, not actual legal move count (generate_legal_moves requires &mut Board, eval takes &GameState)
+- **S06-F01 (NOTE):** Mobility uses piece-type heuristic, not actual legal move count
 - **S06-F02 (NOTE):** PST values for opposite-side pairs differ by up to ~50cp due to 14x14 asymmetric geometry
 - **S06-F03 (NOTE):** Bishop value 450cp (user override)
 
@@ -51,24 +72,20 @@
 
 | File | Action |
 |------|--------|
-| `freyja-engine/src/eval.rs` | Rewritten — full BootstrapEvaluator implementation |
-| `freyja-engine/tests/protocol_integration.rs` | fmt fixes (whitespace only) |
-| `freyja-ui/src-tauri/src/engine.rs` | fmt fixes (whitespace only) |
-| `masterplan/tier_boundary_review_2.md` | Created — Tier 1->2 review |
-| `masterplan/audit_log_stage_06.md` | Created — pre-audit + post-audit |
-| `masterplan/downstream_log_stage_06.md` | Created — API contracts for Stage 7 |
-| `masterplan/STATUS.md` | Updated |
+| `masterplan/sessions/Session-009.md` | Created — planning session note |
 | `masterplan/HANDOFF.md` | Rewritten |
+| `.claude/plans/binary-cuddling-rabin.md` | Created — full Stage 7 implementation plan |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Read this HANDOFF and STATUS.md
-2. Get user green light on Stage 6 (test eval via protocol or unit tests)
+1. Read this HANDOFF
+2. Get user green light on Stage 6
 3. Tag `stage-06-complete` / `v1.6`
-4. Begin Stage 7 (Max^n Search)
-5. Fill Stage 5 deferred work (post-audit, downstream log, vault notes)
+4. Read the Stage 7 plan at `.claude/plans/binary-cuddling-rabin.md`
+5. Begin Stage 7 Step 1: Searcher trait + type definitions
+6. Fill Stage 5 deferred work if time allows
 
 ---
 
