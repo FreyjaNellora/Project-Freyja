@@ -1,0 +1,3773 @@
+{
+  "game": 3,
+  "settings": {
+    "depth": 1
+  },
+  "plies": [
+    {
+      "ply": 0,
+      "player": "Red",
+      "move": "f2f4",
+      "scores": {
+        "red": 496,
+        "blue": 351,
+        "yellow": 401,
+        "green": 376
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "f2f4",
+      "raw_lines": [
+        "info depth 1 score red 496 blue 351 yellow 401 green 376 nodes 21 pv f2f4",
+        "bestmove f2f4"
+      ]
+    },
+    {
+      "ply": 1,
+      "player": "Blue",
+      "move": "b9d9",
+      "scores": {
+        "red": 476,
+        "blue": 421,
+        "yellow": 351,
+        "green": 376
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "b9d9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 476 blue 421 yellow 351 green 376 nodes 19 pv b9d9",
+        "bestmove b9d9"
+      ]
+    },
+    {
+      "ply": 2,
+      "player": "Yellow",
+      "move": "i13i11",
+      "scores": {
+        "red": 466,
+        "blue": 406,
+        "yellow": 416,
+        "green": 336
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "i13i11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 466 blue 406 yellow 416 green 336 nodes 19 pv i13i11",
+        "bestmove i13i11"
+      ]
+    },
+    {
+      "ply": 3,
+      "player": "Green",
+      "move": "m6k6",
+      "scores": {
+        "red": 426,
+        "blue": 406,
+        "yellow": 406,
+        "green": 386
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "m6k6",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 426 blue 406 yellow 406 green 386 nodes 19 pv m6k6",
+        "bestmove m6k6"
+      ]
+    },
+    {
+      "ply": 4,
+      "player": "Red",
+      "move": "k2k4",
+      "scores": {
+        "red": 491,
+        "blue": 406,
+        "yellow": 406,
+        "green": 356
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "k2k4",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 491 blue 406 yellow 406 green 356 nodes 23 pv k2k4",
+        "bestmove k2k4"
+      ]
+    },
+    {
+      "ply": 5,
+      "player": "Blue",
+      "move": "a8f13",
+      "scores": {
+        "red": 525,
+        "blue": 470,
+        "yellow": 240,
+        "green": 390
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "a8f13",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 525 blue 470 yellow 240 green 390 nodes 23 pv a8f13",
+        "bestmove a8f13"
+      ]
+    },
+    {
+      "ply": 6,
+      "player": "Yellow",
+      "move": "g14f13",
+      "scores": {
+        "red": 825,
+        "blue": -485,
+        "yellow": 605,
+        "green": 690
+      },
+      "depth": 1,
+      "nodes": 2,
+      "pv": "g14f13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 825 blue -485 yellow 605 green 690 nodes 2 pv g14f13",
+        "bestmove g14f13"
+      ]
+    },
+    {
+      "ply": 7,
+      "player": "Green",
+      "move": "n7k4",
+      "scores": {
+        "red": 644,
+        "blue": -452,
+        "yellow": 639,
+        "green": 768
+      },
+      "depth": 1,
+      "nodes": 20,
+      "pv": "n7k4",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 644 blue -452 yellow 639 green 768 nodes 20 pv n7k4",
+        "bestmove n7k4"
+      ]
+    },
+    {
+      "ply": 8,
+      "player": "Red",
+      "move": "k1k4",
+      "scores": {
+        "red": 1004,
+        "blue": -152,
+        "yellow": 939,
+        "green": -202
+      },
+      "depth": 1,
+      "nodes": 24,
+      "pv": "k1k4",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1004 blue -152 yellow 939 green -202 nodes 24 pv k1k4",
+        "bestmove k1k4"
+      ]
+    },
+    {
+      "ply": 9,
+      "player": "Blue",
+      "move": "b4d4",
+      "scores": {
+        "red": 994,
+        "blue": -107,
+        "yellow": 939,
+        "green": -202
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "b4d4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 994 blue -107 yellow 939 green -202 nodes 19 pv b4d4",
+        "bestmove b4d4"
+      ]
+    },
+    {
+      "ply": 10,
+      "player": "Yellow",
+      "move": "h14m9",
+      "scores": {
+        "red": 1027,
+        "blue": -74,
+        "yellow": 1002,
+        "green": -368
+      },
+      "depth": 1,
+      "nodes": 28,
+      "pv": "h14m9",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 1027 blue -74 yellow 1002 green -368 nodes 28 pv h14m9",
+        "bestmove h14m9"
+      ]
+    },
+    {
+      "ply": 11,
+      "player": "Green",
+      "move": "n8m9",
+      "scores": {
+        "red": 1327,
+        "blue": 226,
+        "yellow": 47,
+        "green": -3
+      },
+      "depth": 1,
+      "nodes": 3,
+      "pv": "n8m9",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 1327 blue 226 yellow 47 green -3 nodes 3 pv n8m9",
+        "bestmove n8m9"
+      ]
+    },
+    {
+      "ply": 12,
+      "player": "Red",
+      "move": "k4k6",
+      "scores": {
+        "red": 1410,
+        "blue": 240,
+        "yellow": 75,
+        "green": -174
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "k4k6",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1410 blue 240 yellow 75 green -174 nodes 31 pv k4k6",
+        "bestmove k4k6"
+      ]
+    },
+    {
+      "ply": 13,
+      "player": "Blue",
+      "move": "a5c6",
+      "scores": {
+        "red": 1405,
+        "blue": 275,
+        "yellow": 75,
+        "green": -174
+      },
+      "depth": 1,
+      "nodes": 22,
+      "pv": "a5c6",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 1405 blue 275 yellow 75 green -174 nodes 22 pv a5c6",
+        "bestmove a5c6"
+      ]
+    },
+    {
+      "ply": 14,
+      "player": "Yellow",
+      "move": "d13d11",
+      "scores": {
+        "red": 1405,
+        "blue": 265,
+        "yellow": 100,
+        "green": -174
+      },
+      "depth": 1,
+      "nodes": 22,
+      "pv": "d13d11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 1405 blue 265 yellow 100 green -174 nodes 22 pv d13d11",
+        "bestmove d13d11"
+      ]
+    },
+    {
+      "ply": 15,
+      "player": "Green",
+      "move": "m7k7",
+      "scores": {
+        "red": 1390,
+        "blue": 265,
+        "yellow": 100,
+        "green": -137
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "m7k7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 1390 blue 265 yellow 100 green -137 nodes 21 pv m7k7",
+        "bestmove m7k7"
+      ]
+    },
+    {
+      "ply": 16,
+      "player": "Red",
+      "move": "k6n6",
+      "scores": {
+        "red": 1495,
+        "blue": 415,
+        "yellow": 255,
+        "green": -597
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "k6n6",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1495 blue 415 yellow 255 green -597 nodes 31 pv k6n6",
+        "bestmove k6n6"
+      ]
+    },
+    {
+      "ply": 17,
+      "player": "Blue",
+      "move": "d9e9",
+      "scores": {
+        "red": 1490,
+        "blue": 450,
+        "yellow": 235,
+        "green": -597
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "d9e9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 1490 blue 450 yellow 235 green -597 nodes 23 pv d9e9",
+        "bestmove d9e9"
+      ]
+    },
+    {
+      "ply": 18,
+      "player": "Yellow",
+      "move": "h13h11",
+      "scores": {
+        "red": 1490,
+        "blue": 420,
+        "yellow": 267,
+        "green": -597
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "h13h11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 1490 blue 420 yellow 267 green -597 nodes 23 pv h13h11",
+        "bestmove h13h11"
+      ]
+    },
+    {
+      "ply": 19,
+      "player": "Green",
+      "move": "m9l10",
+      "scores": {
+        "red": 1490,
+        "blue": 420,
+        "yellow": 252,
+        "green": -552
+      },
+      "depth": 1,
+      "nodes": 20,
+      "pv": "m9l10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 1490 blue 420 yellow 252 green -552 nodes 20 pv m9l10",
+        "bestmove m9l10"
+      ]
+    },
+    {
+      "ply": 20,
+      "player": "Red",
+      "move": "n6n9",
+      "scores": {
+        "red": 1635,
+        "blue": 570,
+        "yellow": 402,
+        "green": -1067
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "n6n9",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1635 blue 570 yellow 402 green -1067 nodes 31 pv n6n9",
+        "bestmove n6n9"
+      ]
+    },
+    {
+      "ply": 21,
+      "player": "Blue",
+      "move": "b10d10",
+      "scores": {
+        "red": 1635,
+        "blue": 593,
+        "yellow": 377,
+        "green": -1067
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "b10d10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 1635 blue 593 yellow 377 green -1067 nodes 23 pv b10d10",
+        "bestmove b10d10"
+      ]
+    },
+    {
+      "ply": 22,
+      "player": "Yellow",
+      "move": "i14b7",
+      "scores": {
+        "red": 1669,
+        "blue": 447,
+        "yellow": 421,
+        "green": -1034
+      },
+      "depth": 1,
+      "nodes": 30,
+      "pv": "i14b7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 1669 blue 447 yellow 421 green -1034 nodes 30 pv i14b7",
+        "bestmove i14b7"
+      ]
+    },
+    {
+      "ply": 23,
+      "player": "Green",
+      "move": "l10l11",
+      "scores": {
+        "red": 1669,
+        "blue": 447,
+        "yellow": 426,
+        "green": -999
+      },
+      "depth": 1,
+      "nodes": 18,
+      "pv": "l10l11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 1669 blue 447 yellow 426 green -999 nodes 18 pv l10l11",
+        "bestmove l10l11"
+      ]
+    },
+    {
+      "ply": 24,
+      "player": "Red",
+      "move": "n9n10",
+      "scores": {
+        "red": 1769,
+        "blue": 547,
+        "yellow": 526,
+        "green": -1326
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "n9n10",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1769 blue 547 yellow 526 green -1326 nodes 31 pv n9n10",
+        "bestmove n9n10"
+      ]
+    },
+    {
+      "ply": 25,
+      "player": "Blue",
+      "move": "a6b7",
+      "scores": {
+        "red": 1919,
+        "blue": 747,
+        "yellow": 36,
+        "green": -1176
+      },
+      "depth": 1,
+      "nodes": 25,
+      "pv": "a6b7",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 1919 blue 747 yellow 36 green -1176 nodes 25 pv a6b7",
+        "bestmove a6b7"
+      ]
+    },
+    {
+      "ply": 26,
+      "player": "Yellow",
+      "move": "k13k11",
+      "scores": {
+        "red": 1919,
+        "blue": 747,
+        "yellow": 66,
+        "green": -1231
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "k13k11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 1919 blue 747 yellow 66 green -1231 nodes 21 pv k13k11",
+        "bestmove k13k11"
+      ]
+    },
+    {
+      "ply": 27,
+      "player": "Green",
+      "move": "n11n10",
+      "scores": {
+        "red": 1383,
+        "blue": 913,
+        "yellow": 232,
+        "green": -1029
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "n11n10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 1383 blue 913 yellow 232 green -1029 nodes 15 pv n11n10",
+        "bestmove n11n10"
+      ]
+    },
+    {
+      "ply": 28,
+      "player": "Red",
+      "move": "g1d4",
+      "scores": {
+        "red": 1441,
+        "blue": 752,
+        "yellow": 266,
+        "green": -996
+      },
+      "depth": 1,
+      "nodes": 20,
+      "pv": "g1d4",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 1441 blue 752 yellow 266 green -996 nodes 20 pv g1d4",
+        "bestmove g1d4"
+      ]
+    },
+    {
+      "ply": 29,
+      "player": "Blue",
+      "move": "a4d4",
+      "scores": {
+        "red": 491,
+        "blue": 1092,
+        "yellow": 566,
+        "green": -696
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "a4d4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 491 blue 1092 yellow 566 green -696 nodes 31 pv a4d4",
+        "bestmove a4d4"
+      ]
+    },
+    {
+      "ply": 30,
+      "player": "Yellow",
+      "move": "h11h10",
+      "scores": {
+        "red": 491,
+        "blue": 1082,
+        "yellow": 592,
+        "green": -701
+      },
+      "depth": 1,
+      "nodes": 22,
+      "pv": "h11h10",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 491 blue 1082 yellow 592 green -701 nodes 22 pv h11h10",
+        "bestmove h11h10"
+      ]
+    },
+    {
+      "ply": 31,
+      "player": "Green",
+      "move": "m10k10",
+      "scores": {
+        "red": 491,
+        "blue": 1082,
+        "yellow": 577,
+        "green": -668
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "m10k10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 491 blue 1082 yellow 577 green -668 nodes 19 pv m10k10",
+        "bestmove m10k10"
+      ]
+    },
+    {
+      "ply": 32,
+      "player": "Red",
+      "move": "j2j4",
+      "scores": {
+        "red": 529,
+        "blue": 1082,
+        "yellow": 577,
+        "green": -688
+      },
+      "depth": 1,
+      "nodes": 18,
+      "pv": "j2j4",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 529 blue 1082 yellow 577 green -688 nodes 18 pv j2j4",
+        "bestmove j2j4"
+      ]
+    },
+    {
+      "ply": 33,
+      "player": "Blue",
+      "move": "d4f4",
+      "scores": {
+        "red": 363,
+        "blue": 1156,
+        "yellow": 590,
+        "green": -654
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "d4f4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red 363 blue 1156 yellow 590 green -654 nodes 31 pv d4f4",
+        "bestmove d4f4"
+      ]
+    },
+    {
+      "ply": 34,
+      "player": "Yellow",
+      "move": "e14f12",
+      "scores": {
+        "red": 363,
+        "blue": 1151,
+        "yellow": 605,
+        "green": -654
+      },
+      "depth": 1,
+      "nodes": 4,
+      "pv": "e14f12",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red 363 blue 1151 yellow 605 green -654 nodes 4 pv e14f12",
+        "bestmove e14f12"
+      ]
+    },
+    {
+      "ply": 35,
+      "player": "Green",
+      "move": "l11m10",
+      "scores": {
+        "red": 363,
+        "blue": 1151,
+        "yellow": 610,
+        "green": -619
+      },
+      "depth": 1,
+      "nodes": 20,
+      "pv": "l11m10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red 363 blue 1151 yellow 610 green -619 nodes 20 pv l11m10",
+        "bestmove l11m10"
+      ]
+    },
+    {
+      "ply": 36,
+      "player": "Red",
+      "move": "i1m5",
+      "scores": {
+        "red": 431,
+        "blue": 1184,
+        "yellow": 643,
+        "green": -755
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "i1m5",
+      "raw_lines": [
+        "info string nextturn Red",
+        "info depth 1 score red 431 blue 1184 yellow 643 green -755 nodes 21 pv i1m5",
+        "bestmove i1m5"
+      ]
+    },
+    {
+      "ply": 37,
+      "player": "Blue",
+      "move": "f4f1",
+      "scores": {
+        "red": -24,
+        "blue": 1309,
+        "yellow": 793,
+        "green": -605
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "f4f1",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -24 blue 1309 yellow 793 green -605 nodes 31 pv f4f1",
+        "bestmove f4f1"
+      ]
+    },
+    {
+      "ply": 38,
+      "player": "Yellow",
+      "move": "f13e14",
+      "scores": {
+        "red": -24,
+        "blue": 1309,
+        "yellow": 828,
+        "green": -605
+      },
+      "depth": 1,
+      "nodes": 20,
+      "pv": "f13e14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -24 blue 1309 yellow 828 green -605 nodes 20 pv f13e14",
+        "bestmove f13e14"
+      ]
+    },
+    {
+      "ply": 39,
+      "player": "Green",
+      "move": "k7j7",
+      "scores": {
+        "red": -34,
+        "blue": 1309,
+        "yellow": 823,
+        "green": -579
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "k7j7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -34 blue 1309 yellow 823 green -579 nodes 21 pv k7j7",
+        "bestmove k7j7"
+      ]
+    },
+    {
+      "ply": 40,
+      "player": "Blue",
+      "move": "f1f12",
+      "scores": {
+        "red": -32768,
+        "blue": 1537,
+        "yellow": 336,
+        "green": -553
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "f1f12",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 1537 yellow 336 green -553 nodes 31 pv f1f12",
+        "bestmove f1f12"
+      ]
+    },
+    {
+      "ply": 41,
+      "player": "Yellow",
+      "move": "g13f12",
+      "scores": {
+        "red": -32768,
+        "blue": 986,
+        "yellow": 666,
+        "green": -303
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "g13f12",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 986 yellow 666 green -303 nodes 19 pv g13f12",
+        "bestmove g13f12"
+      ]
+    },
+    {
+      "ply": 42,
+      "player": "Green",
+      "move": "m4k4",
+      "scores": {
+        "red": -32768,
+        "blue": 971,
+        "yellow": 666,
+        "green": -273
+      },
+      "depth": 1,
+      "nodes": 41,
+      "pv": "m4k4",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 971 yellow 666 green -273 nodes 41 pv m4k4",
+        "bestmove m4k4"
+      ]
+    },
+    {
+      "ply": 43,
+      "player": "Blue",
+      "move": "a9e13",
+      "scores": {
+        "red": -32768,
+        "blue": 1051,
+        "yellow": 500,
+        "green": -223
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "a9e13",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 1051 yellow 500 green -223 nodes 31 pv a9e13",
+        "bestmove a9e13"
+      ]
+    },
+    {
+      "ply": 44,
+      "player": "Yellow",
+      "move": "e14e13",
+      "scores": {
+        "red": -32768,
+        "blue": 561,
+        "yellow": 800,
+        "green": 2
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "e14e13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 561 yellow 800 green 2 nodes 19 pv e14e13",
+        "bestmove e14e13"
+      ]
+    },
+    {
+      "ply": 45,
+      "player": "Green",
+      "move": "m10n11",
+      "scores": {
+        "red": -32768,
+        "blue": 561,
+        "yellow": 800,
+        "green": 27
+      },
+      "depth": 1,
+      "nodes": 41,
+      "pv": "m10n11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 561 yellow 800 green 27 nodes 41 pv m10n11",
+        "bestmove m10n11"
+      ]
+    },
+    {
+      "ply": 46,
+      "player": "Blue",
+      "move": "b7g12",
+      "scores": {
+        "red": -32768,
+        "blue": 611,
+        "yellow": 715,
+        "green": 27
+      },
+      "depth": 1,
+      "nodes": 27,
+      "pv": "b7g12",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 611 yellow 715 green 27 nodes 27 pv b7g12",
+        "bestmove b7g12"
+      ]
+    },
+    {
+      "ply": 47,
+      "player": "Yellow",
+      "move": "h10h9",
+      "scores": {
+        "red": -32768,
+        "blue": 606,
+        "yellow": 742,
+        "green": 17
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "h10h9",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 606 yellow 742 green 17 nodes 19 pv h10h9",
+        "bestmove h10h9"
+      ]
+    },
+    {
+      "ply": 48,
+      "player": "Green",
+      "move": "m8k8",
+      "scores": {
+        "red": -32768,
+        "blue": 606,
+        "yellow": 742,
+        "green": 39
+      },
+      "depth": 1,
+      "nodes": 35,
+      "pv": "m8k8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 606 yellow 742 green 39 nodes 35 pv m8k8",
+        "bestmove m8k8"
+      ]
+    },
+    {
+      "ply": 49,
+      "player": "Blue",
+      "move": "g12k8",
+      "scores": {
+        "red": -32768,
+        "blue": 671,
+        "yellow": 837,
+        "green": -164
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "g12k8",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 671 yellow 837 green -164 nodes 31 pv g12k8",
+        "bestmove g12k8"
+      ]
+    },
+    {
+      "ply": 50,
+      "player": "Yellow",
+      "move": "i11i10",
+      "scores": {
+        "red": -32768,
+        "blue": 671,
+        "yellow": 887,
+        "green": -164
+      },
+      "depth": 1,
+      "nodes": 18,
+      "pv": "i11i10",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 671 yellow 887 green -164 nodes 18 pv i11i10",
+        "bestmove i11i10"
+      ]
+    },
+    {
+      "ply": 51,
+      "player": "Green",
+      "move": "n10m10",
+      "scores": {
+        "red": -32768,
+        "blue": 671,
+        "yellow": 887,
+        "green": -164
+      },
+      "depth": 1,
+      "nodes": 3,
+      "pv": "n10m10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 671 yellow 887 green -164 nodes 3 pv n10m10",
+        "bestmove n10m10"
+      ]
+    },
+    {
+      "ply": 52,
+      "player": "Blue",
+      "move": "k8m10",
+      "scores": {
+        "red": -32768,
+        "blue": 911,
+        "yellow": 1132,
+        "green": -655
+      },
+      "depth": 1,
+      "nodes": 27,
+      "pv": "k8m10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 911 yellow 1132 green -655 nodes 27 pv k8m10",
+        "bestmove k8m10"
+      ]
+    },
+    {
+      "ply": 53,
+      "player": "Yellow",
+      "move": "f14l8",
+      "scores": {
+        "red": -32768,
+        "blue": 901,
+        "yellow": 1187,
+        "green": -710
+      },
+      "depth": 1,
+      "nodes": 26,
+      "pv": "f14l8",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 901 yellow 1187 green -710 nodes 26 pv f14l8",
+        "bestmove f14l8"
+      ]
+    },
+    {
+      "ply": 54,
+      "player": "Green",
+      "move": "n11m10",
+      "scores": {
+        "red": -32768,
+        "blue": 391,
+        "yellow": 1437,
+        "green": -515
+      },
+      "depth": 1,
+      "nodes": 3,
+      "pv": "n11m10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 391 yellow 1437 green -515 nodes 3 pv n11m10",
+        "bestmove n11m10"
+      ]
+    },
+    {
+      "ply": 55,
+      "player": "Blue",
+      "move": "c6e5",
+      "scores": {
+        "red": -32768,
+        "blue": 426,
+        "yellow": 1437,
+        "green": -545
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "c6e5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 426 yellow 1437 green -545 nodes 19 pv c6e5",
+        "bestmove c6e5"
+      ]
+    },
+    {
+      "ply": 56,
+      "player": "Yellow",
+      "move": "h9h8",
+      "scores": {
+        "red": -32768,
+        "blue": 426,
+        "yellow": 1457,
+        "green": -555
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h9h8",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 426 yellow 1457 green -555 nodes 31 pv h9h8",
+        "bestmove h9h8"
+      ]
+    },
+    {
+      "ply": 57,
+      "player": "Green",
+      "move": "m10n11",
+      "scores": {
+        "red": -32768,
+        "blue": 426,
+        "yellow": 1462,
+        "green": -515
+      },
+      "depth": 1,
+      "nodes": 25,
+      "pv": "m10n11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 426 yellow 1462 green -515 nodes 25 pv m10n11",
+        "bestmove m10n11"
+      ]
+    },
+    {
+      "ply": 58,
+      "player": "Blue",
+      "move": "e5g4",
+      "scores": {
+        "red": -32768,
+        "blue": 471,
+        "yellow": 1457,
+        "green": -555
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "e5g4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 471 yellow 1457 green -555 nodes 23 pv e5g4",
+        "bestmove e5g4"
+      ]
+    },
+    {
+      "ply": 59,
+      "player": "Yellow",
+      "move": "j13j11",
+      "scores": {
+        "red": -32768,
+        "blue": 471,
+        "yellow": 1475,
+        "green": -555
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "j13j11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 471 yellow 1475 green -555 nodes 31 pv j13j11",
+        "bestmove j13j11"
+      ]
+    },
+    {
+      "ply": 60,
+      "player": "Green",
+      "move": "k10j11",
+      "scores": {
+        "red": -32768,
+        "blue": 521,
+        "yellow": 1346,
+        "green": -510
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "k10j11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 521 yellow 1346 green -510 nodes 21 pv k10j11",
+        "bestmove k10j11"
+      ]
+    },
+    {
+      "ply": 61,
+      "player": "Blue",
+      "move": "e9f9",
+      "scores": {
+        "red": -32768,
+        "blue": 541,
+        "yellow": 1336,
+        "green": -510
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "e9f9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 541 yellow 1336 green -510 nodes 23 pv e9f9",
+        "bestmove e9f9"
+      ]
+    },
+    {
+      "ply": 62,
+      "player": "Yellow",
+      "move": "h8h7",
+      "scores": {
+        "red": -32768,
+        "blue": 531,
+        "yellow": 1356,
+        "green": -515
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h8h7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 531 yellow 1356 green -515 nodes 31 pv h8h7",
+        "bestmove h8h7"
+      ]
+    },
+    {
+      "ply": 63,
+      "player": "Green",
+      "move": "j11i10",
+      "scores": {
+        "red": -32768,
+        "blue": 581,
+        "yellow": 1195,
+        "green": -412
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "j11i10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 581 yellow 1195 green -412 nodes 21 pv j11i10",
+        "bestmove j11i10"
+      ]
+    },
+    {
+      "ply": 64,
+      "player": "Blue",
+      "move": "f9g9",
+      "scores": {
+        "red": -32768,
+        "blue": 606,
+        "yellow": 1190,
+        "green": -422
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "f9g9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 606 yellow 1190 green -422 nodes 23 pv f9g9",
+        "bestmove f9g9"
+      ]
+    },
+    {
+      "ply": 65,
+      "player": "Yellow",
+      "move": "h7h6q",
+      "scores": {
+        "red": -32768,
+        "blue": 181,
+        "yellow": 1964,
+        "green": -837
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h7h6q",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 181 yellow 1964 green -837 nodes 31 pv h7h6q",
+        "bestmove h7h6q"
+      ]
+    },
+    {
+      "ply": 66,
+      "player": "Green",
+      "move": "j7i7",
+      "scores": {
+        "red": -32768,
+        "blue": 181,
+        "yellow": 1964,
+        "green": -805
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "j7i7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 181 yellow 1964 green -805 nodes 19 pv j7i7",
+        "bestmove j7i7"
+      ]
+    },
+    {
+      "ply": 67,
+      "player": "Blue",
+      "move": "g4h6",
+      "scores": {
+        "red": -32768,
+        "blue": 658,
+        "yellow": 994,
+        "green": -320
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "g4h6",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 658 yellow 994 green -320 nodes 23 pv g4h6",
+        "bestmove g4h6"
+      ]
+    },
+    {
+      "ply": 68,
+      "player": "Yellow",
+      "move": "j14i12",
+      "scores": {
+        "red": -32768,
+        "blue": 658,
+        "yellow": 1014,
+        "green": -330
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "j14i12",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 658 yellow 1014 green -330 nodes 31 pv j14i12",
+        "bestmove j14i12"
+      ]
+    },
+    {
+      "ply": 69,
+      "player": "Green",
+      "move": "i7h6",
+      "scores": {
+        "red": -32768,
+        "blue": 239,
+        "yellow": 1179,
+        "green": -105
+      },
+      "depth": 1,
+      "nodes": 21,
+      "pv": "i7h6",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 239 yellow 1179 green -105 nodes 21 pv i7h6",
+        "bestmove i7h6"
+      ]
+    },
+    {
+      "ply": 70,
+      "player": "Blue",
+      "move": "b5d5",
+      "scores": {
+        "red": -32768,
+        "blue": 292,
+        "yellow": 1179,
+        "green": -140
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "b5d5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 292 yellow 1179 green -140 nodes 15 pv b5d5",
+        "bestmove b5d5"
+      ]
+    },
+    {
+      "ply": 71,
+      "player": "Yellow",
+      "move": "k14g14",
+      "scores": {
+        "red": -32768,
+        "blue": 292,
+        "yellow": 1184,
+        "green": -140
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "k14g14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 292 yellow 1184 green -140 nodes 31 pv k14g14",
+        "bestmove k14g14"
+      ]
+    },
+    {
+      "ply": 72,
+      "player": "Green",
+      "move": "n5m7",
+      "scores": {
+        "red": -32768,
+        "blue": 292,
+        "yellow": 1164,
+        "green": -115
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "n5m7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 292 yellow 1164 green -115 nodes 19 pv n5m7",
+        "bestmove n5m7"
+      ]
+    },
+    {
+      "ply": 73,
+      "player": "Blue",
+      "move": "d5e5",
+      "scores": {
+        "red": -32768,
+        "blue": 316,
+        "yellow": 1164,
+        "green": -130
+      },
+      "depth": 1,
+      "nodes": 14,
+      "pv": "d5e5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 316 yellow 1164 green -130 nodes 14 pv d5e5",
+        "bestmove d5e5"
+      ]
+    },
+    {
+      "ply": 74,
+      "player": "Yellow",
+      "move": "l8m7",
+      "scores": {
+        "red": -32768,
+        "blue": 466,
+        "yellow": 1324,
+        "green": -437
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "l8m7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 466 yellow 1324 green -437 nodes 31 pv l8m7",
+        "bestmove l8m7"
+      ]
+    },
+    {
+      "ply": 75,
+      "player": "Green",
+      "move": "n11n10",
+      "scores": {
+        "red": -32768,
+        "blue": 466,
+        "yellow": 1314,
+        "green": -427
+      },
+      "depth": 1,
+      "nodes": 27,
+      "pv": "n11n10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 466 yellow 1314 green -427 nodes 27 pv n11n10",
+        "bestmove n11n10"
+      ]
+    },
+    {
+      "ply": 76,
+      "player": "Blue",
+      "move": "e5f5",
+      "scores": {
+        "red": -32768,
+        "blue": 490,
+        "yellow": 1314,
+        "green": -442
+      },
+      "depth": 1,
+      "nodes": 14,
+      "pv": "e5f5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 490 yellow 1314 green -442 nodes 14 pv e5f5",
+        "bestmove e5f5"
+      ]
+    },
+    {
+      "ply": 77,
+      "player": "Yellow",
+      "move": "g14g9",
+      "scores": {
+        "red": -32768,
+        "blue": 284,
+        "yellow": 1414,
+        "green": -432
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "g14g9",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 284 yellow 1414 green -432 nodes 31 pv g14g9",
+        "bestmove g14g9"
+      ]
+    },
+    {
+      "ply": 78,
+      "player": "Green",
+      "move": "n10n11",
+      "scores": {
+        "red": -32768,
+        "blue": 284,
+        "yellow": 1424,
+        "green": -402
+      },
+      "depth": 1,
+      "nodes": 25,
+      "pv": "n10n11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 284 yellow 1424 green -402 nodes 25 pv n10n11",
+        "bestmove n10n11"
+      ]
+    },
+    {
+      "ply": 79,
+      "player": "Blue",
+      "move": "f5g5",
+      "scores": {
+        "red": -32768,
+        "blue": 308,
+        "yellow": 1424,
+        "green": -417
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "f5g5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 308 yellow 1424 green -417 nodes 13 pv f5g5",
+        "bestmove f5g5"
+      ]
+    },
+    {
+      "ply": 80,
+      "player": "Yellow",
+      "move": "g9g5",
+      "scores": {
+        "red": -32768,
+        "blue": 32,
+        "yellow": 1569,
+        "green": -337
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "g9g5",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 32 yellow 1569 green -337 nodes 31 pv g9g5",
+        "bestmove g9g5"
+      ]
+    },
+    {
+      "ply": 81,
+      "player": "Green",
+      "move": "h6g5",
+      "scores": {
+        "red": -32768,
+        "blue": 282,
+        "yellow": 908,
+        "green": 48
+      },
+      "depth": 1,
+      "nodes": 29,
+      "pv": "h6g5",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 282 yellow 908 green 48 nodes 29 pv h6g5",
+        "bestmove h6g5"
+      ]
+    },
+    {
+      "ply": 82,
+      "player": "Blue",
+      "move": "b6d6",
+      "scores": {
+        "red": -32768,
+        "blue": 312,
+        "yellow": 908,
+        "green": 23
+      },
+      "depth": 1,
+      "nodes": 12,
+      "pv": "b6d6",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 312 yellow 908 green 23 nodes 12 pv b6d6",
+        "bestmove b6d6"
+      ]
+    },
+    {
+      "ply": 83,
+      "player": "Yellow",
+      "move": "m7j4",
+      "scores": {
+        "red": -32768,
+        "blue": 312,
+        "yellow": 998,
+        "green": -62
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "m7j4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 312 yellow 998 green -62 nodes 31 pv m7j4",
+        "bestmove m7j4"
+      ]
+    },
+    {
+      "ply": 84,
+      "player": "Green",
+      "move": "g5f5q",
+      "scores": {
+        "red": -32768,
+        "blue": -98,
+        "yellow": 598,
+        "green": 710
+      },
+      "depth": 1,
+      "nodes": 33,
+      "pv": "g5f5q",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -98 yellow 598 green 710 nodes 33 pv g5f5q",
+        "bestmove g5f5q"
+      ]
+    },
+    {
+      "ply": 85,
+      "player": "Blue",
+      "move": "d10e10",
+      "scores": {
+        "red": -32768,
+        "blue": -69,
+        "yellow": 588,
+        "green": 700
+      },
+      "depth": 1,
+      "nodes": 12,
+      "pv": "d10e10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -69 yellow 588 green 700 nodes 12 pv d10e10",
+        "bestmove d10e10"
+      ]
+    },
+    {
+      "ply": 86,
+      "player": "Yellow",
+      "move": "d11e10",
+      "scores": {
+        "red": -32768,
+        "blue": -257,
+        "yellow": 705,
+        "green": 750
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "d11e10",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -257 yellow 705 green 750 nodes 31 pv d11e10",
+        "bestmove d11e10"
+      ]
+    },
+    {
+      "ply": 87,
+      "player": "Green",
+      "move": "f5a10",
+      "scores": {
+        "red": -32768,
+        "blue": -504,
+        "yellow": 880,
+        "green": 802
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "f5a10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -504 yellow 880 green 802 nodes 61 pv f5a10",
+        "bestmove f5a10"
+      ]
+    },
+    {
+      "ply": 88,
+      "player": "Blue",
+      "move": "a11a10",
+      "scores": {
+        "red": -32768,
+        "blue": -29,
+        "yellow": 1330,
+        "green": -128
+      },
+      "depth": 1,
+      "nodes": 4,
+      "pv": "a11a10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -29 yellow 1330 green -128 nodes 4 pv a11a10",
+        "bestmove a11a10"
+      ]
+    },
+    {
+      "ply": 89,
+      "player": "Yellow",
+      "move": "d14d6",
+      "scores": {
+        "red": -32768,
+        "blue": -350,
+        "yellow": 1535,
+        "green": -78
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "d14d6",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -350 yellow 1535 green -78 nodes 31 pv d14d6",
+        "bestmove d14d6"
+      ]
+    },
+    {
+      "ply": 90,
+      "player": "Green",
+      "move": "n4n8",
+      "scores": {
+        "red": -32768,
+        "blue": -370,
+        "yellow": 1505,
+        "green": -43
+      },
+      "depth": 1,
+      "nodes": 25,
+      "pv": "n4n8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -370 yellow 1505 green -43 nodes 25 pv n4n8",
+        "bestmove n4n8"
+      ]
+    },
+    {
+      "ply": 91,
+      "player": "Blue",
+      "move": "a10e10",
+      "scores": {
+        "red": -32768,
+        "blue": -240,
+        "yellow": 1272,
+        "green": 7
+      },
+      "depth": 1,
+      "nodes": 14,
+      "pv": "a10e10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -240 yellow 1272 green 7 nodes 14 pv a10e10",
+        "bestmove a10e10"
+      ]
+    },
+    {
+      "ply": 92,
+      "player": "Yellow",
+      "move": "e13d14",
+      "scores": {
+        "red": -32768,
+        "blue": -235,
+        "yellow": 1237,
+        "green": 7
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "e13d14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -235 yellow 1237 green 7 nodes 6 pv e13d14",
+        "bestmove e13d14"
+      ]
+    },
+    {
+      "ply": 93,
+      "player": "Green",
+      "move": "n8b8",
+      "scores": {
+        "red": -32768,
+        "blue": -406,
+        "yellow": 1322,
+        "green": 52
+      },
+      "depth": 1,
+      "nodes": 45,
+      "pv": "n8b8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -406 yellow 1322 green 52 nodes 45 pv n8b8",
+        "bestmove n8b8"
+      ]
+    },
+    {
+      "ply": 94,
+      "player": "Blue",
+      "move": "a7b8",
+      "scores": {
+        "red": -32768,
+        "blue": -61,
+        "yellow": 1577,
+        "green": -499
+      },
+      "depth": 1,
+      "nodes": 24,
+      "pv": "a7b8",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -61 yellow 1577 green -499 nodes 24 pv a7b8",
+        "bestmove a7b8"
+      ]
+    },
+    {
+      "ply": 95,
+      "player": "Yellow",
+      "move": "i12h10",
+      "scores": {
+        "red": -32768,
+        "blue": -71,
+        "yellow": 1627,
+        "green": -529
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "i12h10",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -71 yellow 1627 green -529 nodes 31 pv i12h10",
+        "bestmove i12h10"
+      ]
+    },
+    {
+      "ply": 96,
+      "player": "Green",
+      "move": "n11n10",
+      "scores": {
+        "red": -32768,
+        "blue": -71,
+        "yellow": 1607,
+        "green": -509
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "n11n10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -71 yellow 1607 green -509 nodes 7 pv n11n10",
+        "bestmove n11n10"
+      ]
+    },
+    {
+      "ply": 97,
+      "player": "Blue",
+      "move": "e10h10",
+      "scores": {
+        "red": -32768,
+        "blue": 144,
+        "yellow": 1260,
+        "green": -359
+      },
+      "depth": 1,
+      "nodes": 30,
+      "pv": "e10h10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 144 yellow 1260 green -359 nodes 30 pv e10h10",
+        "bestmove e10h10"
+      ]
+    },
+    {
+      "ply": 98,
+      "player": "Yellow",
+      "move": "f12f11",
+      "scores": {
+        "red": -32768,
+        "blue": 134,
+        "yellow": 1280,
+        "green": -359
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "f12f11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 134 yellow 1280 green -359 nodes 31 pv f12f11",
+        "bestmove f12f11"
+      ]
+    },
+    {
+      "ply": 99,
+      "player": "Green",
+      "move": "m11l11",
+      "scores": {
+        "red": -32768,
+        "blue": 134,
+        "yellow": 1275,
+        "green": -362
+      },
+      "depth": 1,
+      "nodes": 11,
+      "pv": "m11l11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 134 yellow 1275 green -362 nodes 11 pv m11l11",
+        "bestmove m11l11"
+      ]
+    },
+    {
+      "ply": 100,
+      "player": "Blue",
+      "move": "h10h4",
+      "scores": {
+        "red": -32768,
+        "blue": 219,
+        "yellow": 1145,
+        "green": -317
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h10h4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 219 yellow 1145 green -317 nodes 31 pv h10h4",
+        "bestmove h10h4"
+      ]
+    },
+    {
+      "ply": 101,
+      "player": "Yellow",
+      "move": "j4l6",
+      "scores": {
+        "red": -32768,
+        "blue": 209,
+        "yellow": 1195,
+        "green": -357
+      },
+      "depth": 1,
+      "nodes": 5,
+      "pv": "j4l6",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 209 yellow 1195 green -357 nodes 5 pv j4l6",
+        "bestmove j4l6"
+      ]
+    },
+    {
+      "ply": 102,
+      "player": "Green",
+      "move": "i10h10",
+      "scores": {
+        "red": -32768,
+        "blue": 209,
+        "yellow": 1195,
+        "green": -348
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "i10h10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 209 yellow 1195 green -348 nodes 15 pv i10h10",
+        "bestmove i10h10"
+      ]
+    },
+    {
+      "ply": 103,
+      "player": "Blue",
+      "move": "b11d11",
+      "scores": {
+        "red": -32768,
+        "blue": 259,
+        "yellow": 1160,
+        "green": -348
+      },
+      "depth": 1,
+      "nodes": 29,
+      "pv": "b11d11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 259 yellow 1160 green -348 nodes 29 pv b11d11",
+        "bestmove b11d11"
+      ]
+    },
+    {
+      "ply": 104,
+      "player": "Yellow",
+      "move": "d6d11",
+      "scores": {
+        "red": -32768,
+        "blue": 158,
+        "yellow": 1185,
+        "green": -293
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "d6d11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 158 yellow 1185 green -293 nodes 31 pv d6d11",
+        "bestmove d6d11"
+      ]
+    },
+    {
+      "ply": 105,
+      "player": "Green",
+      "move": "h10g10",
+      "scores": {
+        "red": -32768,
+        "blue": 153,
+        "yellow": 1190,
+        "green": -288
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "h10g10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 153 yellow 1190 green -288 nodes 15 pv h10g10",
+        "bestmove h10g10"
+      ]
+    },
+    {
+      "ply": 106,
+      "player": "Blue",
+      "move": "h4k4",
+      "scores": {
+        "red": -32768,
+        "blue": 238,
+        "yellow": 1225,
+        "green": -434
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h4k4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 238 yellow 1225 green -434 nodes 31 pv h4k4",
+        "bestmove h4k4"
+      ]
+    },
+    {
+      "ply": 107,
+      "player": "Yellow",
+      "move": "d11d6",
+      "scores": {
+        "red": -32768,
+        "blue": 113,
+        "yellow": 1370,
+        "green": -454
+      },
+      "depth": 1,
+      "nodes": 30,
+      "pv": "d11d6",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 113 yellow 1370 green -454 nodes 30 pv d11d6",
+        "bestmove d11d6"
+      ]
+    },
+    {
+      "ply": 108,
+      "player": "Green",
+      "move": "g10f11q",
+      "scores": {
+        "red": -32768,
+        "blue": -277,
+        "yellow": 774,
+        "green": 425
+      },
+      "depth": 1,
+      "nodes": 27,
+      "pv": "g10f11q",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -277 yellow 774 green 425 nodes 27 pv g10f11q",
+        "bestmove g10f11q"
+      ]
+    },
+    {
+      "ply": 109,
+      "player": "Blue",
+      "move": "k4h4",
+      "scores": {
+        "red": -32768,
+        "blue": -222,
+        "yellow": 724,
+        "green": 425
+      },
+      "depth": 1,
+      "nodes": 30,
+      "pv": "k4h4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -222 yellow 724 green 425 nodes 30 pv k4h4",
+        "bestmove k4h4"
+      ]
+    },
+    {
+      "ply": 110,
+      "player": "Yellow",
+      "move": "d6d7",
+      "scores": {
+        "red": -32768,
+        "blue": -257,
+        "yellow": 734,
+        "green": 415
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "d6d7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -257 yellow 734 green 415 nodes 31 pv d6d7",
+        "bestmove d6d7"
+      ]
+    },
+    {
+      "ply": 111,
+      "player": "Green",
+      "move": "f11k11",
+      "scores": {
+        "red": -32768,
+        "blue": -172,
+        "yellow": 568,
+        "green": 510
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "f11k11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -172 yellow 568 green 510 nodes 61 pv f11k11",
+        "bestmove f11k11"
+      ]
+    },
+    {
+      "ply": 112,
+      "player": "Blue",
+      "move": "b8b9",
+      "scores": {
+        "red": -32768,
+        "blue": -122,
+        "yellow": 583,
+        "green": 510
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "b8b9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -122 yellow 583 green 510 nodes 31 pv b8b9",
+        "bestmove b8b9"
+      ]
+    },
+    {
+      "ply": 113,
+      "player": "Yellow",
+      "move": "l6k7",
+      "scores": {
+        "red": -32768,
+        "blue": -127,
+        "yellow": 623,
+        "green": 460
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "l6k7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -127 yellow 623 green 460 nodes 31 pv l6k7",
+        "bestmove l6k7"
+      ]
+    },
+    {
+      "ply": 114,
+      "player": "Green",
+      "move": "k11k7",
+      "scores": {
+        "red": -32768,
+        "blue": 98,
+        "yellow": -2,
+        "green": 840
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "k11k7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 98 yellow -2 green 840 nodes 13 pv k11k7",
+        "bestmove k11k7"
+      ]
+    },
+    {
+      "ply": 115,
+      "player": "Blue",
+      "move": "h4h7",
+      "scores": {
+        "red": -32768,
+        "blue": 183,
+        "yellow": -42,
+        "green": 800
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h4h7",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 183 yellow -42 green 800 nodes 31 pv h4h7",
+        "bestmove h4h7"
+      ]
+    },
+    {
+      "ply": 116,
+      "player": "Yellow",
+      "move": "d14e14",
+      "scores": {
+        "red": -32768,
+        "blue": 178,
+        "yellow": -57,
+        "green": 800
+      },
+      "depth": 1,
+      "nodes": 3,
+      "pv": "d14e14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 178 yellow -57 green 800 nodes 3 pv d14e14",
+        "bestmove d14e14"
+      ]
+    },
+    {
+      "ply": 117,
+      "player": "Green",
+      "move": "k7h7",
+      "scores": {
+        "red": -32768,
+        "blue": -638,
+        "yellow": 373,
+        "green": 1202
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "k7h7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -638 yellow 373 green 1202 nodes 61 pv k7h7",
+        "bestmove k7h7"
+      ]
+    },
+    {
+      "ply": 118,
+      "player": "Blue",
+      "move": "b9b10",
+      "scores": {
+        "red": -32768,
+        "blue": -643,
+        "yellow": 383,
+        "green": 1202
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "b9b10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -643 yellow 383 green 1202 nodes 9 pv b9b10",
+        "bestmove b9b10"
+      ]
+    },
+    {
+      "ply": 119,
+      "player": "Yellow",
+      "move": "d7h7",
+      "scores": {
+        "red": -32768,
+        "blue": -108,
+        "yellow": 963,
+        "green": 50
+      },
+      "depth": 1,
+      "nodes": 23,
+      "pv": "d7h7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -108 yellow 963 green 50 nodes 23 pv d7h7",
+        "bestmove d7h7"
+      ]
+    },
+    {
+      "ply": 120,
+      "player": "Green",
+      "move": "n10m10",
+      "scores": {
+        "red": -32768,
+        "blue": -108,
+        "yellow": 958,
+        "green": 65
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "n10m10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -108 yellow 958 green 65 nodes 13 pv n10m10",
+        "bestmove n10m10"
+      ]
+    },
+    {
+      "ply": 121,
+      "player": "Blue",
+      "move": "b10b9",
+      "scores": {
+        "red": -32768,
+        "blue": -103,
+        "yellow": 948,
+        "green": 65
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "b10b9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -103 yellow 948 green 65 nodes 9 pv b10b9",
+        "bestmove b10b9"
+      ]
+    },
+    {
+      "ply": 122,
+      "player": "Yellow",
+      "move": "e14f14",
+      "scores": {
+        "red": -32768,
+        "blue": -103,
+        "yellow": 963,
+        "green": 45
+      },
+      "depth": 1,
+      "nodes": 29,
+      "pv": "e14f14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -103 yellow 963 green 45 nodes 29 pv e14f14",
+        "bestmove e14f14"
+      ]
+    },
+    {
+      "ply": 123,
+      "player": "Green",
+      "move": "l11k11",
+      "scores": {
+        "red": -32768,
+        "blue": -103,
+        "yellow": 943,
+        "green": 58
+      },
+      "depth": 1,
+      "nodes": 17,
+      "pv": "l11k11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -103 yellow 943 green 58 nodes 17 pv l11k11",
+        "bestmove l11k11"
+      ]
+    },
+    {
+      "ply": 124,
+      "player": "Blue",
+      "move": "b9b10",
+      "scores": {
+        "red": -32768,
+        "blue": -108,
+        "yellow": 953,
+        "green": 58
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "b9b10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -108 yellow 953 green 58 nodes 9 pv b9b10",
+        "bestmove b9b10"
+      ]
+    },
+    {
+      "ply": 125,
+      "player": "Yellow",
+      "move": "f14g13",
+      "scores": {
+        "red": -32768,
+        "blue": -108,
+        "yellow": 963,
+        "green": 38
+      },
+      "depth": 1,
+      "nodes": 30,
+      "pv": "f14g13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -108 yellow 963 green 38 nodes 30 pv f14g13",
+        "bestmove f14g13"
+      ]
+    },
+    {
+      "ply": 126,
+      "player": "Green",
+      "move": "k11j11",
+      "scores": {
+        "red": -32768,
+        "blue": -108,
+        "yellow": 948,
+        "green": 61
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "k11j11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -108 yellow 948 green 61 nodes 19 pv k11j11",
+        "bestmove k11j11"
+      ]
+    },
+    {
+      "ply": 127,
+      "player": "Blue",
+      "move": "b10b9",
+      "scores": {
+        "red": -32768,
+        "blue": -103,
+        "yellow": 938,
+        "green": 61
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "b10b9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -103 yellow 938 green 61 nodes 9 pv b10b9",
+        "bestmove b10b9"
+      ]
+    },
+    {
+      "ply": 128,
+      "player": "Yellow",
+      "move": "h7i7",
+      "scores": {
+        "red": -32768,
+        "blue": -93,
+        "yellow": 948,
+        "green": 36
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "h7i7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -93 yellow 948 green 36 nodes 31 pv h7i7",
+        "bestmove h7i7"
+      ]
+    },
+    {
+      "ply": 129,
+      "player": "Green",
+      "move": "j11i11",
+      "scores": {
+        "red": -32768,
+        "blue": -93,
+        "yellow": 918,
+        "green": 55
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "j11i11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -93 yellow 918 green 55 nodes 19 pv j11i11",
+        "bestmove j11i11"
+      ]
+    },
+    {
+      "ply": 130,
+      "player": "Blue",
+      "move": "b9c9",
+      "scores": {
+        "red": -32768,
+        "blue": -78,
+        "yellow": 888,
+        "green": 55
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "b9c9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -78 yellow 888 green 55 nodes 9 pv b9c9",
+        "bestmove b9c9"
+      ]
+    },
+    {
+      "ply": 131,
+      "player": "Yellow",
+      "move": "g13f13",
+      "scores": {
+        "red": -32768,
+        "blue": -83,
+        "yellow": 903,
+        "green": 70
+      },
+      "depth": 1,
+      "nodes": 29,
+      "pv": "g13f13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -83 yellow 903 green 70 nodes 29 pv g13f13",
+        "bestmove g13f13"
+      ]
+    },
+    {
+      "ply": 132,
+      "player": "Green",
+      "move": "i11h11",
+      "scores": {
+        "red": -32768,
+        "blue": -93,
+        "yellow": 878,
+        "green": 93
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "i11h11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -93 yellow 878 green 93 nodes 19 pv i11h11",
+        "bestmove i11h11"
+      ]
+    },
+    {
+      "ply": 133,
+      "player": "Blue",
+      "move": "c9d9",
+      "scores": {
+        "red": -32768,
+        "blue": -83,
+        "yellow": 873,
+        "green": 83
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "c9d9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -83 yellow 873 green 83 nodes 9 pv c9d9",
+        "bestmove c9d9"
+      ]
+    },
+    {
+      "ply": 134,
+      "player": "Yellow",
+      "move": "f13f14",
+      "scores": {
+        "red": -32768,
+        "blue": -83,
+        "yellow": 893,
+        "green": 88
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "f13f14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -83 yellow 893 green 88 nodes 31 pv f13f14",
+        "bestmove f13f14"
+      ]
+    },
+    {
+      "ply": 135,
+      "player": "Green",
+      "move": "h11g11",
+      "scores": {
+        "red": -32768,
+        "blue": -93,
+        "yellow": 893,
+        "green": 103
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "h11g11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -93 yellow 893 green 103 nodes 19 pv h11g11",
+        "bestmove h11g11"
+      ]
+    },
+    {
+      "ply": 136,
+      "player": "Blue",
+      "move": "d9d10",
+      "scores": {
+        "red": -32768,
+        "blue": -93,
+        "yellow": 898,
+        "green": 103
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "d9d10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -93 yellow 898 green 103 nodes 9 pv d9d10",
+        "bestmove d9d10"
+      ]
+    },
+    {
+      "ply": 137,
+      "player": "Yellow",
+      "move": "i7i9",
+      "scores": {
+        "red": -32768,
+        "blue": -153,
+        "yellow": 928,
+        "green": 8
+      },
+      "depth": 1,
+      "nodes": 31,
+      "pv": "i7i9",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -153 yellow 928 green 8 nodes 31 pv i7i9",
+        "bestmove i7i9"
+      ]
+    },
+    {
+      "ply": 138,
+      "player": "Green",
+      "move": "g11f11q",
+      "scores": {
+        "red": -32768,
+        "blue": -638,
+        "yellow": 533,
+        "green": 772
+      },
+      "depth": 1,
+      "nodes": 19,
+      "pv": "g11f11q",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -638 yellow 533 green 772 nodes 19 pv g11f11q",
+        "bestmove g11f11q"
+      ]
+    },
+    {
+      "ply": 139,
+      "player": "Blue",
+      "move": "d10c10",
+      "scores": {
+        "red": -32768,
+        "blue": -628,
+        "yellow": 533,
+        "green": 787
+      },
+      "depth": 1,
+      "nodes": 2,
+      "pv": "d10c10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -628 yellow 533 green 787 nodes 2 pv d10c10",
+        "bestmove d10c10"
+      ]
+    },
+    {
+      "ply": 140,
+      "player": "Yellow",
+      "move": "f14g14",
+      "scores": {
+        "red": -32768,
+        "blue": -628,
+        "yellow": 493,
+        "green": 782
+      },
+      "depth": 1,
+      "nodes": 5,
+      "pv": "f14g14",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -628 yellow 493 green 782 nodes 5 pv f14g14",
+        "bestmove f14g14"
+      ]
+    },
+    {
+      "ply": 141,
+      "player": "Green",
+      "move": "f11f8",
+      "scores": {
+        "red": -32768,
+        "blue": -658,
+        "yellow": 323,
+        "green": 1027
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "f11f8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -658 yellow 323 green 1027 nodes 61 pv f11f8",
+        "bestmove f11f8"
+      ]
+    },
+    {
+      "ply": 142,
+      "player": "Blue",
+      "move": "c10b11",
+      "scores": {
+        "red": -32768,
+        "blue": -598,
+        "yellow": 333,
+        "green": 1052
+      },
+      "depth": 1,
+      "nodes": 4,
+      "pv": "c10b11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -598 yellow 333 green 1052 nodes 4 pv c10b11",
+        "bestmove c10b11"
+      ]
+    },
+    {
+      "ply": 143,
+      "player": "Yellow",
+      "move": "i9i8",
+      "scores": {
+        "red": -32768,
+        "blue": -598,
+        "yellow": 513,
+        "green": 937
+      },
+      "depth": 1,
+      "nodes": 29,
+      "pv": "i9i8",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -598 yellow 513 green 937 nodes 29 pv i9i8",
+        "bestmove i9i8"
+      ]
+    },
+    {
+      "ply": 144,
+      "player": "Green",
+      "move": "f8i8",
+      "scores": {
+        "red": -32768,
+        "blue": -253,
+        "yellow": -313,
+        "green": 1452
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "f8i8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -253 yellow -313 green 1452 nodes 61 pv f8i8",
+        "bestmove f8i8"
+      ]
+    },
+    {
+      "ply": 145,
+      "player": "Blue",
+      "move": "b11c10",
+      "scores": {
+        "red": -32768,
+        "blue": -223,
+        "yellow": -323,
+        "green": 1417
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "b11c10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -223 yellow -323 green 1417 nodes 6 pv b11c10",
+        "bestmove b11c10"
+      ]
+    },
+    {
+      "ply": 146,
+      "player": "Yellow",
+      "move": "g14g13",
+      "scores": {
+        "red": -32768,
+        "blue": -228,
+        "yellow": -323,
+        "green": 1417
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "g14g13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -228 yellow -323 green 1417 nodes 6 pv g14g13",
+        "bestmove g14g13"
+      ]
+    },
+    {
+      "ply": 147,
+      "player": "Green",
+      "move": "i8d8",
+      "scores": {
+        "red": -32768,
+        "blue": -448,
+        "yellow": -313,
+        "green": 1502
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "i8d8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -448 yellow -313 green 1502 nodes 61 pv i8d8",
+        "bestmove i8d8"
+      ]
+    },
+    {
+      "ply": 148,
+      "player": "Blue",
+      "move": "c10b11",
+      "scores": {
+        "red": -32768,
+        "blue": -408,
+        "yellow": -303,
+        "green": 1527
+      },
+      "depth": 1,
+      "nodes": 4,
+      "pv": "c10b11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -408 yellow -303 green 1527 nodes 4 pv c10b11",
+        "bestmove c10b11"
+      ]
+    },
+    {
+      "ply": 149,
+      "player": "Yellow",
+      "move": "g13f13",
+      "scores": {
+        "red": -32768,
+        "blue": -413,
+        "yellow": -298,
+        "green": 1552
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "g13f13",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -413 yellow -298 green 1552 nodes 7 pv g13f13",
+        "bestmove g13f13"
+      ]
+    },
+    {
+      "ply": 150,
+      "player": "Green",
+      "move": "d8d10",
+      "scores": {
+        "red": -32768,
+        "blue": -463,
+        "yellow": -343,
+        "green": 1565
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "d8d10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -463 yellow -343 green 1565 nodes 61 pv d8d10",
+        "bestmove d8d10"
+      ]
+    },
+    {
+      "ply": 151,
+      "player": "Blue",
+      "move": "b11a11",
+      "scores": {
+        "red": -32768,
+        "blue": -433,
+        "yellow": -338,
+        "green": 1575
+      },
+      "depth": 1,
+      "nodes": 2,
+      "pv": "b11a11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -433 yellow -338 green 1575 nodes 2 pv b11a11",
+        "bestmove b11a11"
+      ]
+    },
+    {
+      "ply": 152,
+      "player": "Yellow",
+      "move": "f13g12",
+      "scores": {
+        "red": -32768,
+        "blue": -433,
+        "yellow": -308,
+        "green": 1530
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "f13g12",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -433 yellow -308 green 1530 nodes 6 pv f13g12",
+        "bestmove f13g12"
+      ]
+    },
+    {
+      "ply": 153,
+      "player": "Green",
+      "move": "m10l11",
+      "scores": {
+        "red": -32768,
+        "blue": -433,
+        "yellow": -343,
+        "green": 1550
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "m10l11",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -433 yellow -343 green 1550 nodes 61 pv m10l11",
+        "bestmove m10l11"
+      ]
+    },
+    {
+      "ply": 154,
+      "player": "Blue",
+      "move": "a11b11",
+      "scores": {
+        "red": -32768,
+        "blue": -458,
+        "yellow": -348,
+        "green": 1535
+      },
+      "depth": 1,
+      "nodes": 2,
+      "pv": "a11b11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -458 yellow -348 green 1535 nodes 2 pv a11b11",
+        "bestmove a11b11"
+      ]
+    },
+    {
+      "ply": 155,
+      "player": "Yellow",
+      "move": "g12h11",
+      "scores": {
+        "red": -32768,
+        "blue": -448,
+        "yellow": -238,
+        "green": 1390
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "g12h11",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue -448 yellow -238 green 1390 nodes 6 pv g12h11",
+        "bestmove g12h11"
+      ]
+    },
+    {
+      "ply": 156,
+      "player": "Green",
+      "move": "d10g10",
+      "scores": {
+        "red": -32768,
+        "blue": -363,
+        "yellow": -363,
+        "green": 1435
+      },
+      "depth": 1,
+      "nodes": 61,
+      "pv": "d10g10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue -363 yellow -363 green 1435 nodes 61 pv d10g10",
+        "bestmove d10g10"
+      ]
+    },
+    {
+      "ply": 157,
+      "player": "Blue",
+      "move": "b11c11",
+      "scores": {
+        "red": -32768,
+        "blue": -348,
+        "yellow": -373,
+        "green": 1415
+      },
+      "depth": 1,
+      "nodes": 3,
+      "pv": "b11c11",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue -348 yellow -373 green 1415 nodes 3 pv b11c11",
+        "bestmove b11c11"
+      ]
+    },
+    {
+      "ply": 158,
+      "player": "Yellow",
+      "move": "h11g10",
+      "scores": {
+        "red": -32768,
+        "blue": 172,
+        "yellow": 457,
+        "green": 162
+      },
+      "depth": 1,
+      "nodes": 4,
+      "pv": "h11g10",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 172 yellow 457 green 162 nodes 4 pv h11g10",
+        "bestmove h11g10"
+      ]
+    },
+    {
+      "ply": 159,
+      "player": "Green",
+      "move": "l11l10",
+      "scores": {
+        "red": -32768,
+        "blue": 172,
+        "yellow": 452,
+        "green": 167
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "l11l10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 172 yellow 452 green 167 nodes 13 pv l11l10",
+        "bestmove l11l10"
+      ]
+    },
+    {
+      "ply": 160,
+      "player": "Blue",
+      "move": "c11d10",
+      "scores": {
+        "red": -32768,
+        "blue": 452,
+        "yellow": 167,
+        "green": 167
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "c11d10",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 452 yellow 167 green 167 nodes 7 pv c11d10",
+        "bestmove c11d10"
+      ]
+    },
+    {
+      "ply": 161,
+      "player": "Yellow",
+      "move": "g10h9",
+      "scores": {
+        "red": -32768,
+        "blue": 257,
+        "yellow": 377,
+        "green": 152
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "g10h9",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 257 yellow 377 green 152 nodes 7 pv g10h9",
+        "bestmove g10h9"
+      ]
+    },
+    {
+      "ply": 162,
+      "player": "Green",
+      "move": "l10k10",
+      "scores": {
+        "red": -32768,
+        "blue": 252,
+        "yellow": 357,
+        "green": 172
+      },
+      "depth": 1,
+      "nodes": 17,
+      "pv": "l10k10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 252 yellow 357 green 172 nodes 17 pv l10k10",
+        "bestmove l10k10"
+      ]
+    },
+    {
+      "ply": 163,
+      "player": "Blue",
+      "move": "d10e9",
+      "scores": {
+        "red": -32768,
+        "blue": 462,
+        "yellow": 127,
+        "green": 182
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "d10e9",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 462 yellow 127 green 182 nodes 9 pv d10e9",
+        "bestmove d10e9"
+      ]
+    },
+    {
+      "ply": 164,
+      "player": "Yellow",
+      "move": "h9h8",
+      "scores": {
+        "red": -32768,
+        "blue": 272,
+        "yellow": 312,
+        "green": 187
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "h9h8",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 272 yellow 312 green 187 nodes 7 pv h9h8",
+        "bestmove h9h8"
+      ]
+    },
+    {
+      "ply": 165,
+      "player": "Green",
+      "move": "k10j10",
+      "scores": {
+        "red": -32768,
+        "blue": 252,
+        "yellow": 287,
+        "green": 187
+      },
+      "depth": 1,
+      "nodes": 17,
+      "pv": "k10j10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 252 yellow 287 green 187 nodes 17 pv k10j10",
+        "bestmove k10j10"
+      ]
+    },
+    {
+      "ply": 166,
+      "player": "Blue",
+      "move": "e9e8",
+      "scores": {
+        "red": -32768,
+        "blue": 412,
+        "yellow": 112,
+        "green": 202
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "e9e8",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 412 yellow 112 green 202 nodes 9 pv e9e8",
+        "bestmove e9e8"
+      ]
+    },
+    {
+      "ply": 167,
+      "player": "Yellow",
+      "move": "h8h7",
+      "scores": {
+        "red": -32768,
+        "blue": 257,
+        "yellow": 277,
+        "green": 232
+      },
+      "depth": 1,
+      "nodes": 8,
+      "pv": "h8h7",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 257 yellow 277 green 232 nodes 8 pv h8h7",
+        "bestmove h8h7"
+      ]
+    },
+    {
+      "ply": 168,
+      "player": "Green",
+      "move": "j10i10",
+      "scores": {
+        "red": -32768,
+        "blue": 237,
+        "yellow": 272,
+        "green": 257
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "j10i10",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 237 yellow 272 green 257 nodes 15 pv j10i10",
+        "bestmove j10i10"
+      ]
+    },
+    {
+      "ply": 169,
+      "player": "Blue",
+      "move": "e8e7",
+      "scores": {
+        "red": -32768,
+        "blue": 352,
+        "yellow": 137,
+        "green": 277
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "e8e7",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 352 yellow 137 green 277 nodes 9 pv e8e7",
+        "bestmove e8e7"
+      ]
+    },
+    {
+      "ply": 170,
+      "player": "Yellow",
+      "move": "h7i6",
+      "scores": {
+        "red": -32768,
+        "blue": 267,
+        "yellow": 302,
+        "green": 197
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "h7i6",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 267 yellow 302 green 197 nodes 9 pv h7i6",
+        "bestmove h7i6"
+      ]
+    },
+    {
+      "ply": 171,
+      "player": "Green",
+      "move": "i10j9",
+      "scores": {
+        "red": -32768,
+        "blue": 287,
+        "yellow": 212,
+        "green": 262
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "i10j9",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 287 yellow 212 green 262 nodes 13 pv i10j9",
+        "bestmove i10j9"
+      ]
+    },
+    {
+      "ply": 172,
+      "player": "Blue",
+      "move": "e7f6",
+      "scores": {
+        "red": -32768,
+        "blue": 372,
+        "yellow": 107,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "e7f6",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 372 yellow 107 green 282 nodes 9 pv e7f6",
+        "bestmove e7f6"
+      ]
+    },
+    {
+      "ply": 173,
+      "player": "Yellow",
+      "move": "i6j5",
+      "scores": {
+        "red": -32768,
+        "blue": 327,
+        "yellow": 202,
+        "green": 237
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "i6j5",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 327 yellow 202 green 237 nodes 9 pv i6j5",
+        "bestmove i6j5"
+      ]
+    },
+    {
+      "ply": 174,
+      "player": "Green",
+      "move": "j9k8",
+      "scores": {
+        "red": -32768,
+        "blue": 352,
+        "yellow": 147,
+        "green": 272
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "j9k8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 352 yellow 147 green 272 nodes 13 pv j9k8",
+        "bestmove j9k8"
+      ]
+    },
+    {
+      "ply": 175,
+      "player": "Blue",
+      "move": "f6g5",
+      "scores": {
+        "red": -32768,
+        "blue": 397,
+        "yellow": 82,
+        "green": 297
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "f6g5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 397 yellow 82 green 297 nodes 9 pv f6g5",
+        "bestmove f6g5"
+      ]
+    },
+    {
+      "ply": 176,
+      "player": "Yellow",
+      "move": "j5j4",
+      "scores": {
+        "red": -32768,
+        "blue": 357,
+        "yellow": 127,
+        "green": 297
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "j5j4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 357 yellow 127 green 297 nodes 9 pv j5j4",
+        "bestmove j5j4"
+      ]
+    },
+    {
+      "ply": 177,
+      "player": "Green",
+      "move": "k8j7",
+      "scores": {
+        "red": -32768,
+        "blue": 322,
+        "yellow": 147,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "k8j7",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 322 yellow 147 green 307 nodes 13 pv k8j7",
+        "bestmove k8j7"
+      ]
+    },
+    {
+      "ply": 178,
+      "player": "Blue",
+      "move": "g5g6",
+      "scores": {
+        "red": -32768,
+        "blue": 327,
+        "yellow": 162,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "g5g6",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 327 yellow 162 green 282 nodes 9 pv g5g6",
+        "bestmove g5g6"
+      ]
+    },
+    {
+      "ply": 179,
+      "player": "Yellow",
+      "move": "j4k4",
+      "scores": {
+        "red": -32768,
+        "blue": 352,
+        "yellow": 137,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "j4k4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 352 yellow 137 green 282 nodes 6 pv j4k4",
+        "bestmove j4k4"
+      ]
+    },
+    {
+      "ply": 180,
+      "player": "Green",
+      "move": "j7i8",
+      "scores": {
+        "red": -32768,
+        "blue": 312,
+        "yellow": 162,
+        "green": 257
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "j7i8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 312 yellow 162 green 257 nodes 13 pv j7i8",
+        "bestmove j7i8"
+      ]
+    },
+    {
+      "ply": 181,
+      "player": "Blue",
+      "move": "g6h5",
+      "scores": {
+        "red": -32768,
+        "blue": 332,
+        "yellow": 142,
+        "green": 302
+      },
+      "depth": 1,
+      "nodes": 8,
+      "pv": "g6h5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 332 yellow 142 green 302 nodes 8 pv g6h5",
+        "bestmove g6h5"
+      ]
+    },
+    {
+      "ply": 182,
+      "player": "Yellow",
+      "move": "k4k5",
+      "scores": {
+        "red": -32768,
+        "blue": 367,
+        "yellow": 122,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 5,
+      "pv": "k4k5",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 367 yellow 122 green 282 nodes 5 pv k4k5",
+        "bestmove k4k5"
+      ]
+    },
+    {
+      "ply": 183,
+      "player": "Green",
+      "move": "i8h8",
+      "scores": {
+        "red": -32768,
+        "blue": 367,
+        "yellow": 122,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "i8h8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 367 yellow 122 green 282 nodes 13 pv i8h8",
+        "bestmove i8h8"
+      ]
+    },
+    {
+      "ply": 184,
+      "player": "Blue",
+      "move": "h5g5",
+      "scores": {
+        "red": -32768,
+        "blue": 332,
+        "yellow": 157,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "h5g5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 332 yellow 157 green 282 nodes 9 pv h5g5",
+        "bestmove h5g5"
+      ]
+    },
+    {
+      "ply": 185,
+      "player": "Yellow",
+      "move": "k5j4",
+      "scores": {
+        "red": -32768,
+        "blue": 277,
+        "yellow": 192,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 7,
+      "pv": "k5j4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 277 yellow 192 green 307 nodes 7 pv k5j4",
+        "bestmove k5j4"
+      ]
+    },
+    {
+      "ply": 186,
+      "player": "Green",
+      "move": "h8i8",
+      "scores": {
+        "red": -32768,
+        "blue": 302,
+        "yellow": 172,
+        "green": 302
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "h8i8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 302 yellow 172 green 302 nodes 15 pv h8i8",
+        "bestmove h8i8"
+      ]
+    },
+    {
+      "ply": 187,
+      "player": "Blue",
+      "move": "g5g4",
+      "scores": {
+        "red": -32768,
+        "blue": 307,
+        "yellow": 142,
+        "green": 327
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "g5g4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 307 yellow 142 green 327 nodes 9 pv g5g4",
+        "bestmove g5g4"
+      ]
+    },
+    {
+      "ply": 188,
+      "player": "Yellow",
+      "move": "j4j5",
+      "scores": {
+        "red": -32768,
+        "blue": 317,
+        "yellow": 147,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "j4j5",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 317 yellow 147 green 307 nodes 6 pv j4j5",
+        "bestmove j4j5"
+      ]
+    },
+    {
+      "ply": 189,
+      "player": "Green",
+      "move": "i8h8",
+      "scores": {
+        "red": -32768,
+        "blue": 292,
+        "yellow": 172,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "i8h8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 292 yellow 172 green 307 nodes 13 pv i8h8",
+        "bestmove i8h8"
+      ]
+    },
+    {
+      "ply": 190,
+      "player": "Blue",
+      "move": "g4g5",
+      "scores": {
+        "red": -32768,
+        "blue": 317,
+        "yellow": 172,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "g4g5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 317 yellow 172 green 282 nodes 6 pv g4g5",
+        "bestmove g4g5"
+      ]
+    },
+    {
+      "ply": 191,
+      "player": "Yellow",
+      "move": "j5j4",
+      "scores": {
+        "red": -32768,
+        "blue": 277,
+        "yellow": 192,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "j5j4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 277 yellow 192 green 307 nodes 9 pv j5j4",
+        "bestmove j5j4"
+      ]
+    },
+    {
+      "ply": 192,
+      "player": "Green",
+      "move": "h8i8",
+      "scores": {
+        "red": -32768,
+        "blue": 302,
+        "yellow": 172,
+        "green": 302
+      },
+      "depth": 1,
+      "nodes": 15,
+      "pv": "h8i8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 302 yellow 172 green 302 nodes 15 pv h8i8",
+        "bestmove h8i8"
+      ]
+    },
+    {
+      "ply": 193,
+      "player": "Blue",
+      "move": "g5g4",
+      "scores": {
+        "red": -32768,
+        "blue": 307,
+        "yellow": 142,
+        "green": 327
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "g5g4",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 307 yellow 142 green 327 nodes 9 pv g5g4",
+        "bestmove g5g4"
+      ]
+    },
+    {
+      "ply": 194,
+      "player": "Yellow",
+      "move": "j4j5",
+      "scores": {
+        "red": -32768,
+        "blue": 317,
+        "yellow": 147,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "j4j5",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 317 yellow 147 green 307 nodes 6 pv j4j5",
+        "bestmove j4j5"
+      ]
+    },
+    {
+      "ply": 195,
+      "player": "Green",
+      "move": "i8h8",
+      "scores": {
+        "red": -32768,
+        "blue": 292,
+        "yellow": 172,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 13,
+      "pv": "i8h8",
+      "raw_lines": [
+        "info string nextturn Green",
+        "info depth 1 score red -32768 blue 292 yellow 172 green 307 nodes 13 pv i8h8",
+        "bestmove i8h8"
+      ]
+    },
+    {
+      "ply": 196,
+      "player": "Blue",
+      "move": "g4g5",
+      "scores": {
+        "red": -32768,
+        "blue": 317,
+        "yellow": 172,
+        "green": 282
+      },
+      "depth": 1,
+      "nodes": 6,
+      "pv": "g4g5",
+      "raw_lines": [
+        "info string nextturn Blue",
+        "info depth 1 score red -32768 blue 317 yellow 172 green 282 nodes 6 pv g4g5",
+        "bestmove g4g5"
+      ]
+    },
+    {
+      "ply": 197,
+      "player": "Yellow",
+      "move": "j5j4",
+      "scores": {
+        "red": -32768,
+        "blue": 277,
+        "yellow": 192,
+        "green": 307
+      },
+      "depth": 1,
+      "nodes": 9,
+      "pv": "j5j4",
+      "raw_lines": [
+        "info string nextturn Yellow",
+        "info depth 1 score red -32768 blue 277 yellow 192 green 307 nodes 9 pv j5j4",
+        "bestmove j5j4"
+      ]
+    }
+  ],
+  "eliminations": [],
+  "winner": null,
+  "total_ply": 198,
+  "error": null
+}

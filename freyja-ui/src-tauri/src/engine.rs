@@ -125,17 +125,18 @@ impl EngineManager {
     fn resolve_engine_path() -> Result<String, String> {
         // Development mode: look for the engine binary relative to the project
         let dev_paths = [
+            // Prefer release builds (debug is too slow for search time budgets)
             // Cargo workspace: binary in project root target/
             // From freyja-ui/src-tauri/ (where the Tauri binary runs during dev)
-            "../../target/debug/freyja.exe",
-            "../../target/debug/freyja",
             "../../target/release/freyja.exe",
             "../../target/release/freyja",
+            "../../target/debug/freyja.exe",
+            "../../target/debug/freyja",
             // From project root
-            "target/debug/freyja.exe",
-            "target/debug/freyja",
             "target/release/freyja.exe",
             "target/release/freyja",
+            "target/debug/freyja.exe",
+            "target/debug/freyja",
         ];
 
         for path in &dev_paths {

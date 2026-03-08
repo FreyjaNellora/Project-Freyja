@@ -2,7 +2,7 @@
 
 > Single source of truth for all `[[wikilink]]` targets in the vault.
 
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-07
 
 ---
 
@@ -45,6 +45,8 @@
 | [[Session-003]] | `masterplan/sessions/Session-003.md` | Stage 0 closure + Stage 1 Board Representation |
 | [[Session-005]] | `masterplan/sessions/Session-005.md` | Stage 2 closure + Stage 3 Game State |
 | [[Session-006]] | `masterplan/sessions/Session-006.md` | Stage 3 closure + Stage 4 Protocol |
+| [[Session-009]] | `masterplan/sessions/Session-009.md` | Stage 7 planning session |
+| [[Session-010]] | `masterplan/sessions/Session-010.md` | Bug fixes, observer tool, UI feature gap analysis |
 
 ---
 
@@ -100,7 +102,10 @@
 
 ## Issues
 
-*None yet — populated as issues are found.*
+| Wikilink | File | Description |
+|----------|------|-------------|
+| [[Issue-UI-Feature-Gaps]] | `masterplan/issues/Issue-UI-Feature-Gaps.md` | UI missing components needed for Stages 7-10 |
+| [[Issue-UI-AutoPlay-Broken]] | `masterplan/issues/Issue-UI-AutoPlay-Broken.md` | Start button does nothing — useEngine render cascade |
 
 ---
 

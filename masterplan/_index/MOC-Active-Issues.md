@@ -2,7 +2,7 @@
 
 > All open bugs, concerns, and tracked items.
 
-**Last scanned:** 2026-02-25 (Session 1)
+**Last scanned:** 2026-03-07 (Session 12)
 
 ---
 
@@ -14,7 +14,7 @@
 
 ## Warning
 
-*None.*
+- [[Issue-UI-Feature-Gaps]] — UI missing Debug Console, Engine Internals needed for Stages 8-10. Prioritized list with Odin source references. (Session 10)
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## Recently Resolved
 
-*None yet — project has not started implementation.*
+- [[Issue-UI-AutoPlay-Broken]] — Start button did nothing. Fixed Session 12: memoized `useEngine()`, destructured stable callbacks, reordered declarations, switched to release binary. (Resolved 2026-03-07)
 
 ---
 

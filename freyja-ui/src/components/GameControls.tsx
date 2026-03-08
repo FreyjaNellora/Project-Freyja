@@ -120,10 +120,10 @@ export default function GameControls({
           </button>
         </div>
         <div className="delay-control">
-          <label>Delay: {engineDelay}ms</label>
+          <label>Delay: {engineDelay >= 1000 ? `${(engineDelay / 1000).toFixed(1)}s` : `${engineDelay}ms`}</label>
           <input
             type="range"
-            min={0}
+            min={100}
             max={5000}
             step={100}
             value={engineDelay}

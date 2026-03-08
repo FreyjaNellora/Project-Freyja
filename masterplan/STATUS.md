@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-07
-**Updated By:** Session 10
+**Updated By:** Session 12
 
 ---
 
 ## Current Stage
 
 **Stage:** 7 (Max^n Search) -- IN PROGRESS
-**Build-Order Step:** 1/10
-**Status:** Stage 6 tagged complete. Beginning Stage 7 implementation.
+**Build-Order Step:** 10/10 (engine complete, UI auto-play verified)
+**Status:** Stage 7 COMPLETE. User green light granted Session 12. Engine plays all 4 sides via UI auto-play, analysis panel shows depth/nodes/NPS/scores/PV.
 
 ---
 
@@ -24,7 +24,7 @@
 | 4 | Freyja Protocol | Complete | `stage-04-complete` / `v1.4` | 2026-03-06 |
 | 5 | UI Shell | Complete | `stage-05-complete` / `v1.5` | 2026-03-06 |
 | 6 | Bootstrap Evaluation | Complete | `stage-06-complete` / `v1.6` | 2026-03-07 |
-| 7 | Max^n Search | In Progress | -- | -- |
+| 7 | Max^n Search | Complete | `stage-07-complete` / `v1.7` | 2026-03-07 |
 | 8 | Quiescence Search | Not Started | -- | -- |
 | 9 | TT + Move Ordering | Not Started | -- | -- |
 | 10 | MCTS | Not Started | -- | -- |
@@ -43,7 +43,13 @@
 
 ## Blocking Issues
 
-None.
+*None.*
+
+---
+
+## Warning Issues
+
+- **[[Issue-UI-Feature-Gaps]]:** UI missing Debug Console, Engine Internals needed for Stage 8-10 development. Prioritized feature list with Odin source references. See `masterplan/issues/Issue-UI-Feature-Gaps.md`.
 
 ---
 
@@ -55,19 +61,25 @@ None.
 | Random playout avg | ~1004 half-moves | 1000 games, seeded LCG |
 | Protocol startup | <1ms | Header output only |
 | eval_4vec() | <100us debug, <50us release | Starting position |
+| Observer: 3 games depth 1 | 198 ply each, stable | No crashes, no infinite loops |
+| Search NPS (release) | ~84k depth 4 | Starting position, 2s budget |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Continue Stage 7 implementation (check HANDOFF.md for current step)
-2. Plan at `.claude/plans/binary-cuddling-rabin.md`
+1. Get user green light on Stage 7 (watch engine play in UI, confirm acceptable)
+2. Complete Stage 7 formalities (post-audit, tag `stage-07-complete` / `v1.7`)
+3. Begin Stage 8 (Quiescence Search) planning
 
 ---
 
 ## Deferred Debt
 
-None.
+- Stage 5 post-audit, downstream log, vault notes
+- Session notes for Sessions 7 and 8
+- Dead code: `apply_move_with_events` in `game_state.rs`
+- Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
 
 ---
 
@@ -76,7 +88,7 @@ None.
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 7 (Stages 0-6) | 2026-03-07 |
-| Open blocking issues | 0 | -- |
-| Open warning issues | 0 | -- |
-| NPS baseline | Not set | -- |
+| Stages complete | 8 (Stages 0-7) | 2026-03-07 |
+| Open blocking issues | 0 | 2026-03-07 |
+| Open warning issues | 1 | 2026-03-07 |
+| NPS baseline | ~84k (release, depth 4) | 2026-03-07 |

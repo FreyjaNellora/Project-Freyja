@@ -1,97 +1,83 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-07
-**Session Number:** 9
+**Session Number:** 12
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 6: Bootstrap Evaluation -- AWAITING USER GREEN LIGHT**
-**Stage 7: Max^n Search -- PLANNED, NOT STARTED**
+**Stage 7: Max^n Search -- IN PROGRESS (awaiting user green light)**
+
+Stage 7 engine search is COMPLETE and VERIFIED in UI. Auto-play works: engine plays all 4 sides, moves chain automatically, analysis panel shows depth/nodes/NPS/scores/PV.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Stage 7 planning session** — full implementation plan created
-   - Read AGENT_CONDUCT.md, all upstream API contracts, existing codebase
-   - Identified critical issue: `make_move` doesn't update `king_squares` on king capture — search needs `piece_at` check for mid-tree elimination detection
-   - Designed 10-step build order, type definitions, algorithm structure
-   - User chose hybrid beam ordering (MVV-LVA pre-filter → eval_scalar on top 15)
-2. **Session note** created: `masterplan/sessions/Session-009.md`
+1. **Fixed UI auto-play bug ([[Issue-UI-AutoPlay-Broken]]):**
+   - Memoized `useEngine()` return with `useMemo` (stops new object identity every render)
+   - Destructured stable callbacks (`engineSendCommand`, `engineOnMessage`) from engine object
+   - Moved `sendGoFromRef` definition above `setAutoPlay` (fixed const temporal dead zone)
+   - Made all UI control setters update refs synchronously (prevents React batching stale reads)
+   - Removed `sendGoRef` ref indirection (no longer needed with stable callbacks)
+   - Added `console.error` to catch handlers for error visibility
+   - Added try/catch to `spawnEngine` for visible spawn failures
+
+2. **Fixed engine binary path resolution:**
+   - Tauri backend now prefers release builds over debug (debug is too slow for search time budgets)
+   - Release engine: ~84k NPS, depth 4 in ~1.5s with 2s budget
+   - Debug engine: ~11k NPS, depth 4 takes 15+ seconds (search abort doesn't respect time limit)
+
+3. **Updated project status:**
+   - Marked [[Issue-UI-AutoPlay-Broken]] as resolved
+   - Updated STATUS.md, MOC-Active-Issues.md
+   - Zero blocking issues remaining
 
 ---
 
 ## What Was NOT Completed
 
-- User green light for Stage 6
-- Git tag `stage-06-complete` / `v1.6`
-- Any Stage 7 code
-- Stage 5 deferred: post-audit, downstream_log, vault notes
-- Session notes for Sessions 7 and 8
-
----
-
-## Stage 7 Implementation Plan
-
-**Full plan at:** `.claude/plans/binary-cuddling-rabin.md`
-
-**10-step build order (summary):**
-1. Searcher trait + types (SearchLimits, SearchResult, SearchConfig, MaxnSearcher)
-2. Score vector utilities + elimination detection helpers
-3. Basic Max^n (no beam, depth 1-3, all moves expanded)
-4. Beam search integration (hybrid MVV-LVA → eval_scalar ordering)
-5. Iterative deepening wrapper
-6. Shallow pruning (Korf 1991)
-7. Negamax fallback (2-player endgame, alpha-beta)
-8. PV tracking (triangular table)
-9. Time/node limits
-10. Protocol integration (replace handle_go stub)
-
-**Key design decisions:**
-- `Searcher` trait: `fn search(&self, state: &mut GameState, limits: &SearchLimits) -> SearchResult`
-- `MaxnSearcher<E: Evaluator>` generic, owns evaluator
-- Mid-search elimination: check `board.piece_at(Square(board.king_square(p)))` since `make_move` doesn't update `king_squares`
-- Depth NOT decremented for eliminated player skip
-- `format_info` signature changes from `[u16; 4]` to `[i16; 4]`
-
-**Files to modify:** `search.rs` (primary), `protocol/mod.rs`, `protocol/output.rs`
-
----
-
-## Open Issues / Discoveries
-
-- **S06-F01 (NOTE):** Mobility uses piece-type heuristic, not actual legal move count
-- **S06-F02 (NOTE):** PST values for opposite-side pairs differ by up to ~50cp due to 14x14 asymmetric geometry
-- **S06-F03 (NOTE):** Bishop value 450cp (user override)
-
----
-
-## Files Created/Modified This Session
-
-| File | Action |
-|------|--------|
-| `masterplan/sessions/Session-009.md` | Created — planning session note |
-| `masterplan/HANDOFF.md` | Rewritten |
-| `.claude/plans/binary-cuddling-rabin.md` | Created — full Stage 7 implementation plan |
+- Stage 7 formal completion (post-audit, tagging, user green light)
+- Git commits for changes
+- Stage 5 deferred debt (post-audit, downstream_log, vault notes)
+- Session notes for Sessions 7, 8, 11, 12
+- Debug build search time abort bug (deferred — only affects debug, release works)
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Read this HANDOFF
-2. Get user green light on Stage 6
-3. Tag `stage-06-complete` / `v1.6`
-4. Read the Stage 7 plan at `.claude/plans/binary-cuddling-rabin.md`
-5. Begin Stage 7 Step 1: Searcher trait + type definitions
-6. Fill Stage 5 deferred work if time allows
+1. Get user green light on Stage 7 (watch engine play in UI)
+2. Complete Stage 7 formalities (post-audit, tag `stage-07-complete` / `v1.7`)
+3. Begin Stage 8 (Quiescence Search) planning
+
+---
+
+## Open Issues / Discoveries
+
+- **[[Issue-UI-Feature-Gaps]] (WARNING):** UI missing Debug Console, Engine Internals needed for Stages 8-10.
+- **Search time abort bug (NOTE):** Debug build doesn't respect 2s time budget at depth 4+ (only matters for debug, release works correctly). Root cause: `should_abort()` uses `nodes & 1023 == 0` optimization that can skip time checks between depth iterations.
+
+---
+
+## Files Modified This Session
+
+| File | Action |
+|------|--------|
+| `freyja-ui/src/hooks/useEngine.ts` | Memoized return, error handling on spawn |
+| `freyja-ui/src/hooks/useGameState.ts` | Full auto-play fix (destructure, reorder, stable deps, ref sync) |
+| `freyja-ui/src-tauri/src/engine.rs` | Prefer release binary path |
+| `masterplan/issues/Issue-UI-AutoPlay-Broken.md` | Marked resolved |
+| `masterplan/STATUS.md` | Updated (no blocking issues) |
+| `masterplan/_index/MOC-Active-Issues.md` | Updated |
+| `masterplan/HANDOFF.md` | Rewritten |
 
 ---
 
 ## Deferred Debt
 
-- Stage 5 post-audit (audit_log_stage_05.md post-audit section)
-- Stage 5 downstream log (downstream_log_stage_05.md)
-- Stage 5 vault notes (components, connections, patterns)
-- Session notes for Sessions 7 and 8
+- Stage 5 post-audit, downstream log, vault notes
+- Session notes for Sessions 7, 8, 11, 12
+- Remove dead code: `apply_move_with_events` in `game_state.rs`
+- Debug build search time abort bug

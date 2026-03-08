@@ -12,9 +12,8 @@ pub mod parse;
 
 use std::io::{BufRead, Write};
 
-use crate::board::types::Player;
 use crate::eval::BootstrapEvaluator;
-use crate::game_state::{GameState, PlayerStatus};
+use crate::game_state::GameState;
 use crate::move_gen::Move;
 use crate::search::{MaxnSearcher, SearchConfig, SearchLimits, Searcher};
 
@@ -23,8 +22,7 @@ use self::logfile::LogFile;
 use self::notation::parse_move_str;
 use self::options::{EngineOptions, SetOptionResult, apply_option};
 use self::output::{
-    format_bestmove, format_eliminated, format_error, format_info, format_info_string,
-    format_nextturn,
+    format_bestmove, format_error, format_info, format_info_string, format_nextturn,
 };
 use self::parse::parse_command;
 
@@ -118,12 +116,13 @@ impl<W: Write> Protocol<W> {
         self.ply_count = 0;
         self.position_set = true;
 
-        // Apply moves
+        // Apply moves silently (no per-move events during replay).
         for move_str in &moves {
             let legal = self.game_state.legal_moves();
             match parse_move_str(move_str, &legal) {
                 Ok(mv) => {
-                    self.apply_move_with_events(mv);
+                    self.game_state.apply_move(mv);
+                    self.ply_count += 1;
                 }
                 Err(e) => {
                     let msg = format_error(&format!("in position moves: {e}"));
@@ -131,6 +130,12 @@ impl<W: Write> Protocol<W> {
                     return;
                 }
             }
+        }
+
+        // Emit current turn so UI knows whose move it is after replay
+        if !moves.is_empty() && !self.game_state.is_game_over() {
+            let msg = format_nextturn(self.game_state.current_player());
+            self.send(&msg);
         }
     }
 
@@ -171,24 +176,35 @@ impl<W: Write> Protocol<W> {
             return;
         }
 
-        // Run real search
+        // Run real search — default to 2s time budget if no constraints given
+        let no_constraints = params.depth.is_none()
+            && params.nodes.is_none()
+            && params.movetime.is_none()
+            && !params.infinite;
         let limits = SearchLimits {
             max_depth: params.depth,
             max_nodes: params.nodes,
-            max_time_ms: params.movetime,
+            max_time_ms: if no_constraints { Some(2000) } else { params.movetime },
             infinite: params.infinite,
         };
 
         let mut searcher = MaxnSearcher::new(BootstrapEvaluator::new(), SearchConfig::default());
+        let start = std::time::Instant::now();
         let result = searcher.search(&mut self.game_state, &limits);
+        let elapsed_ms = start.elapsed().as_millis() as u64;
 
         // Send info line
+        let nps = if elapsed_ms > 0 {
+            Some(result.nodes * 1000 / elapsed_ms)
+        } else {
+            None
+        };
         let pv_slice: &[Move] = &result.pv;
         let info = format_info(
             Some(result.depth),
             Some(result.scores),
             Some(result.nodes),
-            None,
+            nps,
             Some(pv_slice),
         );
         self.send(&info);
@@ -221,39 +237,6 @@ impl<W: Write> Protocol<W> {
         }
     }
 
-    /// Apply a move, emitting elimination and turn events.
-    fn apply_move_with_events(&mut self, mv: Move) {
-        // Snapshot player statuses before apply
-        let statuses_before: [PlayerStatus; 4] = [
-            self.game_state.player_status(Player::Red),
-            self.game_state.player_status(Player::Blue),
-            self.game_state.player_status(Player::Yellow),
-            self.game_state.player_status(Player::Green),
-        ];
-
-        self.game_state.apply_move(mv);
-        self.ply_count += 1;
-
-        // Check for elimination events
-        for (i, player) in Player::all().iter().enumerate() {
-            let before = statuses_before[i];
-            let after = self.game_state.player_status(*player);
-            if before != PlayerStatus::Eliminated && after == PlayerStatus::Eliminated {
-                let reason = match before {
-                    PlayerStatus::DeadKingWalking => "dkw",
-                    _ => "checkmate",
-                };
-                let msg = format_eliminated(*player, reason);
-                self.send(&msg);
-            }
-        }
-
-        // Emit turn event
-        if !self.game_state.is_game_over() {
-            let msg = format_nextturn(self.game_state.current_player());
-            self.send(&msg);
-        }
-    }
 }
 
 #[cfg(test)]
@@ -392,8 +375,12 @@ mod tests {
     }
 
     #[test]
-    fn test_nextturn_after_position_move() {
+    fn test_position_replay_emits_final_state() {
+        // Position replay emits a single nextturn for final state (not per-move)
         let output = run_protocol("position startpos moves d2d4\nquit\n");
-        assert!(output.contains("info string nextturn Blue"));
+        // Should have exactly one nextturn (the final state after d2d4)
+        let nextturn_count = output.matches("info string nextturn").count();
+        assert_eq!(nextturn_count, 1, "Expected exactly 1 nextturn, got {nextturn_count}");
+        assert!(output.contains("info string nextturn Blue"), "After Red's d2d4, Blue should be next");
     }
 }

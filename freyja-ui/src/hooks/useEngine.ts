@@ -2,7 +2,7 @@
 // Manages spawning, command sending, and stdout event listening.
 // Generation tagging prevents stale events from killed engine processes.
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { EngineMessage } from '../types/protocol';
@@ -70,12 +70,17 @@ export function useEngine(): UseEngineResult {
   }, []);
 
   const spawnEngine = useCallback(async () => {
-    const gen = await invoke<number>('spawn_engine');
-    engineGenRef.current = gen;
-    setIsConnected(true);
-    // Freyja protocol init sequence
-    await invoke('send_command', { cmd: 'freyja' });
-    await invoke('send_command', { cmd: 'isready' });
+    try {
+      const gen = await invoke<number>('spawn_engine');
+      engineGenRef.current = gen;
+      setIsConnected(true);
+      // Freyja protocol init sequence
+      await invoke('send_command', { cmd: 'freyja' });
+      await invoke('send_command', { cmd: 'isready' });
+    } catch (err) {
+      console.error('[Freyja] Failed to spawn engine:', err);
+      setIsConnected(false);
+    }
   }, []);
 
   const sendCommand = useCallback(async (cmd: string) => {
@@ -94,7 +99,7 @@ export function useEngine(): UseEngineResult {
     messageHandlerRef.current = handler;
   }, []);
 
-  return {
+  return useMemo(() => ({
     isConnected,
     rawLog,
     lastMessage,
@@ -102,5 +107,5 @@ export function useEngine(): UseEngineResult {
     sendCommand,
     killEngine,
     onMessage,
-  };
+  }), [isConnected, rawLog, lastMessage, spawnEngine, sendCommand, killEngine, onMessage]);
 }

@@ -250,7 +250,13 @@ impl std::fmt::Display for Move {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}", self.from_sq(), self.to_sq())?;
         if let Some(promo) = self.promotion() {
-            write!(f, "{}", promo.char().to_ascii_lowercase())?;
+            // Use protocol notation (q/r/b/n), not PieceType::char() which
+            // maps PromotedQueen to 'D'. Protocol expects 'q' for queen promo.
+            let c = match promo {
+                PieceType::PromotedQueen => 'q',
+                _ => promo.char().to_ascii_lowercase(),
+            };
+            write!(f, "{c}")?;
         }
         Ok(())
     }
@@ -989,6 +995,24 @@ mod tests {
         let mv = Move::new_promotion(from, to, Some(PieceType::Rook), PieceType::PromotedQueen);
         assert_eq!(mv.promotion(), Some(PieceType::PromotedQueen));
         assert_eq!(mv.captured(), Some(PieceType::Rook));
+    }
+
+    #[test]
+    fn test_promotion_display_uses_protocol_notation() {
+        // PromotedQueen must display as 'q' (protocol), not 'd' (PieceType::char)
+        let from = Square::new(7, 5).unwrap();
+        let to = Square::new(8, 5).unwrap();
+        let mv = Move::new_promotion(from, to, None, PieceType::PromotedQueen);
+        let s = format!("{mv}");
+        assert!(s.ends_with('q'), "Expected 'q' suffix, got: {s}");
+
+        // Other promotions should also be correct
+        let mv_r = Move::new_promotion(from, to, None, PieceType::Rook);
+        assert!(format!("{mv_r}").ends_with('r'));
+        let mv_b = Move::new_promotion(from, to, None, PieceType::Bishop);
+        assert!(format!("{mv_b}").ends_with('b'));
+        let mv_n = Move::new_promotion(from, to, None, PieceType::Knight);
+        assert!(format!("{mv_n}").ends_with('n'));
     }
 
     #[test]

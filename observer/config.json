@@ -1,0 +1,7 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 3,
+  "depth": 4,
+  "max_ply": 400,
+  "output_dir": "reports"
+}

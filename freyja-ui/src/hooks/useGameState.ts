@@ -53,6 +53,11 @@ export interface UseGameStateResult {
 }
 
 export function useGameState(engine: UseEngineResult): UseGameStateResult {
+  // Destructure stable callbacks — these are useCallback([]) and never change.
+  // Using them directly in dependency arrays prevents the cascade where
+  // a new `engine` object identity causes all dependent callbacks to churn.
+  const { sendCommand: engineSendCommand, onMessage: engineOnMessage } = engine;
+
   // --- Display state ---
   const [board, setBoard] = useState<(Piece | null)[]>(() => startingPosition());
   const [currentPlayer, setCurrentPlayer] = useState<Player>('Red');
@@ -69,12 +74,12 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: number; to: number } | null>(null);
 
   // --- Controls state ---
-  const [slotConfig, setSlotConfig] = useState<SlotConfig>({
+  const [slotConfig, setSlotConfigState] = useState<SlotConfig>({
     Red: 'human', Blue: 'engine', Yellow: 'engine', Green: 'engine',
   });
-  const [autoPlay, setAutoPlay] = useState(false);
-  const [engineDelay, setEngineDelay] = useState(500);
-  const [isPaused, setIsPaused] = useState(false);
+  const [autoPlay, setAutoPlayState] = useState(false);
+  const [engineDelay, setEngineDelayState] = useState(500);
+  const [isPaused, setIsPausedState] = useState(false);
 
   // --- Refs for async access ---
   const boardRef = useRef(board);
@@ -90,13 +95,67 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   const slotConfigRef = useRef(slotConfig);
   const gameGenRef = useRef(0);
 
-  // Keep refs in sync
+  // Keep board/currentPlayer refs in sync via useEffect (these are set internally, not from UI callbacks)
   useEffect(() => { boardRef.current = board; }, [board]);
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
-  useEffect(() => { autoPlayRef.current = autoPlay; }, [autoPlay]);
-  useEffect(() => { engineDelayRef.current = engineDelay; }, [engineDelay]);
-  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
-  useEffect(() => { slotConfigRef.current = slotConfig; }, [slotConfig]);
+
+  // --- Send go command (single entry point with guard) ---
+  const sendGoFromRef = useCallback(() => {
+    if (awaitingBestmoveRef.current) return;
+    awaitingBestmoveRef.current = true;
+
+    const moves = [...moveListRef.current];
+    const posCmd = moves.length > 0
+      ? `position startpos moves ${moves.join(' ')}`
+      : 'position startpos';
+
+    engineSendCommand(posCmd).then(() => {
+      return engineSendCommand('go');
+    }).catch((err: unknown) => {
+      console.error('[Freyja] sendGo failed:', err);
+      awaitingBestmoveRef.current = false;
+      // Use ref to avoid circular dependency: sendGoFromRef -> setAutoPlay -> sendGoFromRef
+      autoPlayRef.current = false;
+      setAutoPlayState(false);
+    });
+  }, [engineSendCommand]);
+
+  // All UI control setters update BOTH state AND ref synchronously.
+  // This prevents React batching from causing stale ref reads in effects.
+  const setSlotConfig = useCallback((config: SlotConfig) => {
+    setSlotConfigState(config);
+    slotConfigRef.current = config;
+  }, []);
+
+  const setAutoPlay = useCallback((on: boolean) => {
+    setAutoPlayState(on);
+    autoPlayRef.current = on;
+    // Directly kick off the first engine move when auto-play is turned on.
+    if (on && !isPausedRef.current && !awaitingBestmoveRef.current) {
+      const player = currentPlayerRef.current;
+      if (slotConfigRef.current[player] === 'engine') {
+        const gen = gameGenRef.current;
+        const delay = engineDelayRef.current;
+        setTimeout(() => {
+          if (gen !== gameGenRef.current) return;
+          if (autoPlayRef.current && !isPausedRef.current) {
+            sendGoFromRef();
+          }
+        }, delay);
+      }
+    }
+  }, [sendGoFromRef]);
+
+  const setEngineDelay = useCallback((ms: number) => {
+    const clamped = Math.max(100, ms);
+    setEngineDelayState(clamped);
+    engineDelayRef.current = clamped;
+  }, []);
+
+  const setIsPaused = useCallback((paused: boolean) => {
+    setIsPausedState(paused);
+    isPausedRef.current = paused;
+  }, []);
 
   // --- Move string parser (greedy longest-match for multi-digit ranks) ---
   const parseMoveString = useCallback((moveStr: string): { from: number; to: number; promo: string } | null => {
@@ -224,28 +283,6 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     return from; // All eliminated (shouldn't happen)
   }, []);
 
-  // --- Send go command (single entry point with guard) ---
-  const sendGoFromRef = useCallback(() => {
-    if (awaitingBestmoveRef.current) {
-      console.warn('go blocked: already awaiting bestmove');
-      return;
-    }
-    awaitingBestmoveRef.current = true;
-
-    const moves = [...moveListRef.current];
-    const posCmd = moves.length > 0
-      ? `position startpos moves ${moves.join(' ')}`
-      : 'position startpos';
-
-    engine.sendCommand(posCmd).then(() => {
-      engine.sendCommand('go depth 1');
-    }).catch(() => {
-      awaitingBestmoveRef.current = false;
-      autoPlayRef.current = false;
-      setAutoPlay(false);
-    });
-  }, [engine]);
-
   // --- Public request to trigger engine move ---
   const requestEngineMove = useCallback(() => {
     if (isPausedRef.current) return;
@@ -259,7 +296,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     if (slotConfigRef.current[nextPlayer] !== 'engine') return;
 
     const gen = gameGenRef.current;
-    const delay = autoPlayRef.current ? engineDelayRef.current : 100;
+    const delay = engineDelayRef.current;
     setTimeout(() => {
       // Bail if game was reset since this timeout was queued
       if (gen !== gameGenRef.current) return;
@@ -271,7 +308,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
 
   // --- Handle engine messages ---
   useEffect(() => {
-    engine.onMessage((msg: EngineMessage) => {
+    engineOnMessage((msg: EngineMessage) => {
       if (msg.type === 'bestmove') {
         // Stale move discard
         if (ignoreNextBestmoveRef.current) {
@@ -344,7 +381,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
         setPlayerStatus((prev) => ({ ...prev, [msg.player]: 'Eliminated' as PlayerStatus }));
       }
     });
-  }, [engine, applyMoveToBoard, advancePlayer, maybeChainEngineMove]);
+  }, [engineOnMessage, applyMoveToBoard, advancePlayer, maybeChainEngineMove, setAutoPlay]);
 
   // --- Square click handler ---
   const onSquareClick = useCallback((sq: number) => {
@@ -408,13 +445,12 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     const moves = [...moveListRef.current, moveStr];
     const posCmd = `position startpos moves ${moves.join(' ')}`;
 
-    engine.sendCommand(posCmd).then(() => {
-      return engine.sendCommand('isready');
+    engineSendCommand(posCmd).then(() => {
+      return engineSendCommand('isready');
     }).then(() => {
       // If we get readyok, the move was accepted
-      // The move is now pending — we'll get readyok back
-    }).catch(() => {
-      // Move rejected
+    }).catch((err: unknown) => {
+      console.error('[Freyja] submitMove failed:', err);
       setSelectedSquare(null);
     });
 
@@ -451,7 +487,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
         if (gen === gameGenRef.current) sendGoFromRef();
       }, engineDelayRef.current);
     }
-  }, [engine, applyMoveToBoard, advancePlayer, sendGoFromRef]);
+  }, [engineSendCommand, applyMoveToBoard, advancePlayer, sendGoFromRef]);
 
   // --- Promotion handlers ---
   const onPromotionSelect = useCallback((piece: 'q' | 'r' | 'b' | 'n') => {
@@ -473,12 +509,11 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
 
     // Stop auto-play first to prevent queued timeouts from re-triggering
     setAutoPlay(false);
-    autoPlayRef.current = false;
 
     // If a search is in flight, discard the response
     if (awaitingBestmoveRef.current) {
       ignoreNextBestmoveRef.current = true;
-      engine.sendCommand('stop');
+      engineSendCommand('stop');
     }
     awaitingBestmoveRef.current = false;
 
@@ -499,14 +534,12 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     setPlayerStatus({ Red: 'Active', Blue: 'Active', Yellow: 'Active', Green: 'Active' });
     eliminatedPlayersRef.current = new Set();
     setSlotConfig({ Red: 'human', Blue: 'engine', Yellow: 'engine', Green: 'engine' });
-    slotConfigRef.current = { Red: 'human', Blue: 'engine', Yellow: 'engine', Green: 'engine' };
     setPendingPromotion(null);
     setIsPaused(false);
-    isPausedRef.current = false;
 
-    engine.sendCommand('position startpos');
-    engine.sendCommand('isready');
-  }, [engine]);
+    engineSendCommand('position startpos');
+    engineSendCommand('isready');
+  }, [engineSendCommand, setAutoPlay, setSlotConfig, setIsPaused]);
 
   // --- Undo ---
   const undo = useCallback(() => {
@@ -543,38 +576,25 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
 
     // Sync engine state
     if (newMoves.length > 0) {
-      engine.sendCommand(`position startpos moves ${newMoves.join(' ')}`);
+      engineSendCommand(`position startpos moves ${newMoves.join(' ')}`);
     } else {
-      engine.sendCommand('position startpos');
+      engineSendCommand('position startpos');
     }
-    engine.sendCommand('isready');
-  }, [engine, applyMoveToBoard, advancePlayer]);
+    engineSendCommand('isready');
+  }, [engineSendCommand, applyMoveToBoard, advancePlayer]);
 
   // --- Pause toggle ---
   const togglePause = useCallback(() => {
-    setIsPaused((prev) => {
-      const next = !prev;
-      isPausedRef.current = next;
-      if (!next && autoPlayRef.current) {
-        // Resuming — kick off next move
-        const player = currentPlayerRef.current;
-        if (slotConfigRef.current[player] === 'engine') {
-          setTimeout(() => sendGoFromRef(), engineDelayRef.current);
-        }
-      }
-      return next;
-    });
-  }, [sendGoFromRef]);
-
-  // --- Auto-play start: trigger first engine move when turned on or slots change ---
-  useEffect(() => {
-    if (autoPlay && !isPaused && !awaitingBestmoveRef.current) {
+    const next = !isPausedRef.current;
+    setIsPaused(next);
+    if (!next && autoPlayRef.current) {
+      // Resuming — kick off next move
       const player = currentPlayerRef.current;
       if (slotConfigRef.current[player] === 'engine') {
-        sendGoFromRef();
+        setTimeout(() => sendGoFromRef(), engineDelayRef.current);
       }
     }
-  }, [autoPlay, isPaused, slotConfig, sendGoFromRef]);
+  }, [setIsPaused, sendGoFromRef]);
 
   return {
     board,
