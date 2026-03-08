@@ -1,63 +1,64 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-07
-**Session Number:** 12
+**Session Number:** 13
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 7: Max^n Search -- IN PROGRESS (awaiting user green light)**
+**Stage 8: Quiescence Search -- COMPLETE (user green light granted)**
 
-Stage 7 engine search is COMPLETE and VERIFIED in UI. Auto-play works: engine plays all 4 sides, moves chain automatically, analysis panel shows depth/nodes/NPS/scores/PV.
+Stage 8 is fully implemented and verified. Quiescence search added to both Max^n and negamax paths. Engine plays depth 4 consistently with min depth guarantee.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Fixed UI auto-play bug ([[Issue-UI-AutoPlay-Broken]]):**
-   - Memoized `useEngine()` return with `useMemo` (stops new object identity every render)
-   - Destructured stable callbacks (`engineSendCommand`, `engineOnMessage`) from engine object
-   - Moved `sendGoFromRef` definition above `setAutoPlay` (fixed const temporal dead zone)
-   - Made all UI control setters update refs synchronously (prevents React batching stale reads)
-   - Removed `sendGoRef` ref indirection (no longer needed with stable callbacks)
-   - Added `console.error` to catch handlers for error visibility
-   - Added try/catch to `spawnEngine` for visible spawn failures
+1. **Stage 8: Quiescence Search (full implementation):**
+   - `generate_captures_only()` in `move_gen.rs` — pseudo-legal filter + selective validation
+   - `qsearch()` — Max^n quiescence with root-player capture filter, stand-pat, delta pruning
+   - `qsearch_2p()` — Standard alpha-beta quiescence for negamax fallback
+   - `qsearch_2p_entry()` — Bridge from scalar qsearch to Score4
+   - Integration at depth 0 in both `maxn()` and `negamax_2p()`
+   - `MIN_SEARCH_DEPTH = 4` with `suspend_time_check` to guarantee depth 4
+   - Default time budget increased from 2s to 5s
+   - Separate `qnodes` tracking in `SearchState`, `SearchResult`, and info strings
+   - 8 new unit tests including hanging queen detection
+   - Fixed pre-existing test bug in `test_all_four_players_can_move_via_protocol`
 
-2. **Fixed engine binary path resolution:**
-   - Tauri backend now prefers release builds over debug (debug is too slow for search time budgets)
-   - Release engine: ~84k NPS, depth 4 in ~1.5s with 2s budget
-   - Debug engine: ~11k NPS, depth 4 takes 15+ seconds (search abort doesn't respect time limit)
-
-3. **Updated project status:**
-   - Marked [[Issue-UI-AutoPlay-Broken]] as resolved
-   - Updated STATUS.md, MOC-Active-Issues.md
-   - Zero blocking issues remaining
+2. **Stage 8 formalities:**
+   - Audit log (`masterplan/audit_log_stage_08.md`)
+   - Downstream log (`masterplan/downstream_log_stage_08.md`)
+   - Session note (`masterplan/sessions/Session-013.md`)
+   - STATUS.md and HANDOFF.md updated
+   - Tagged `stage-08-complete` / `v1.8`
 
 ---
 
 ## What Was NOT Completed
 
-- Stage 7 formal completion (post-audit, tagging, user green light)
-- Git commits for changes
 - Stage 5 deferred debt (post-audit, downstream_log, vault notes)
 - Session notes for Sessions 7, 8, 11, 12
-- Debug build search time abort bug (deferred — only affects debug, release works)
+- Remove dead code: `apply_move_with_events` in `game_state.rs`
+- Debug build search time abort bug
+- Bootstrap eval tuning (pawn-heavy play) — deferred to NNUE Stages 15-17
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Get user green light on Stage 7 (watch engine play in UI)
-2. Complete Stage 7 formalities (post-audit, tag `stage-07-complete` / `v1.7`)
-3. Begin Stage 8 (Quiescence Search) planning
+1. Begin Stage 9 (TT + Move Ordering) planning
+2. Read `masterplan/downstream_log_stage_08.md` for API contracts
+3. Consider whether MVV-LVA ordering should apply to quiescence captures
 
 ---
 
 ## Open Issues / Discoveries
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** UI missing Debug Console, Engine Internals needed for Stages 8-10.
-- **Search time abort bug (NOTE):** Debug build doesn't respect 2s time budget at depth 4+ (only matters for debug, release works correctly). Root cause: `should_abort()` uses `nodes & 1023 == 0` optimization that can skip time checks between depth iterations.
+- **Search time abort bug (NOTE):** Debug build doesn't respect time budget at depth 4+ (only affects debug, release works).
+- **Pawn-heavy play (NOTE):** Bootstrap eval territory/pawn weights too high. Not a quiescence issue. Deferred to NNUE.
 
 ---
 
@@ -65,12 +66,15 @@ Stage 7 engine search is COMPLETE and VERIFIED in UI. Auto-play works: engine pl
 
 | File | Action |
 |------|--------|
-| `freyja-ui/src/hooks/useEngine.ts` | Memoized return, error handling on spawn |
-| `freyja-ui/src/hooks/useGameState.ts` | Full auto-play fix (destructure, reorder, stable deps, ref sync) |
-| `freyja-ui/src-tauri/src/engine.rs` | Prefer release binary path |
-| `masterplan/issues/Issue-UI-AutoPlay-Broken.md` | Marked resolved |
-| `masterplan/STATUS.md` | Updated (no blocking issues) |
-| `masterplan/_index/MOC-Active-Issues.md` | Updated |
+| `freyja-engine/src/search.rs` | Quiescence search, min depth guarantee, qnode tracking |
+| `freyja-engine/src/move_gen.rs` | `generate_captures_only()` |
+| `freyja-engine/src/protocol/output.rs` | qnodes in info string |
+| `freyja-engine/src/protocol/mod.rs` | Pass qnodes, 5s default budget |
+| `freyja-engine/tests/protocol_integration.rs` | Fixed nextturn test bug |
+| `masterplan/audit_log_stage_08.md` | Created |
+| `masterplan/downstream_log_stage_08.md` | Created |
+| `masterplan/sessions/Session-013.md` | Created |
+| `masterplan/STATUS.md` | Updated |
 | `masterplan/HANDOFF.md` | Rewritten |
 
 ---

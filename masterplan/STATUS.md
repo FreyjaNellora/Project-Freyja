@@ -1,15 +1,14 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-07
-**Updated By:** Session 12
+**Updated By:** Session 13
 
 ---
 
 ## Current Stage
 
-**Stage:** 7 (Max^n Search) -- IN PROGRESS
-**Build-Order Step:** 10/10 (engine complete, UI auto-play verified)
-**Status:** Stage 7 COMPLETE. User green light granted Session 12. Engine plays all 4 sides via UI auto-play, analysis panel shows depth/nodes/NPS/scores/PV.
+**Stage:** 8 (Quiescence Search) -- COMPLETE
+**Status:** Stage 8 COMPLETE. User green light granted Session 13. Quiescence search added to both Max^n and negamax paths. Root-player captures, delta pruning, depth cap 4, min depth guarantee. Engine verified in UI at depth 4.
 
 ---
 
@@ -25,7 +24,7 @@
 | 5 | UI Shell | Complete | `stage-05-complete` / `v1.5` | 2026-03-06 |
 | 6 | Bootstrap Evaluation | Complete | `stage-06-complete` / `v1.6` | 2026-03-07 |
 | 7 | Max^n Search | Complete | `stage-07-complete` / `v1.7` | 2026-03-07 |
-| 8 | Quiescence Search | Not Started | -- | -- |
+| 8 | Quiescence Search | Complete | `stage-08-complete` / `v1.8` | 2026-03-07 |
 | 9 | TT + Move Ordering | Not Started | -- | -- |
 | 10 | MCTS | Not Started | -- | -- |
 | 11 | Max^n -> MCTS Integration | Not Started | -- | -- |
@@ -62,15 +61,16 @@
 | Protocol startup | <1ms | Header output only |
 | eval_4vec() | <100us debug, <50us release | Starting position |
 | Observer: 3 games depth 1 | 198 ply each, stable | No crashes, no infinite loops |
-| Search NPS (release) | ~84k depth 4 | Starting position, 2s budget |
+| Search NPS (release, pre-qsearch) | ~84k depth 4 | Starting position, 2s budget |
+| Search NPS (release, post-qsearch) | ~33-60k depth 4 | Starting position, 5s budget, min depth 4 |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Get user green light on Stage 7 (watch engine play in UI, confirm acceptable)
-2. Complete Stage 7 formalities (post-audit, tag `stage-07-complete` / `v1.7`)
-3. Begin Stage 8 (Quiescence Search) planning
+1. Begin Stage 9 (TT + Move Ordering) planning
+2. Read `masterplan/downstream_log_stage_08.md` for API contracts
+3. Address deferred debt if time allows
 
 ---
 
@@ -88,7 +88,7 @@
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 8 (Stages 0-7) | 2026-03-07 |
+| Stages complete | 9 (Stages 0-8) | 2026-03-07 |
 | Open blocking issues | 0 | 2026-03-07 |
 | Open warning issues | 1 | 2026-03-07 |
-| NPS baseline | ~84k (release, depth 4) | 2026-03-07 |
+| NPS baseline | ~33-60k (release, depth 4, qsearch) | 2026-03-07 |
