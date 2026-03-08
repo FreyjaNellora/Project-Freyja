@@ -14,6 +14,10 @@ use crate::game_state::GameState;
 use crate::move_gen::{
     MAX_MOVES, Move, generate_captures_only, generate_legal_moves, make_move, unmake_move,
 };
+use crate::move_order::{
+    HistoryTable, KillerTable, order_captures_mvv_lva, order_moves, score_move,
+};
+use crate::tt::{DEFAULT_TT_SIZE_MB, TTFlag, TranspositionTable};
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -82,6 +86,10 @@ pub struct SearchResult {
     pub qnodes: u64,
     /// Principal variation (best line of play).
     pub pv: ArrayVec<Move, MAX_DEPTH>,
+    /// TT hit rate as percentage (0.0 - 100.0).
+    pub tt_hit_rate: f64,
+    /// Killer move hit rate as percentage (0.0 - 100.0).
+    pub killer_hit_rate: f64,
 }
 
 // ─── Search Configuration ──────────────────────────────────────────────────
@@ -93,6 +101,8 @@ pub struct SearchConfig {
     pub beam_width: usize,
     /// Sum bound for Korf shallow pruning.
     pub sum_bound: i32,
+    /// Transposition table size in megabytes.
+    pub tt_size_mb: usize,
 }
 
 impl Default for SearchConfig {
@@ -100,6 +110,7 @@ impl Default for SearchConfig {
         Self {
             beam_width: DEFAULT_BEAM_WIDTH,
             sum_bound: DEFAULT_SUM_BOUND,
+            tt_size_mb: DEFAULT_TT_SIZE_MB,
         }
     }
 }
@@ -128,12 +139,28 @@ pub trait Searcher {
 pub struct MaxnSearcher<E: Evaluator> {
     evaluator: E,
     config: SearchConfig,
+    tt: TranspositionTable,
+    killers: KillerTable,
+    history: HistoryTable,
 }
 
 impl<E: Evaluator> MaxnSearcher<E> {
     /// Create a new MaxnSearcher with the given evaluator and config.
     pub fn new(evaluator: E, config: SearchConfig) -> Self {
-        Self { evaluator, config }
+        let tt = TranspositionTable::new(config.tt_size_mb);
+        Self {
+            evaluator,
+            config,
+            tt,
+            killers: KillerTable::new(),
+            history: HistoryTable::new(),
+        }
+    }
+
+    /// Extract the history table for MCTS Progressive History warm-start.
+    /// Required by ADR-007 for Stage 11 hybrid controller.
+    pub fn history_table(&self) -> &HistoryTable {
+        &self.history
     }
 }
 
@@ -266,18 +293,22 @@ impl<E: Evaluator> MaxnSearcher<E> {
         scores
     }
 
-    /// Hybrid beam selection: MVV-LVA pre-filter then eval_scalar on top candidates.
+    /// Hybrid beam selection with TT-aware move ordering.
     ///
     /// 1. Generate all legal moves
-    /// 2. Score cheaply with MVV-LVA (capture value + promotion bonus)
+    /// 2. Score with move ordering heuristics (TT move, MVV-LVA, killers, history)
     /// 3. Pre-sort, take top BEAM_CANDIDATES
     /// 4. For those candidates: make_move, eval_scalar, unmake_move
     /// 5. Re-sort by eval, take top beam_width
+    ///
+    /// The TT best move is always included in the candidate set.
     fn beam_select(
         &self,
         state: &mut GameState,
         player: Player,
         beam_width: usize,
+        tt_move: Option<Move>,
+        ply: usize,
     ) -> ArrayVec<Move, MAX_MOVES> {
         let board = state.board_mut();
         let all_moves = generate_legal_moves(board);
@@ -288,27 +319,28 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         let effective_beam = beam_width.min(all_moves.len()).max(1);
 
-        // If beam covers all moves, skip sorting
+        // If beam covers all moves, still order them (TT move first)
         if effective_beam >= all_moves.len() {
-            return all_moves;
+            let mut ordered = all_moves;
+            // Put TT move first if present
+            if let Some(tt) = tt_move
+                && let Some(pos) = ordered.iter().position(|&m| m == tt)
+            {
+                ordered.swap(0, pos);
+            }
+            return ordered;
         }
 
-        // Step 1: Cheap MVV-LVA scoring
+        // Step 1: Score all moves with ordering heuristics
         let mut scored: ArrayVec<(Move, i32), MAX_MOVES> = all_moves
             .iter()
             .map(|&mv| {
-                let mut score: i32 = 0;
-                if let Some(captured) = mv.captured() {
-                    score += piece_value(captured) as i32 * 100;
-                }
-                if mv.promotion().is_some() {
-                    score += 900; // Queen promotion bonus
-                }
-                (mv, score)
+                let s = score_move(mv, tt_move, &self.killers, &self.history, ply, player);
+                (mv, s)
             })
             .collect();
 
-        // Sort descending by cheap score
+        // Sort descending by ordering score
         scored.sort_unstable_by(|a, b| b.1.cmp(&a.1));
 
         // Step 2: Take top BEAM_CANDIDATES for eval-based re-ranking
@@ -326,6 +358,13 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         // Sort candidates by eval descending
         eval_scored.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+
+        // Ensure TT move is always first if it's in the candidate set
+        if let Some(tt) = tt_move
+            && let Some(pos) = eval_scored.iter().position(|&(m, _)| m == tt)
+        {
+            eval_scored.swap(0, pos);
+        }
 
         // Take top beam_width
         eval_scored
@@ -369,7 +408,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     /// `root_player` is the player who initiated the search (used by quiescence
     /// to restrict captures to those involving the root player's pieces).
     fn maxn(
-        &self,
+        &mut self,
         state: &mut GameState,
         depth: u32,
         ply: usize,
@@ -414,8 +453,28 @@ impl<E: Evaluator> MaxnSearcher<E> {
             return self.negamax_2p_entry(state, depth, ply, ss);
         }
 
+        // TT probe
+        let hash = state.board().zobrist_hash();
+        let tt_move;
+        if let Some(entry) = self.tt.probe(hash) {
+            tt_move = entry.best_move();
+            // Exact hit at sufficient depth — return stored scores
+            if entry.flag() == TTFlag::Exact && entry.depth() as u32 >= depth {
+                tracing::debug!(
+                    depth = entry.depth(),
+                    flag = ?entry.flag(),
+                    scores = ?entry.scores(),
+                    "TT hit (exact cutoff)"
+                );
+                ss.pv_length[ply] = 0;
+                return *entry.scores();
+            }
+        } else {
+            tt_move = None;
+        }
+
         // Generate moves with beam selection
-        let moves = self.beam_select(state, current, self.config.beam_width);
+        let moves = self.beam_select(state, current, self.config.beam_width, tt_move, ply);
 
         // No legal moves (stalemate/checkmate)
         if moves.is_empty() {
@@ -441,6 +500,11 @@ impl<E: Evaluator> MaxnSearcher<E> {
                 best_scores = child_scores;
                 best_move = *mv;
                 Self::update_pv(ss, ply, *mv);
+
+                // Update history for quiet moves that improve the score
+                if !mv.is_capture() && mv.promotion().is_none() {
+                    self.history.update(mv.from_sq().0, mv.to_sq().0, depth);
+                }
             }
 
             // Korf shallow pruning: if current player can't improve, prune
@@ -452,7 +516,20 @@ impl<E: Evaluator> MaxnSearcher<E> {
             }
         }
 
-        let _ = best_move; // used via PV
+        // TT store — Max^n always produces exact results
+        self.tt.store(
+            hash,
+            depth as u8,
+            TTFlag::Exact,
+            best_scores,
+            Some(best_move),
+        );
+
+        // Store best quiet move as killer
+        if !best_move.is_capture() && best_move.promotion().is_none() {
+            self.killers.store(ply, current, best_move);
+        }
+
         best_scores
     }
 
@@ -461,7 +538,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     /// Identifies the two active players, runs alpha-beta negamax,
     /// and maps the result back to a Score4.
     fn negamax_2p_entry(
-        &self,
+        &mut self,
         state: &mut GameState,
         depth: u32,
         ply: usize,
@@ -503,7 +580,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     ///
     /// Returns score from the perspective of the current side to move.
     fn negamax_2p(
-        &self,
+        &mut self,
         state: &mut GameState,
         depth: u32,
         ply: usize,
@@ -536,12 +613,50 @@ impl<E: Evaluator> MaxnSearcher<E> {
             return self.qsearch_2p(state, 0, ply, alpha, beta, ss);
         }
 
-        let moves = generate_legal_moves(state.board_mut());
+        // TT probe
+        let hash = state.board().zobrist_hash();
+        let tt_move;
+        if let Some(entry) = self.tt.probe(hash) {
+            tt_move = entry.best_move();
+            if entry.depth() as u32 >= depth {
+                let stored_score = entry.scores()[current.index()];
+                match entry.flag() {
+                    TTFlag::Exact => return stored_score,
+                    TTFlag::LowerBound => {
+                        if stored_score >= beta {
+                            return beta;
+                        }
+                    }
+                    TTFlag::UpperBound => {
+                        if stored_score <= alpha {
+                            return alpha;
+                        }
+                    }
+                }
+            }
+        } else {
+            tt_move = None;
+        }
+
+        let mut moves = generate_legal_moves(state.board_mut());
 
         if moves.is_empty() {
             ss.pv_length[ply] = 0;
             return self.evaluator.eval_scalar(state, current);
         }
+
+        // Order moves with TT move, killers, history
+        order_moves(
+            &mut moves,
+            tt_move,
+            &self.killers,
+            &self.history,
+            ply,
+            current,
+        );
+
+        let original_alpha = alpha;
+        let mut best_move = moves[0];
 
         for mv in &moves {
             let undo = make_move(state.board_mut(), *mv);
@@ -554,12 +669,33 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
             if score > alpha {
                 alpha = score;
+                best_move = *mv;
                 Self::update_pv(ss, ply, *mv);
             }
             if alpha >= beta {
-                break; // Beta cutoff
+                // Beta cutoff — update killer and history for quiet moves
+                if !mv.is_capture() && mv.promotion().is_none() {
+                    self.killers.store(ply, current, *mv);
+                    self.history.update(mv.from_sq().0, mv.to_sq().0, depth);
+                }
+                break;
             }
         }
+
+        // TT store with correct flag
+        let tt_flag = if alpha >= beta {
+            TTFlag::LowerBound
+        } else if alpha > original_alpha {
+            TTFlag::Exact
+        } else {
+            TTFlag::UpperBound
+        };
+
+        // Store score from current player's perspective
+        let mut tt_scores = [0i16; 4];
+        tt_scores[current.index()] = alpha;
+        self.tt
+            .store(hash, depth as u8, tt_flag, tt_scores, Some(best_move));
 
         alpha
     }
@@ -575,7 +711,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     /// Stand-pat evaluation provides a lower bound: if the position is already
     /// good for the current player, we can return without searching captures.
     fn qsearch(
-        &self,
+        &mut self,
         state: &mut GameState,
         qdepth: u32,
         ply: usize,
@@ -625,8 +761,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             return self.qsearch_2p_entry(state, qdepth, ply, ss);
         }
 
-        // Generate capture-only moves
-        let captures = generate_captures_only(state.board_mut());
+        // Generate capture-only moves, sorted by MVV-LVA for better delta pruning
+        let mut captures = generate_captures_only(state.board_mut());
+        order_captures_mvv_lva(&mut captures);
 
         // Filter to root-player captures only:
         // captures where the moving piece belongs to root_player,
@@ -713,7 +850,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     /// Standard alpha-beta quiescence with stand-pat and delta pruning.
     /// Returns score from the perspective of the current side to move.
     fn qsearch_2p(
-        &self,
+        &mut self,
         state: &mut GameState,
         qdepth: u32,
         ply: usize,
@@ -759,8 +896,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             alpha = stand_pat;
         }
 
-        // Generate captures
-        let captures = generate_captures_only(state.board_mut());
+        // Generate captures, sorted by MVV-LVA for better delta pruning
+        let mut captures = generate_captures_only(state.board_mut());
+        order_captures_mvv_lva(&mut captures);
 
         ss.pv_length[ply] = 0;
 
@@ -801,7 +939,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
     ///
     /// Maps the scalar negamax qsearch result back to a Score4.
     fn qsearch_2p_entry(
-        &self,
+        &mut self,
         state: &mut GameState,
         qdepth: u32,
         ply: usize,
@@ -848,6 +986,11 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         let root_player = state.board().side_to_move();
 
+        // Prepare TT and killers for this search
+        self.tt.new_search();
+        self.killers.clear();
+        // History is NOT cleared between ID iterations — it accumulates
+
         let mut best_result = SearchResult {
             best_move: None,
             scores: SCORE4_MIN,
@@ -855,6 +998,8 @@ impl<E: Evaluator> MaxnSearcher<E> {
             nodes: 0,
             qnodes: 0,
             pv: ArrayVec::new(),
+            tt_hit_rate: 0.0,
+            killer_hit_rate: 0.0,
         };
 
         // Determine the minimum depth we must complete before allowing time abort.
@@ -887,6 +1032,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             let pv = Self::extract_pv(&ss);
             let best_move = pv.first().copied();
 
+            let tt_hit_rate = self.tt.hit_rate_pct();
+            let killer_hit_rate = self.killers.hit_rate_pct();
+
             best_result = SearchResult {
                 best_move,
                 scores,
@@ -894,6 +1042,8 @@ impl<E: Evaluator> MaxnSearcher<E> {
                 nodes: ss.nodes,
                 qnodes: ss.qnodes,
                 pv,
+                tt_hit_rate,
+                killer_hit_rate,
             };
 
             tracing::info!(
@@ -902,6 +1052,8 @@ impl<E: Evaluator> MaxnSearcher<E> {
                 qnodes = ss.qnodes,
                 best_move = ?best_result.best_move,
                 scores = ?scores,
+                tt_hit_rate = format!("{:.1}%", tt_hit_rate),
+                killer_hit_rate = format!("{:.1}%", killer_hit_rate),
                 "Search depth complete"
             );
 
@@ -1359,5 +1511,89 @@ mod tests {
                 "All moves from generate_captures_only must be captures"
             );
         }
+    }
+
+    // ── Stage 9: TT + Move Ordering ──
+
+    #[test]
+    fn test_tt_hit_rate_positive_at_depth_3() {
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(3),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+        assert!(
+            result.tt_hit_rate > 0.0,
+            "TT hit rate should be positive at depth 3, got {:.1}%",
+            result.tt_hit_rate
+        );
+    }
+
+    #[test]
+    fn test_history_table_populated_after_search() {
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(3),
+            ..Default::default()
+        };
+        let _ = searcher.search(&mut gs, &limits);
+
+        // Check history table has nonzero entries
+        let history = searcher.history_table();
+        let raw = history.raw();
+        let nonzero = raw
+            .iter()
+            .flat_map(|row| row.iter())
+            .filter(|&&v| v > 0)
+            .count();
+        assert!(
+            nonzero > 0,
+            "History table should have nonzero entries after depth 3 search"
+        );
+    }
+
+    #[test]
+    fn test_search_result_includes_tt_stats() {
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(2),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+        // At depth 2, TT hit rate might be 0 (no transpositions at this shallow depth),
+        // but the field should exist and be non-negative
+        assert!(result.tt_hit_rate >= 0.0);
+        assert!(result.killer_hit_rate >= 0.0);
+    }
+
+    #[test]
+    fn test_tt_preserves_board_state() {
+        let mut gs = GameState::new_standard_ffa();
+        let hash_before = gs.board().zobrist_hash();
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(3),
+            ..Default::default()
+        };
+        let _ = searcher.search(&mut gs, &limits);
+        assert_eq!(
+            gs.board().zobrist_hash(),
+            hash_before,
+            "Board hash must be restored after TT-enabled search"
+        );
+    }
+
+    #[test]
+    fn test_history_table_accessor() {
+        let searcher = make_searcher();
+        let history = searcher.history_table();
+        // Fresh history table should be all zeros
+        let raw = history.raw();
+        let total: u32 = raw.iter().flat_map(|row| row.iter()).sum();
+        assert_eq!(total, 0, "Fresh history table should be all zeros");
     }
 }

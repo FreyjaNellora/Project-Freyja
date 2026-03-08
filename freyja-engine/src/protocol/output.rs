@@ -14,6 +14,7 @@ pub fn format_bestmove(mv: Option<Move>) -> String {
 /// Format an info string with search results.
 ///
 /// All fields are optional; only present fields are included.
+#[allow(clippy::too_many_arguments)]
 pub fn format_info(
     depth: Option<u32>,
     scores: Option<[i16; 4]>,
@@ -21,6 +22,8 @@ pub fn format_info(
     qnodes: Option<u64>,
     nps: Option<u64>,
     pv: Option<&[Move]>,
+    tt_hit_rate: Option<f64>,
+    killer_hit_rate: Option<f64>,
 ) -> String {
     let mut parts: Vec<String> = vec!["info".to_string()];
 
@@ -41,6 +44,12 @@ pub fn format_info(
     }
     if let Some(n) = nps {
         parts.push(format!("nps {n}"));
+    }
+    if let Some(rate) = tt_hit_rate {
+        parts.push(format!("tthitrate {:.1}", rate));
+    }
+    if let Some(rate) = killer_hit_rate {
+        parts.push(format!("killerhitrate {:.1}", rate));
     }
     if let Some(pv_moves) = pv
         && !pv_moves.is_empty()
@@ -111,6 +120,8 @@ mod tests {
             None,
             Some(100000),
             None,
+            None,
+            None,
         );
         assert_eq!(
             result,
@@ -120,15 +131,42 @@ mod tests {
 
     #[test]
     fn test_info_with_qnodes() {
-        let result = format_info(Some(3), None, Some(10000), Some(5000), Some(50000), None);
+        let result = format_info(
+            Some(3),
+            None,
+            Some(10000),
+            Some(5000),
+            Some(50000),
+            None,
+            None,
+            None,
+        );
         assert_eq!(result, "info depth 3 nodes 10000 qnodes 5000 nps 50000");
     }
 
     #[test]
     fn test_info_depth_only() {
         assert_eq!(
-            format_info(Some(3), None, None, None, None, None),
+            format_info(Some(3), None, None, None, None, None, None, None),
             "info depth 3"
+        );
+    }
+
+    #[test]
+    fn test_info_with_tt_stats() {
+        let result = format_info(
+            Some(5),
+            None,
+            Some(10000),
+            None,
+            None,
+            None,
+            Some(42.5),
+            Some(15.3),
+        );
+        assert_eq!(
+            result,
+            "info depth 5 nodes 10000 tthitrate 42.5 killerhitrate 15.3"
         );
     }
 

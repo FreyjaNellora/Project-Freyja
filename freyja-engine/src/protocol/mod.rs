@@ -210,6 +210,16 @@ impl<W: Write> Protocol<W> {
         } else {
             None
         };
+        let tt_rate = if result.tt_hit_rate > 0.0 {
+            Some(result.tt_hit_rate)
+        } else {
+            None
+        };
+        let killer_rate = if result.killer_hit_rate > 0.0 {
+            Some(result.killer_hit_rate)
+        } else {
+            None
+        };
         let info = format_info(
             Some(result.depth),
             Some(result.scores),
@@ -217,6 +227,8 @@ impl<W: Write> Protocol<W> {
             qnodes_opt,
             nps,
             Some(pv_slice),
+            tt_rate,
+            killer_rate,
         );
         self.send(&info);
 
