@@ -914,6 +914,34 @@ pub fn generate_legal_into(board: &mut Board, moves: &mut ArrayVec<Move, MAX_MOV
     moves.extend(result);
 }
 
+/// Generate only legal capture moves for the current side to move.
+///
+/// Generates pseudo-legal moves, filters to captures only, then validates
+/// legality only for those captures. Much cheaper than generating all legal
+/// moves when captures are rare (typical in quiescence search).
+pub fn generate_captures_only(board: &mut Board) -> ArrayVec<Move, MAX_MOVES> {
+    let mut pseudo = ArrayVec::<Move, MAX_MOVES>::new();
+    generate_pseudo_legal(board, &mut pseudo);
+
+    let player = board.side_to_move();
+    let mut captures = ArrayVec::<Move, MAX_MOVES>::new();
+
+    for mv in pseudo {
+        if !mv.is_capture() {
+            continue;
+        }
+        // Validate legality: make move, check if own king is in check
+        let undo = make_move(board, mv);
+        let in_check = board.is_in_check(player);
+        unmake_move(board, &undo);
+
+        if !in_check {
+            captures.push(mv);
+        }
+    }
+    captures
+}
+
 // ─── Perft ──────────────────────────────────────────────────────────────────
 
 /// Perft: count leaf nodes at a given depth.

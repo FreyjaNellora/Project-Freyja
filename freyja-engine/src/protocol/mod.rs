@@ -176,7 +176,8 @@ impl<W: Write> Protocol<W> {
             return;
         }
 
-        // Run real search — default to 2s time budget if no constraints given
+        // Run real search — default to 5s time budget if no constraints given
+        // (quiescence adds overhead at leaf nodes, need more time for depth 4+)
         let no_constraints = params.depth.is_none()
             && params.nodes.is_none()
             && params.movetime.is_none()
@@ -184,7 +185,11 @@ impl<W: Write> Protocol<W> {
         let limits = SearchLimits {
             max_depth: params.depth,
             max_nodes: params.nodes,
-            max_time_ms: if no_constraints { Some(2000) } else { params.movetime },
+            max_time_ms: if no_constraints {
+                Some(5000)
+            } else {
+                params.movetime
+            },
             infinite: params.infinite,
         };
 
@@ -200,10 +205,16 @@ impl<W: Write> Protocol<W> {
             None
         };
         let pv_slice: &[Move] = &result.pv;
+        let qnodes_opt = if result.qnodes > 0 {
+            Some(result.qnodes)
+        } else {
+            None
+        };
         let info = format_info(
             Some(result.depth),
             Some(result.scores),
             Some(result.nodes),
+            qnodes_opt,
             nps,
             Some(pv_slice),
         );
@@ -236,7 +247,6 @@ impl<W: Write> Protocol<W> {
             }
         }
     }
-
 }
 
 #[cfg(test)]
@@ -380,7 +390,13 @@ mod tests {
         let output = run_protocol("position startpos moves d2d4\nquit\n");
         // Should have exactly one nextturn (the final state after d2d4)
         let nextturn_count = output.matches("info string nextturn").count();
-        assert_eq!(nextturn_count, 1, "Expected exactly 1 nextturn, got {nextturn_count}");
-        assert!(output.contains("info string nextturn Blue"), "After Red's d2d4, Blue should be next");
+        assert_eq!(
+            nextturn_count, 1,
+            "Expected exactly 1 nextturn, got {nextturn_count}"
+        );
+        assert!(
+            output.contains("info string nextturn Blue"),
+            "After Red's d2d4, Blue should be next"
+        );
     }
 }

@@ -18,6 +18,7 @@ pub fn format_info(
     depth: Option<u32>,
     scores: Option<[i16; 4]>,
     nodes: Option<u64>,
+    qnodes: Option<u64>,
     nps: Option<u64>,
     pv: Option<&[Move]>,
 ) -> String {
@@ -34,6 +35,9 @@ pub fn format_info(
     }
     if let Some(n) = nodes {
         parts.push(format!("nodes {n}"));
+    }
+    if let Some(n) = qnodes {
+        parts.push(format!("qnodes {n}"));
     }
     if let Some(n) = nps {
         parts.push(format!("nps {n}"));
@@ -104,6 +108,7 @@ mod tests {
             Some(5),
             Some([150, 120, 100, 140]),
             Some(50000),
+            None,
             Some(100000),
             None,
         );
@@ -114,8 +119,17 @@ mod tests {
     }
 
     #[test]
+    fn test_info_with_qnodes() {
+        let result = format_info(Some(3), None, Some(10000), Some(5000), Some(50000), None);
+        assert_eq!(result, "info depth 3 nodes 10000 qnodes 5000 nps 50000");
+    }
+
+    #[test]
     fn test_info_depth_only() {
-        assert_eq!(format_info(Some(3), None, None, None, None), "info depth 3");
+        assert_eq!(
+            format_info(Some(3), None, None, None, None, None),
+            "info depth 3"
+        );
     }
 
     #[test]

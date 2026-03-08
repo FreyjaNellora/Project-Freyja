@@ -277,10 +277,14 @@ fn test_all_four_players_can_move_via_protocol() {
         !output.contains("error:"),
         "no errors applying 4-player moves"
     );
-    // Should have nextturn events for Blue, Yellow, Green after Red/Blue/Yellow moves
-    assert!(output.contains("nextturn Blue"));
-    assert!(output.contains("nextturn Yellow"));
-    assert!(output.contains("nextturn Green"));
+    // After 4 moves (one per player), side to move is Red again.
+    // Protocol emits a single nextturn for the final state after replay.
+    assert!(
+        output.contains("nextturn Red"),
+        "After one full round, Red should be next"
+    );
+    // Should produce a bestmove from the search
+    assert!(output.contains("bestmove "));
 }
 
 // ─── Game Over Handling ─────────────────────────────────────────────────────
