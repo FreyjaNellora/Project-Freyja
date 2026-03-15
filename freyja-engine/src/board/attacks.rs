@@ -56,6 +56,7 @@ impl AttackInfo {
 
 impl Board {
     /// Walk a ray from `sq` in direction `(dr, df)` and return the first piece found.
+    /// Skips invalid corner squares — the ray continues on the other side.
     fn ray_find_piece(&self, sq: Square, dr: i8, df: i8) -> Option<(Piece, Square)> {
         let mut rank = sq.rank() as i8 + dr;
         let mut file = sq.file() as i8 + df;
@@ -63,7 +64,10 @@ impl Board {
             let r = rank as u8;
             let f = file as u8;
             if !is_valid_square(r, f) {
-                break; // Hit invalid corner, ray stops
+                // Invalid corner — skip and continue ray
+                rank += dr;
+                file += df;
+                continue;
             }
             let idx = r as usize * BOARD_SIZE + f as usize;
             if let Some(piece) = self.squares[idx] {
@@ -530,28 +534,94 @@ mod tests {
         assert!(board.is_square_attacked_by(Square::from_notation("i9").unwrap(), Player::Red));
     }
 
-    // ── Slider blocked by corner ──
+    // ── Slider crosses corners ──
 
     #[test]
-    fn test_slider_blocked_by_sw_corner() {
+    fn test_bishop_crosses_sw_corner() {
         let mut board = empty_board_with_hash();
-        // Bishop at d4 (rank 3, file 3), diagonal SW goes toward invalid corner
+        // Bishop at d4 (rank 3, file 3), diagonal SW crosses invalid corner
         let bishop_sq = Square::from_notation("d4").unwrap();
         board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Red));
-        // c3 (rank 2, file 2) is in the SW corner — INVALID
+        // c3 (rank 2, file 2) is in the SW corner — INVALID, ray skips it
         assert!(Square::new(2, 2).is_none());
-        // Bishop at d4 going SW: first step is (2,2) which is invalid → ray stops
-        // No squares attacked in that direction
+        // b2 (rank 1, file 1) is also invalid
+        assert!(Square::new(1, 1).is_none());
+        // a1 (rank 0, file 0) is also invalid — ray exits board
+        // No valid square on the other side for this direction
     }
 
     #[test]
-    fn test_slider_blocked_by_ne_corner() {
+    fn test_bishop_crosses_ne_corner() {
         let mut board = empty_board_with_hash();
         // Bishop at k12 (rank 11, file 10), diagonal NE goes toward invalid corner
         let bishop_sq = Square::from_notation("k12").unwrap();
         board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Yellow));
-        // (12,11) = l13 is invalid
+        // (12,11) = l13 is invalid, ray skips
         assert!(Square::new(12, 11).is_none());
+        // (13,12) = m14 is also invalid — ray exits board
+    }
+
+    #[test]
+    fn test_bishop_crosses_sw_corner_attacks_far_side() {
+        let mut board = empty_board_with_hash();
+        // Bishop at e4 (rank 3, file 4), diagonal SW: d3 valid, c2 invalid, b1 valid
+        let bishop_sq = Square::from_notation("e4").unwrap();
+        board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Red));
+        // d3 (rank 2, file 3) is valid — attacked
+        let d3 = Square::from_notation("d3").unwrap();
+        assert!(board.is_square_attacked_by(d3, Player::Red));
+        // c2 (rank 1, file 2) is INVALID — skipped
+        assert!(Square::new(1, 2).is_none());
+        // b1 (rank 0, file 1) is INVALID — skipped, ray exits board
+    }
+
+    #[test]
+    fn test_bishop_near_nw_corner_stops_at_invalid() {
+        let mut board = empty_board_with_hash();
+        // Bishop at d11 (rank 10, file 3), diagonal NW: c12 is (11,2) — INVALID (NW corner)
+        let bishop_sq = Square::from_notation("d11").unwrap();
+        board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Blue));
+        // c12 (rank 11, file 2) is in the NW corner — invalid
+        assert!(Square::new(11, 2).is_none());
+        // Ray skips invalid and exits board — no squares attacked in that direction
+    }
+
+    #[test]
+    fn test_queen_near_se_corner_stops_at_invalid() {
+        let mut board = empty_board_with_hash();
+        // Queen at k4 (rank 3, file 10), diagonal SE: l3 is (2,11) — INVALID (SE corner)
+        let queen_sq = Square::from_notation("k4").unwrap();
+        board.set_piece(queen_sq, Piece::new(PieceType::Queen, Player::Green));
+        // l3 (rank 2, file 11) is in the SE corner — invalid
+        assert!(Square::new(2, 11).is_none());
+        // Ray skips invalid and exits board — no squares attacked in that direction
+    }
+
+    #[test]
+    fn test_rook_does_not_cross_corner_orthogonally() {
+        let mut board = empty_board_with_hash();
+        // Rook on d1 (rank 0, file 3), moving west into SW corner area
+        // Orthogonal rays along rank 0: c1 (0,2) is INVALID, b1 (0,1) is INVALID, a1 (0,0) is INVALID
+        // Rook should skip invalid squares but there are none valid on the other side
+        let rook_sq = Square::from_notation("d1").unwrap();
+        board.set_piece(rook_sq, Piece::new(PieceType::Rook, Player::Red));
+        // e1 (rank 0, file 4) going east is valid — attacked
+        let e1 = Square::from_notation("e1").unwrap();
+        assert!(board.is_square_attacked_by(e1, Player::Red));
+    }
+
+    #[test]
+    fn test_bishop_cross_corner_blocked_by_piece() {
+        let mut board = empty_board_with_hash();
+        // Bishop at e4 (rank 3, file 4), diagonal SW toward corner
+        let bishop_sq = Square::from_notation("e4").unwrap();
+        board.set_piece(bishop_sq, Piece::new(PieceType::Bishop, Player::Red));
+        // Blocker at d3 (rank 2, file 3) — before the corner
+        let blocker_sq = Square::from_notation("d3").unwrap();
+        board.set_piece(blocker_sq, Piece::new(PieceType::Pawn, Player::Blue));
+        // d3 is attacked (the blocker itself can be captured)
+        assert!(board.is_square_attacked_by(blocker_sq, Player::Red));
+        // Ray stops at blocker, doesn't continue across corner
     }
 
     // ── King attacks ──

@@ -559,18 +559,26 @@ fn gen_slider_moves(
         let mut r = rank + dr;
         let mut f = file + df;
         loop {
-            match try_square(r, f) {
-                None => break,
-                Some(target) => match board.piece_at(target) {
-                    None => {
-                        moves.push(Move::new(sq, target, piece_type));
-                    }
-                    Some(piece) if piece.player != player => {
-                        moves.push(Move::capture(sq, target, piece_type, piece.piece_type));
-                        break;
-                    }
-                    _ => break,
-                },
+            // Board edge — ray stops
+            if r < 0 || r >= BOARD_SIZE as i8 || f < 0 || f >= BOARD_SIZE as i8 {
+                break;
+            }
+            // Invalid corner — skip and continue ray
+            if !is_valid_square(r as u8, f as u8) {
+                r += dr;
+                f += df;
+                continue;
+            }
+            let target = Square::from_rank_file_unchecked(r as u8, f as u8);
+            match board.piece_at(target) {
+                None => {
+                    moves.push(Move::new(sq, target, piece_type));
+                }
+                Some(piece) if piece.player != player => {
+                    moves.push(Move::capture(sq, target, piece_type, piece.piece_type));
+                    break;
+                }
+                _ => break,
             }
             r += dr;
             f += df;
