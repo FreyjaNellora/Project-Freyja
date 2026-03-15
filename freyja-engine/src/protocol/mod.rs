@@ -76,6 +76,7 @@ impl<W: Write> Protocol<W> {
                 Command::Position { fen, moves } => self.handle_position(fen, moves),
                 Command::Go(params) => self.handle_go(params),
                 Command::Stop => { /* no-op: search is synchronous in Stage 4 */ }
+                Command::Debug => self.handle_debug(),
                 Command::Quit => break,
                 Command::SetOption { name, value } => self.handle_setoption(&name, &value),
                 Command::Unknown(cmd) => {
@@ -92,6 +93,12 @@ impl<W: Write> Protocol<W> {
         let _ = self.output.flush();
         self.logfile.log_outgoing(line);
         tracing::debug!("< {}", line);
+    }
+
+    /// Handle `d` / `debug` command — dump current position as FEN4.
+    fn handle_debug(&mut self) {
+        let fen = self.game_state.board().to_fen4();
+        self.send(&format!("fen4 {fen}"));
     }
 
     /// Handle `position` command.

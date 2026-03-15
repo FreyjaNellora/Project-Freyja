@@ -19,6 +19,7 @@ pub fn parse_command(line: &str) -> Option<Command> {
         "isready" => Command::IsReady,
         "stop" => Command::Stop,
         "quit" => Command::Quit,
+        "d" | "debug" => Command::Debug,
         "position" => parse_position(&mut tokens),
         "go" => Command::Go(parse_go(&mut tokens)),
         "setoption" => parse_setoption(&mut tokens),

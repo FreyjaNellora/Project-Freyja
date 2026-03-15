@@ -1596,4 +1596,40 @@ mod tests {
         let total: u32 = raw.iter().flat_map(|row| row.iter()).sum();
         assert_eq!(total, 0, "Fresh history table should be all zeros");
     }
+
+    #[test]
+    fn test_eval_tuning_game_sim() {
+        // Play a game at depth 4, print each move for eval tuning.
+        // Run with: cargo test -p freyja-engine test_eval_tuning_game_sim -- --nocapture
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(4),
+            ..Default::default()
+        };
+
+        for ply in 0..40 {
+            if gs.is_game_over() {
+                break;
+            }
+            let player = gs.current_player();
+            let result = searcher.search(&mut gs, &limits);
+            if let Some(mv) = result.best_move {
+                eprintln!(
+                    "Ply {}: {} plays {} (scores: R={} B={} Y={} G={})",
+                    ply,
+                    player,
+                    mv,
+                    result.scores[0],
+                    result.scores[1],
+                    result.scores[2],
+                    result.scores[3]
+                );
+                gs.apply_move(mv);
+            } else {
+                eprintln!("Ply {}: {} has no legal moves", ply, player);
+                break;
+            }
+        }
+    }
 }

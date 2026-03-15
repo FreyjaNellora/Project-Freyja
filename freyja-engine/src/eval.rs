@@ -49,14 +49,29 @@ pub fn piece_value(pt: PieceType) -> i16 {
 // ─── Component Weights ──────────────────────────────────────────────────────
 
 /// Weights for combining eval components. Untuned — Stage 13 tunes these.
-const WEIGHT_MATERIAL: i16 = 1; // Applied as multiplier (values already in cp)
-const WEIGHT_PST: i16 = 1; // PST values are already scaled
-const WEIGHT_MOBILITY: i16 = 3; // cp per legal move
-const WEIGHT_TERRITORY: i16 = 5; // cp per owned square
-const WEIGHT_KING_SAFETY_SHELTER: i16 = 15; // cp per shelter pawn
-const WEIGHT_KING_SAFETY_ATTACKER: i16 = 20; // cp per attacker (penalty)
-const WEIGHT_PAWN_ADVANCE: i16 = 5; // cp per rank advanced
-const WEIGHT_PAWN_DOUBLED: i16 = 15; // cp penalty per doubled pawn
+const WEIGHT_MATERIAL: i16 = 1; // Anchor — values already in cp
+const WEIGHT_PST: i16 = 1; // Tiebreaker — correctly quiet
+const WEIGHT_MOBILITY: i16 = 4; // cp per legal move — slight bump for piece voice
+const WEIGHT_TERRITORY: i16 = 0; // DISABLED — BFS Voronoi rewards pawn pushes, re-enable with NNUE
+const WEIGHT_KING_SAFETY_SHELTER: i16 = 35; // cp per shelter pawn — king safety > pawn structure
+const WEIGHT_KING_SAFETY_ATTACKER: i16 = 35; // cp per attacker penalty — matches shelter priority
+const WEIGHT_PAWN_ADVANCE: i16 = 0; // DISABLED — pawns don't need advancement reward, re-enable with NNUE
+const WEIGHT_PAWN_DOUBLED: i16 = 8; // cp penalty per doubled pawn — minor structural signal
+const WEIGHT_DEVELOPMENT: i16 = 35; // cp per dev unit — capped development max 280cp
+const DEV_SCORE_CAP: i16 = 8; // Cap positive dev score (8 * 35 = 280cp max)
+const CASTLED_BONUS: i16 = 80; // Flat bonus for having castled
+
+/// Per-player castling destination squares: [KS_king_to, QS_king_to].
+/// Indices match CASTLE_DEFS in move_gen.rs.
+const CASTLE_KING_DESTS: [[u8; 2]; 4] = [
+    [9, 5],     // Red: KS=j1, QS=f1
+    [56, 112],  // Blue: KS=a5, QS=a9
+    [186, 190], // Yellow: KS=e14, QS=i14
+    [139, 83],  // Green: KS=n10, QS=n6
+];
+
+/// Per-player castling rights bit indices: [KS_bit, QS_bit].
+const CASTLE_RIGHTS_BITS: [[u8; 2]; 4] = [[0, 1], [2, 3], [4, 5], [6, 7]];
 
 // ─── Piece-Square Tables ────────────────────────────────────────────────────
 
@@ -71,27 +86,27 @@ const PST_PAWN: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
     // rank 1 (Red's pawn starting rank)
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     // rank 2
-    [0, 0, 0, 2, 3, 5, 5, 5, 5, 3, 2, 0, 0, 0],
+    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
     // rank 3
-    [0, 0, 0, 5, 8,10,12,12,10, 8, 5, 0, 0, 0],
+    [0, 0, 0, 1, 1, 2, 2, 2, 2, 1, 1, 0, 0, 0],
     // rank 4
-    [0, 0, 0, 8,12,15,18,18,15,12, 8, 0, 0, 0],
+    [0, 0, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, 0, 0],
     // rank 5
-    [0, 0, 0,12,16,20,25,25,20,16,12, 0, 0, 0],
+    [0, 0, 0, 2, 3, 4, 5, 5, 4, 3, 2, 0, 0, 0],
     // rank 6 (center)
-    [0, 0, 0,15,20,25,30,30,25,20,15, 0, 0, 0],
+    [0, 0, 0, 2, 3, 4, 5, 5, 4, 3, 2, 0, 0, 0],
     // rank 7 (center)
-    [0, 0, 0,15,20,25,30,30,25,20,15, 0, 0, 0],
+    [0, 0, 0, 2, 3, 4, 5, 5, 4, 3, 2, 0, 0, 0],
     // rank 8
-    [0, 0, 0,18,22,28,32,32,28,22,18, 0, 0, 0],
+    [0, 0, 0, 3, 4, 5, 6, 6, 5, 4, 3, 0, 0, 0],
     // rank 9
-    [0, 0, 0,22,28,35,40,40,35,28,22, 0, 0, 0],
+    [0, 0, 0, 4, 5, 6, 7, 7, 6, 5, 4, 0, 0, 0],
     // rank 10
-    [0, 0, 0,28,35,42,48,48,42,35,28, 0, 0, 0],
+    [0, 0, 0, 5, 6, 7, 8, 8, 7, 6, 5, 0, 0, 0],
     // rank 11
-    [0, 0, 0,35,42,50,55,55,50,42,35, 0, 0, 0],
+    [0, 0, 0, 6, 7, 8, 9, 9, 8, 7, 6, 0, 0, 0],
     // rank 12 (promotion rank for Red)
-    [0, 0, 0,50,55,60,65,65,60,55,50, 0, 0, 0],
+    [0, 0, 0, 8, 9,10,12,12,10, 9, 8, 0, 0, 0],
     // rank 13
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
@@ -99,96 +114,96 @@ const PST_PAWN: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
 /// PST for knights from Red's perspective. Center-biased.
 #[rustfmt::skip]
 const PST_KNIGHT: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
-    [0, 0, 0,-10,-5,-5,-5,-5,-5,-5,-10, 0, 0, 0],
-    [0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0],
-    [0, 0, 0, -5, 0, 5, 5, 5, 5, 0, -5, 0, 0, 0],
-    [-10,-5,-5,  0, 5,10,10,10,10, 5,  0,-5,-5,-10],
-    [ -5, 0, 0,  5,10,15,15,15,15,10,  5, 0, 0, -5],
-    [ -5, 0, 5, 10,15,20,22,22,20,15, 10, 5, 0, -5],
-    [ -5, 0, 5, 10,15,22,25,25,22,15, 10, 5, 0, -5],
-    [ -5, 0, 5, 10,15,22,25,25,22,15, 10, 5, 0, -5],
-    [ -5, 0, 5, 10,15,20,22,22,20,15, 10, 5, 0, -5],
-    [ -5, 0, 0,  5,10,15,15,15,15,10,  5, 0, 0, -5],
-    [-10,-5,-5,  0, 5,10,10,10,10, 5,  0,-5,-5,-10],
-    [0, 0, 0, -5, 0, 5, 5, 5, 5, 0, -5, 0, 0, 0],
-    [0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0],
-    [0, 0, 0,-10,-5,-5,-5,-5,-5,-5,-10, 0, 0, 0],
+    [0, 0, 0, -3,-2,-2,-2,-2,-2,-2, -3, 0, 0, 0],
+    [0, 0, 0, -2, 0, 0, 0, 0, 0, 0, -2, 0, 0, 0],
+    [0, 0, 0, -2, 0, 1, 1, 1, 1, 0, -2, 0, 0, 0],
+    [-3,-2,-2,  0, 1, 3, 3, 3, 3, 1,  0,-2,-2, -3],
+    [-2, 0, 0,  1, 3, 4, 5, 5, 4, 3,  1, 0, 0, -2],
+    [-2, 0, 1,  3, 4, 6, 7, 7, 6, 4,  3, 1, 0, -2],
+    [-2, 0, 1,  3, 4, 7, 8, 8, 7, 4,  3, 1, 0, -2],
+    [-2, 0, 1,  3, 4, 7, 8, 8, 7, 4,  3, 1, 0, -2],
+    [-2, 0, 1,  3, 4, 6, 7, 7, 6, 4,  3, 1, 0, -2],
+    [-2, 0, 0,  1, 3, 4, 5, 5, 4, 3,  1, 0, 0, -2],
+    [-3,-2,-2,  0, 1, 3, 3, 3, 3, 1,  0,-2,-2, -3],
+    [0, 0, 0, -2, 0, 1, 1, 1, 1, 0, -2, 0, 0, 0],
+    [0, 0, 0, -2, 0, 0, 0, 0, 0, 0, -2, 0, 0, 0],
+    [0, 0, 0, -3,-2,-2,-2,-2,-2,-2, -3, 0, 0, 0],
 ];
 
 /// PST for bishops from Red's perspective. Diagonal control, center.
 #[rustfmt::skip]
 const PST_BISHOP: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
-    [0, 0, 0, -5, -5, -5, -5, -5, -5, -5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5,  0,  0,  0,  0,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  5,  5,  5,  5,  0, -5, 0, 0, 0],
-    [-5,-5,-5,  0,  5,  8, 10, 10,  8,  5,  0,-5,-5,-5],
-    [-5, 0, 0,  5,  8, 12, 12, 12, 12,  8,  5, 0, 0,-5],
-    [-5, 0, 5,  8, 12, 15, 15, 15, 15, 12,  8, 5, 0,-5],
-    [-5, 0, 5, 10, 12, 15, 18, 18, 15, 12, 10, 5, 0,-5],
-    [-5, 0, 5, 10, 12, 15, 18, 18, 15, 12, 10, 5, 0,-5],
-    [-5, 0, 5,  8, 12, 15, 15, 15, 15, 12,  8, 5, 0,-5],
-    [-5, 0, 0,  5,  8, 12, 12, 12, 12,  8,  5, 0, 0,-5],
-    [-5,-5,-5,  0,  5,  8, 10, 10,  8,  5,  0,-5,-5,-5],
-    [0, 0, 0, -5,  0,  5,  5,  5,  5,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5,  0,  0,  0,  0,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5, -5, -5, -5, -5, -5, -5, -5, 0, 0, 0],
+    [0, 0, 0, -2, -2, -2, -2, -2, -2, -2, -2, 0, 0, 0],
+    [0, 0, 0, -2,  1,  0,  0,  0,  0,  1, -2, 0, 0, 0],
+    [0, 0, 0, -2,  0,  1,  1,  1,  1,  0, -2, 0, 0, 0],
+    [-2,-2,-2,  0,  1,  3,  3,  3,  3,  1,  0,-2,-2,-2],
+    [-2, 0, 0,  1,  3,  4,  4,  4,  4,  3,  1, 0, 0,-2],
+    [-2, 0, 1,  3,  4,  5,  5,  5,  5,  4,  3, 1, 0,-2],
+    [-2, 0, 1,  3,  4,  5,  6,  6,  5,  4,  3, 1, 0,-2],
+    [-2, 0, 1,  3,  4,  5,  6,  6,  5,  4,  3, 1, 0,-2],
+    [-2, 0, 1,  3,  4,  5,  5,  5,  5,  4,  3, 1, 0,-2],
+    [-2, 0, 0,  1,  3,  4,  4,  4,  4,  3,  1, 0, 0,-2],
+    [-2,-2,-2,  0,  1,  3,  3,  3,  3,  1,  0,-2,-2,-2],
+    [0, 0, 0, -2,  0,  1,  1,  1,  1,  0, -2, 0, 0, 0],
+    [0, 0, 0, -2,  1,  0,  0,  0,  0,  1, -2, 0, 0, 0],
+    [0, 0, 0, -2, -2, -2, -2, -2, -2, -2, -2, 0, 0, 0],
 ];
 
 /// PST for rooks from Red's perspective. Open files, 7th rank bonus.
 #[rustfmt::skip]
 const PST_ROOK: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 5, 5, 5,  5,  5,  5, 10, 10,  5,  5,  5, 5, 5, 5],
-    [ 5, 5, 5,  5,  5,  5, 10, 10,  5,  5,  5, 5, 5, 5],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [ 0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 2, 2, 2,  2,  2,  2,  3,  3,  2,  2,  2, 2, 2, 2],
+    [ 2, 2, 2,  2,  2,  2,  3,  3,  2,  2,  2, 2, 2, 2],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [ 0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
 ];
 
 /// PST for queen from Red's perspective. Slight center preference, not too strong.
 #[rustfmt::skip]
 const PST_QUEEN: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
-    [0, 0, 0, -5, -5, -5, -5, -5, -5, -5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  0,  0,  0,  0,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  3,  3,  3,  3,  0, -5, 0, 0, 0],
-    [-5,-5,-5,  0,  3,  5,  5,  5,  5,  3,  0,-5,-5,-5],
-    [-5, 0, 0,  3,  5,  8,  8,  8,  8,  5,  3, 0, 0,-5],
-    [-5, 0, 3,  5,  8, 10, 10, 10, 10,  8,  5, 3, 0,-5],
-    [-5, 0, 3,  5,  8, 10, 12, 12, 10,  8,  5, 3, 0,-5],
-    [-5, 0, 3,  5,  8, 10, 12, 12, 10,  8,  5, 3, 0,-5],
-    [-5, 0, 3,  5,  8, 10, 10, 10, 10,  8,  5, 3, 0,-5],
-    [-5, 0, 0,  3,  5,  8,  8,  8,  8,  5,  3, 0, 0,-5],
-    [-5,-5,-5,  0,  3,  5,  5,  5,  5,  3,  0,-5,-5,-5],
-    [0, 0, 0, -5,  0,  3,  3,  3,  3,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  0,  0,  0,  0,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5, -5, -5, -5, -5, -5, -5, -5, 0, 0, 0],
+    [0, 0, 0, -2, -2, -2, -2, -2, -2, -2, -2, 0, 0, 0],
+    [0, 0, 0, -2,  0,  0,  0,  0,  0,  0, -2, 0, 0, 0],
+    [0, 0, 0, -2,  0,  1,  1,  1,  1,  0, -2, 0, 0, 0],
+    [-2,-2,-2,  0,  1,  2,  2,  2,  2,  1,  0,-2,-2,-2],
+    [-2, 0, 0,  1,  2,  3,  3,  3,  3,  2,  1, 0, 0,-2],
+    [-2, 0, 1,  2,  3,  4,  4,  4,  4,  3,  2, 1, 0,-2],
+    [-2, 0, 1,  2,  3,  4,  5,  5,  4,  3,  2, 1, 0,-2],
+    [-2, 0, 1,  2,  3,  4,  5,  5,  4,  3,  2, 1, 0,-2],
+    [-2, 0, 1,  2,  3,  4,  4,  4,  4,  3,  2, 1, 0,-2],
+    [-2, 0, 0,  1,  2,  3,  3,  3,  3,  2,  1, 0, 0,-2],
+    [-2,-2,-2,  0,  1,  2,  2,  2,  2,  1,  0,-2,-2,-2],
+    [0, 0, 0, -2,  0,  1,  1,  1,  1,  0, -2, 0, 0, 0],
+    [0, 0, 0, -2,  0,  0,  0,  0,  0,  0, -2, 0, 0, 0],
+    [0, 0, 0, -2, -2, -2, -2, -2, -2, -2, -2, 0, 0, 0],
 ];
 
 /// PST for king from Red's perspective. Stay on back rank early game.
 #[rustfmt::skip]
 const PST_KING: [[i16; BOARD_SIZE]; BOARD_SIZE] = [
-    [0, 0, 0, 10, 10,  5,  0,  0,  5, 10, 10, 0, 0, 0],
-    [0, 0, 0,  5,  5,  0, -5, -5,  0,  5,  5, 0, 0, 0],
-    [0, 0, 0,-10,-10,-15,-15,-15,-15,-10,-10, 0, 0, 0],
-    [-10,-10,-10,-15,-15,-20,-20,-20,-20,-15,-15,-10,-10,-10],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-15,-15,-15,-20,-20,-25,-25,-25,-25,-20,-20,-15,-15,-15],
-    [-10,-10,-10,-15,-15,-20,-20,-20,-20,-15,-15,-10,-10,-10],
-    [0, 0, 0,-10,-10,-15,-15,-15,-15,-10,-10, 0, 0, 0],
-    [0, 0, 0,  5,  5,  0, -5, -5,  0,  5,  5, 0, 0, 0],
-    [0, 0, 0, 10, 10,  5,  0,  0,  5, 10, 10, 0, 0, 0],
+    [0, 0, 0,  3,  3,  2,  0,  0,  2,  3,  3, 0, 0, 0],
+    [0, 0, 0,  2,  2,  0, -2, -2,  0,  2,  2, 0, 0, 0],
+    [0, 0, 0, -3, -3, -5, -5, -5, -5, -3, -3, 0, 0, 0],
+    [-3,-3,-3, -5, -5, -7, -7, -7, -7, -5, -5,-3,-3,-3],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-5,-5,-5, -7, -7, -8, -8, -8, -8, -7, -7,-5,-5,-5],
+    [-3,-3,-3, -5, -5, -7, -7, -7, -7, -5, -5,-3,-3,-3],
+    [0, 0, 0, -3, -3, -5, -5, -5, -5, -3, -3, 0, 0, 0],
+    [0, 0, 0,  2,  2,  0, -2, -2,  0,  2,  2, 0, 0, 0],
+    [0, 0, 0,  3,  3,  2,  0,  0,  2,  3,  3, 0, 0, 0],
 ];
 
 /// Map a (rank, file) from Red's perspective to the correct (rank, file)
@@ -448,7 +463,104 @@ impl BootstrapEvaluator {
             }
         }
 
-        shelter * WEIGHT_KING_SAFETY_SHELTER - attackers * WEIGHT_KING_SAFETY_ATTACKER
+        // Exposure penalty: king with few shelter pawns is vulnerable
+        let exposure_penalty = if shelter <= 1 {
+            45 // Severe: 0-1 shelter pawns
+        } else if shelter <= 2 {
+            20 // Moderate: only 2 shelter pawns
+        } else {
+            0 // 3+ shelter pawns is adequate
+        };
+
+        // Amplify attacker penalty when shelter is already damaged
+        let attacker_weight = if shelter <= 1 {
+            WEIGHT_KING_SAFETY_ATTACKER * 2
+        } else {
+            WEIGHT_KING_SAFETY_ATTACKER
+        };
+
+        shelter * WEIGHT_KING_SAFETY_SHELTER - attackers * attacker_weight - exposure_penalty
+    }
+
+    /// Castling bonus: flat reward for having castled.
+    /// Detects castling by checking if king is on a castling destination square
+    /// AND that side's castling right is revoked.
+    fn castled_bonus(state: &GameState, player: Player) -> i16 {
+        let board = state.board();
+        let king_sq = board.king_square(player);
+        if king_sq == ELIMINATED_KING_SENTINEL {
+            return 0;
+        }
+        let rights = board.castling_rights();
+        let pi = player.index();
+
+        for side in 0..2 {
+            let dest = CASTLE_KING_DESTS[pi][side];
+            let bit = CASTLE_RIGHTS_BITS[pi][side];
+            // King is on castling destination AND that right is revoked
+            if king_sq == dest && (rights & (1 << bit)) == 0 {
+                return CASTLED_BONUS;
+            }
+        }
+        0
+    }
+
+    /// Development bonus: reward pieces that have moved off their back rank.
+    /// Knights and bishops get the biggest bonus (develop minors first),
+    /// queen gets a moderate bonus (activate early like 3000+ Elo players),
+    /// rooks get a small bonus (usually develop later via castling/open files).
+    fn development_score(state: &GameState, player: Player) -> i16 {
+        let board = state.board();
+        let mut score = 0i16;
+
+        // Count undeveloped pieces (pieces still on back rank) as penalty
+        let mut undeveloped_minors = 0i16; // knights, bishops
+        let mut undeveloped_queen = false;
+
+        for (pt, sq) in board.pieces(player) {
+            // Check if piece is off its back rank(s)
+            let off_home = match player {
+                Player::Red => sq.rank() >= 2,     // Red's back ranks are 0-1
+                Player::Blue => sq.file() >= 2,    // Blue's back files are 0-1
+                Player::Yellow => sq.rank() <= 11, // Yellow's back ranks are 12-13
+                Player::Green => sq.file() <= 11,  // Green's back files are 12-13
+            };
+
+            match pt {
+                PieceType::Knight | PieceType::Bishop => {
+                    if off_home {
+                        score += 3; // Strong bonus for developed minors
+                    } else {
+                        undeveloped_minors += 1;
+                    }
+                }
+                PieceType::Queen | PieceType::PromotedQueen => {
+                    if off_home {
+                        score += 2; // Moderate bonus for active queen
+                    } else {
+                        undeveloped_queen = true;
+                    }
+                }
+                PieceType::Rook => {
+                    if off_home {
+                        score += 1; // Small bonus for rooks
+                    }
+                }
+                _ => continue, // Skip pawns and king
+            }
+        }
+
+        // Penalty for undeveloped minors: gets worse the more you have sitting at home
+        score -= undeveloped_minors * undeveloped_minors; // quadratic: 1→-1, 2→-4, 3→-9, 4→-16
+
+        // Penalty for undeveloped queen when minors are still home
+        // (don't penalize queen staying home if minors are developed — sometimes queen develops first)
+        if undeveloped_queen && undeveloped_minors >= 3 {
+            score -= 2;
+        }
+
+        // Cap positive development to prevent drowning out material gains (captures)
+        score.min(DEV_SCORE_CAP)
     }
 
     /// Pawn structure: advancement bonus and doubled pawn penalty.
@@ -523,9 +635,18 @@ impl Evaluator for BootstrapEvaluator {
             let mobility = Self::mobility_score(state, player) * WEIGHT_MOBILITY;
             let terr = territory[player.index()] * WEIGHT_TERRITORY;
             let king_safety = Self::king_safety_score(state, player);
+            let castled = Self::castled_bonus(state, player);
             let pawn_structure = Self::pawn_structure_score(state, player);
+            let development = Self::development_score(state, player) * WEIGHT_DEVELOPMENT;
 
-            let total = material + pst + mobility + terr + king_safety + pawn_structure;
+            let total = material
+                + pst
+                + mobility
+                + terr
+                + king_safety
+                + castled
+                + pawn_structure
+                + development;
 
             tracing::debug!(
                 player = %player,
@@ -535,7 +656,9 @@ impl Evaluator for BootstrapEvaluator {
                 mobility,
                 territory = terr,
                 king_safety,
+                castled,
                 pawn_structure,
+                development,
                 "eval component breakdown"
             );
 
@@ -771,14 +894,14 @@ mod tests {
     // ── Pawn Structure ──
 
     #[test]
-    fn test_pawn_advancement_bonus() {
+    fn test_pawn_advancement_disabled() {
+        // WEIGHT_PAWN_ADVANCE = 0: advancement scoring disabled until NNUE (Stage 14+).
+        // Pawns get value from material (captures) and promotion, not walking forward.
         let mut board = Board::empty();
-        // Place Red king (needed for valid state)
         board.set_piece(
             Square::from_rank_file_unchecked(0, 7),
             Piece::new(PieceType::King, Player::Red),
         );
-        // Place a pawn on rank 2 (1 rank advanced from starting rank 1)
         board.set_piece(
             Square::from_rank_file_unchecked(2, 5),
             Piece::new(PieceType::Pawn, Player::Red),
@@ -790,7 +913,6 @@ mod tests {
             Square::from_rank_file_unchecked(0, 7),
             Piece::new(PieceType::King, Player::Red),
         );
-        // Place the pawn further advanced on rank 6
         board2.set_piece(
             Square::from_rank_file_unchecked(6, 5),
             Piece::new(PieceType::Pawn, Player::Red),
@@ -800,11 +922,10 @@ mod tests {
         let adv1 = BootstrapEvaluator::pawn_structure_score(&state1, Player::Red);
         let adv2 = BootstrapEvaluator::pawn_structure_score(&state2, Player::Red);
 
-        assert!(
-            adv2 > adv1,
-            "More advanced pawn should have higher pawn structure score: rank2={}, rank6={}",
-            adv1,
-            adv2
+        assert_eq!(
+            adv1, adv2,
+            "With WEIGHT_PAWN_ADVANCE=0, advancement should not affect score: rank2={}, rank6={}",
+            adv1, adv2
         );
     }
 

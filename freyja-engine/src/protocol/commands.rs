@@ -40,6 +40,8 @@ pub enum Command {
         /// Option value.
         value: String,
     },
+    /// Dump current position as FEN4.
+    Debug,
     /// Unrecognized command (kept for error reporting).
     Unknown(String),
 }
