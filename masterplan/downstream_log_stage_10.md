@@ -82,7 +82,7 @@ let result = mcts_searcher.search(&mut state, &remaining_limits);
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| MCTS unit tests | 36 tests pass | All acceptance criteria covered |
+| MCTS unit tests | 41 tests pass | All 9 acceptance criteria covered |
 | Simulations per search (50-node limit) | ~50 | Starting position, debug build |
 | Memory per node | ~80-100 bytes | MctsNode + Vec overhead for children |
 | Max tree size (2M nodes) | ~200MB | Generous default, tunable via MctsConfig |

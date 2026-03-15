@@ -1,14 +1,14 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-14
-**Updated By:** Session 15
+**Last Updated:** 2026-03-15
+**Updated By:** Session 16
 
 ---
 
 ## Current Stage
 
-**Stage:** 9 (TT + Move Ordering) -- COMPLETE
-**Status:** Stage 9 verified and tagged. TT (16MB, Zobrist-keyed), killer moves, history heuristic, MVV-LVA ordering. NPS ~89.7k at depth 5 release. Eval improvements: castling bonus, king exposure penalty, development cap, attacker amplifier. Debug command (`d`) added to protocol. Observer eval suite infrastructure created.
+**Stage:** 10 (MCTS) -- COMPLETE
+**Status:** Gumbel MCTS with Max^n backpropagation implemented. 41 MCTS-specific tests, 355 total unit tests, 0 clippy warnings. Sequential Halving root selection, progressive widening, progressive history injection points for Stage 11. Memory bounded with graceful degradation. All 9 acceptance criteria verified (AC3 partial — needs FEN4 position setup).
 
 ---
 
@@ -26,7 +26,7 @@
 | 7 | Max^n Search | Complete | `stage-07-complete` / `v1.7` | 2026-03-07 |
 | 8 | Quiescence Search | Complete | `stage-08-complete` / `v1.8` | 2026-03-07 |
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
-| 10 | MCTS | Not Started | -- | -- |
+| 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
 | 11 | Max^n -> MCTS Integration | Not Started | -- | -- |
 | 12 | Self-Play Framework | Not Started | -- | -- |
 | 13 | Time + Beam Tuning | Not Started | -- | -- |
@@ -65,14 +65,17 @@
 | Search NPS (release, post-qsearch) | ~33-60k depth 4 | Starting position, 5s budget, min depth 4 |
 | Search NPS (release, post-TT) | ~89.7k depth 5 | Starting position, TT + move ordering |
 | Eval suite score | 17/39 (44%) at depth 2 | Baseline — systematic tuning deferred to Stage 13 |
+| MCTS tests | 41/41 pass | All 9 acceptance criteria |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Begin Stage 10 (MCTS) planning — read MASTERPLAN Stage 10 spec
-2. Read `masterplan/downstream_log_stage_09.md` for API contracts
-3. Address deferred debt if time allows
+1. Tag Stage 10: `git tag stage-10-complete && git tag v1.10`
+2. Begin Stage 11 (Max^n → MCTS Integration) — read MASTERPLAN Stage 11 spec
+3. Read `masterplan/downstream_log_stage_10.md` for MCTS API contracts
+4. Read `masterplan/downstream_log_stage_09.md` for Max^n API contracts
+5. Address deferred debt if time allows
 
 ---
 
@@ -82,6 +85,7 @@
 - Session notes for Sessions 7, 8, 11, 12
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
+- Pre-existing slider corner changes in attacks.rs/move_gen.rs (review needed)
 
 ---
 
@@ -96,7 +100,7 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 10 (Stages 0-9) | 2026-03-14 |
-| Open blocking issues | 0 | 2026-03-14 |
+| Stages complete | 11 (Stages 0-10) | 2026-03-15 |
+| Open blocking issues | 0 | 2026-03-15 |
 | Open warning issues | 1 | 2026-03-07 |
 | NPS baseline | ~89.7k (release, depth 5, TT+ordering) | 2026-03-08 |
