@@ -312,6 +312,34 @@ impl<E: Evaluator> MaxnSearcher<E> {
         scores
     }
 
+    /// Get beam width for a given remaining depth, respecting schedule and adaptive beam.
+    #[inline]
+    fn beam_width_at_depth(&self, remaining_depth: u32, state: &mut GameState) -> usize {
+        let base = if let Some(ref schedule) = self.config.beam_schedule {
+            // Schedule is indexed by depth level (0 = shallowest remaining depth)
+            // Use remaining_depth as index, capping at schedule length
+            let idx = (remaining_depth as usize).min(schedule.len() - 1);
+            schedule[idx].max(1)
+        } else {
+            self.config.beam_width
+        };
+
+        if !self.config.adaptive_beam {
+            return base;
+        }
+
+        // Adaptive beam: widen for tactical positions (many captures), narrow for quiet
+        let captures = generate_captures_only(state.board_mut());
+        let capture_count = captures.len();
+        if capture_count > 8 {
+            (base * 3 / 2).min(MAX_MOVES) // 50% wider for highly tactical
+        } else if capture_count == 0 {
+            (base * 2 / 3).max(4) // 33% narrower for quiet
+        } else {
+            base
+        }
+    }
+
     /// Hybrid beam selection with TT-aware move ordering.
     ///
     /// 1. Generate all legal moves
@@ -492,8 +520,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             tt_move = None;
         }
 
-        // Generate moves with beam selection
-        let moves = self.beam_select(state, current, self.config.beam_width, tt_move, ply);
+        // Generate moves with beam selection (respects schedule and adaptive beam)
+        let beam = self.beam_width_at_depth(depth, state);
+        let moves = self.beam_select(state, current, beam, tt_move, ply);
 
         // No legal moves (stalemate/checkmate)
         if moves.is_empty() {
@@ -1041,6 +1070,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             MIN_SEARCH_DEPTH
         };
 
+        #[allow(unused_assignments)]
+        let mut last_depth_ms: u64 = 0;
+
         for depth in 1..=max_depth {
             // Reset PV for this iteration
             ss.pv_length = [0; MAX_DEPTH];
@@ -1051,13 +1083,17 @@ impl<E: Evaluator> MaxnSearcher<E> {
                 ss.suspend_time_check = true;
             }
 
+            let depth_start = Instant::now();
             let scores = self.maxn(state, depth, 0, root_player, &mut ss);
+            let depth_elapsed_ms = depth_start.elapsed().as_millis() as u64;
 
             ss.suspend_time_check = false;
 
             if ss.aborted {
                 break; // Use result from last completed depth
             }
+
+            last_depth_ms = depth_elapsed_ms;
 
             // Extract best move from PV
             let pv = Self::extract_pv(&ss);
@@ -1079,6 +1115,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
             tracing::info!(
                 depth = depth,
+                depth_ms = depth_elapsed_ms,
                 nodes = ss.nodes,
                 qnodes = ss.qnodes,
                 best_move = ?best_result.best_move,
@@ -1091,6 +1128,73 @@ impl<E: Evaluator> MaxnSearcher<E> {
             // Check if we should stop before the next iteration
             if ss.should_abort() {
                 break;
+            }
+
+            // Time management: estimate if next depth will fit in remaining budget.
+            // Heuristic: next depth takes ~4x current depth (effective branching factor).
+            if let Some(max_time_ms) = ss.limits.max_time_ms {
+                let total_elapsed = ss.start_time.elapsed().as_millis() as u64;
+                let remaining = max_time_ms.saturating_sub(total_elapsed);
+                let estimated_next = last_depth_ms.saturating_mul(4);
+                if estimated_next > remaining && depth >= min_depth {
+                    tracing::info!(
+                        depth,
+                        depth_ms = last_depth_ms,
+                        remaining_ms = remaining,
+                        estimated_next_ms = estimated_next,
+                        "Stopping ID: next depth unlikely to complete in time"
+                    );
+                    break;
+                }
+            }
+        }
+
+        // MoveNoise: probabilistic move replacement for opening diversity.
+        // When move_noise > 0, with probability move_noise/100, replace the
+        // best move with a random top-3 move. Uses Zobrist hash as seed for
+        // deterministic-per-position randomization.
+        if self.config.move_noise > 0 && best_result.best_move.is_some() {
+            let hash = state.board().zobrist_hash();
+            // Simple xorshift from Zobrist hash
+            let mut rng = hash ^ (hash >> 17);
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            let roll = (rng % 100) as u32;
+            if roll < self.config.move_noise {
+                // Pick a random move from top-3 legal moves (ordered by search)
+                let legal = generate_legal_moves(state.board_mut());
+                if legal.len() >= 2 {
+                    // Use PV move (index 0) and next 2 candidates
+                    let pick_idx = (rng as usize / 100) % legal.len().min(3);
+                    // Score moves to find top 3
+                    let tt_move = best_result.best_move;
+                    let mut scored: ArrayVec<(Move, i32), MAX_MOVES> = legal
+                        .iter()
+                        .map(|&mv| {
+                            let s = score_move(
+                                mv,
+                                tt_move,
+                                &self.killers,
+                                &self.history,
+                                0,
+                                root_player,
+                            );
+                            (mv, s)
+                        })
+                        .collect();
+                    scored.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+                    let top_n = scored.len().min(3);
+                    let chosen = scored[pick_idx % top_n].0;
+                    if chosen != best_result.best_move.unwrap() {
+                        tracing::info!(
+                            noise = self.config.move_noise,
+                            original = ?best_result.best_move,
+                            chosen = ?chosen,
+                            "MoveNoise: replaced best move"
+                        );
+                        best_result.best_move = Some(chosen);
+                    }
+                }
             }
         }
 
