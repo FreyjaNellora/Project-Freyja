@@ -109,6 +109,12 @@ pub struct SearchConfig {
     pub tt_size_mb: usize,
     /// Maximum quiescence nodes before soft abort (return stand-pat).
     pub max_qnodes: u64,
+    /// Per-depth beam width schedule. None = use flat beam_width.
+    pub beam_schedule: Option<[usize; MAX_DEPTH]>,
+    /// Move noise level (0-100). 0 = deterministic.
+    pub move_noise: u32,
+    /// Adaptive beam based on position complexity.
+    pub adaptive_beam: bool,
 }
 
 impl Default for SearchConfig {
@@ -118,6 +124,9 @@ impl Default for SearchConfig {
             sum_bound: DEFAULT_SUM_BOUND,
             tt_size_mb: DEFAULT_TT_SIZE_MB,
             max_qnodes: DEFAULT_MAX_QNODES,
+            beam_schedule: None,
+            move_noise: 0,
+            adaptive_beam: false,
         }
     }
 }

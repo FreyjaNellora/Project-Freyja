@@ -190,9 +190,15 @@ impl<W: Write> Protocol<W> {
             && params.nodes.is_none()
             && params.movetime.is_none()
             && !params.infinite;
+        // Wire MaxNodes from options if not specified in go command
+        let effective_max_nodes = params.nodes.or(if self.options.max_nodes > 0 {
+            Some(self.options.max_nodes)
+        } else {
+            None
+        });
         let limits = SearchLimits {
             max_depth: params.depth,
-            max_nodes: params.nodes,
+            max_nodes: effective_max_nodes,
             max_time_ms: if no_constraints {
                 Some(5000)
             } else {
@@ -201,7 +207,13 @@ impl<W: Write> Protocol<W> {
             infinite: params.infinite,
         };
 
-        let mut searcher = HybridSearcher::new(BootstrapEvaluator::new(), HybridConfig::default());
+        let hybrid_config = HybridConfig {
+            maxn_config: self.options.search_config(),
+            mcts_config: self.options.mcts_config(),
+            time_split_ratio: self.options.time_split_ratio,
+            ..HybridConfig::default()
+        };
+        let mut searcher = HybridSearcher::new(BootstrapEvaluator::new(), hybrid_config);
         let start = std::time::Instant::now();
         let result = searcher.search(&mut self.game_state, &limits);
         let elapsed_ms = start.elapsed().as_millis() as u64;
