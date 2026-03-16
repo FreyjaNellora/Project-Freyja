@@ -345,6 +345,7 @@ fn bfs_territory(state: &GameState) -> [i16; PLAYERS] {
 ///
 /// Combines material, PST, mobility, territory, king safety, and pawn structure.
 /// Temporary — NNUE replaces this in Stage 17.
+#[derive(Clone)]
 pub struct BootstrapEvaluator;
 
 impl BootstrapEvaluator {

@@ -14,8 +14,9 @@ use std::io::{BufRead, Write};
 
 use crate::eval::BootstrapEvaluator;
 use crate::game_state::GameState;
+use crate::hybrid::{HybridConfig, HybridSearcher};
 use crate::move_gen::Move;
-use crate::search::{MaxnSearcher, SearchConfig, SearchLimits, Searcher};
+use crate::search::{SearchLimits, Searcher};
 
 use self::commands::Command;
 use self::logfile::LogFile;
@@ -200,7 +201,7 @@ impl<W: Write> Protocol<W> {
             infinite: params.infinite,
         };
 
-        let mut searcher = MaxnSearcher::new(BootstrapEvaluator::new(), SearchConfig::default());
+        let mut searcher = HybridSearcher::new(BootstrapEvaluator::new(), HybridConfig::default());
         let start = std::time::Instant::now();
         let result = searcher.search(&mut self.game_state, &limits);
         let elapsed_ms = start.elapsed().as_millis() as u64;

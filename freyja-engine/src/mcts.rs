@@ -1660,7 +1660,10 @@ mod tests {
         };
 
         let result = searcher.search(&mut state, &limits);
-        assert!(result.best_move.is_some(), "100-sim search must return a move");
+        assert!(
+            result.best_move.is_some(),
+            "100-sim search must return a move"
+        );
 
         // Verify scores are in reasonable range (not garbage)
         let scores = result.scores;
@@ -1789,6 +1792,9 @@ mod tests {
 
         // The key property: PH warm-start should influence selection.
         // We verify by checking that the searcher's history is set.
-        assert!(warm.history.is_some(), "History should be set after warm-start");
+        assert!(
+            warm.history.is_some(),
+            "History should be set after warm-start"
+        );
     }
 }

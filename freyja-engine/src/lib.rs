@@ -1,6 +1,7 @@
 pub mod board;
 pub mod eval;
 pub mod game_state;
+pub mod hybrid;
 pub mod mcts;
 pub mod move_gen;
 pub mod move_order;
