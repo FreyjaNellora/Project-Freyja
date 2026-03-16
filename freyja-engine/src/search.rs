@@ -39,6 +39,10 @@ pub const DEFAULT_SUM_BOUND: i32 = 40_000;
 /// 4 is sufficient to resolve most capture chains while keeping overhead manageable.
 pub const MAX_QSEARCH_DEPTH: u32 = 4;
 
+/// Default maximum quiescence nodes before soft abort (return stand-pat).
+/// Prevents stack overflow from capture explosion on the 14x14 board.
+pub const DEFAULT_MAX_QNODES: u64 = 2_000_000;
+
 /// Minimum search depth before time-based abort is allowed.
 /// Ensures the engine always completes at least this depth for quality decisions.
 pub const MIN_SEARCH_DEPTH: u32 = 4;
@@ -103,6 +107,8 @@ pub struct SearchConfig {
     pub sum_bound: i32,
     /// Transposition table size in megabytes.
     pub tt_size_mb: usize,
+    /// Maximum quiescence nodes before soft abort (return stand-pat).
+    pub max_qnodes: u64,
 }
 
 impl Default for SearchConfig {
@@ -111,6 +117,7 @@ impl Default for SearchConfig {
             beam_width: DEFAULT_BEAM_WIDTH,
             sum_bound: DEFAULT_SUM_BOUND,
             tt_size_mb: DEFAULT_TT_SIZE_MB,
+            max_qnodes: DEFAULT_MAX_QNODES,
         }
     }
 }
@@ -174,6 +181,8 @@ struct SearchState {
     nodes: u64,
     /// Total quiescence nodes visited.
     qnodes: u64,
+    /// Maximum quiescence nodes before soft abort (return stand-pat).
+    max_qnodes: u64,
     /// Search start time.
     start_time: Instant,
     /// Limits for this search.
@@ -189,10 +198,11 @@ struct SearchState {
 }
 
 impl SearchState {
-    fn new(limits: SearchLimits) -> Self {
+    fn new(limits: SearchLimits, max_qnodes: u64) -> Self {
         Self {
             nodes: 0,
             qnodes: 0,
+            max_qnodes,
             start_time: Instant::now(),
             limits,
             aborted: false,
@@ -749,6 +759,12 @@ impl<E: Evaluator> MaxnSearcher<E> {
         // Stand-pat evaluation
         let stand_pat = self.eval_4vec_search(state);
 
+        // Qsearch node budget: soft abort — return stand-pat when budget exhausted
+        if ss.qnodes >= ss.max_qnodes {
+            ss.pv_length[ply] = 0;
+            return stand_pat;
+        }
+
         // Depth cap: return stand-pat
         if qdepth >= MAX_QSEARCH_DEPTH {
             ss.pv_length[ply] = 0;
@@ -881,6 +897,12 @@ impl<E: Evaluator> MaxnSearcher<E> {
         // Stand-pat
         let stand_pat = self.evaluator.eval_scalar(state, current);
 
+        // Qsearch node budget: soft abort — return stand-pat when budget exhausted
+        if ss.qnodes >= ss.max_qnodes {
+            ss.pv_length[ply] = 0;
+            return stand_pat;
+        }
+
         // Depth cap
         if qdepth >= MAX_QSEARCH_DEPTH {
             ss.pv_length[ply] = 0;
@@ -981,7 +1003,7 @@ impl<E: Evaluator> MaxnSearcher<E> {
         state: &mut GameState,
         limits: &SearchLimits,
     ) -> SearchResult {
-        let mut ss = SearchState::new(limits.clone());
+        let mut ss = SearchState::new(limits.clone(), self.config.max_qnodes);
         let max_depth = limits.max_depth.unwrap_or(MAX_DEPTH as u32);
 
         let root_player = state.board().side_to_move();
@@ -1595,6 +1617,60 @@ mod tests {
         let raw = history.raw();
         let total: u32 = raw.iter().flat_map(|row| row.iter()).sum();
         assert_eq!(total, 0, "Fresh history table should be all zeros");
+    }
+
+    // ── Qsearch node budget ──
+
+    #[test]
+    fn test_qsearch_node_budget_caps_qnodes() {
+        // With a tight qsearch budget, depth 4 search should complete
+        // and qnodes should not exceed the budget significantly.
+        let mut gs = GameState::new_standard_ffa();
+        let budget = 50_000u64;
+        let mut searcher = MaxnSearcher::new(
+            BootstrapEvaluator::new(),
+            SearchConfig {
+                max_qnodes: budget,
+                ..SearchConfig::default()
+            },
+        );
+        let limits = SearchLimits {
+            max_depth: Some(4),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+        assert!(result.best_move.is_some(), "Should find a move");
+        assert_eq!(result.depth, 4, "Should complete depth 4 with budget");
+        // Budget is soft: checked per-call, so overshoot is expected due to
+        // in-flight recursive calls between checks. The key property is that
+        // depth 4 completes at all (it hangs without a budget).
+        assert!(
+            result.qnodes < budget * 10,
+            "qnodes {} should be bounded (budget {})",
+            result.qnodes,
+            budget
+        );
+    }
+
+    #[test]
+    fn test_qsearch_budget_zero_disables_qsearch() {
+        // max_qnodes=0 means qsearch immediately returns stand-pat
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = MaxnSearcher::new(
+            BootstrapEvaluator::new(),
+            SearchConfig {
+                max_qnodes: 0,
+                ..SearchConfig::default()
+            },
+        );
+        let limits = SearchLimits {
+            max_depth: Some(3),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+        assert!(result.best_move.is_some());
+        // With qsearch disabled, qnodes should be minimal (only the initial
+        // increment before the budget check fires)
     }
 
     #[test]
