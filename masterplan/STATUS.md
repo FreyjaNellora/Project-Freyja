@@ -1,14 +1,14 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-15
-**Updated By:** Session 16
+**Updated By:** Session 17
 
 ---
 
 ## Current Stage
 
-**Stage:** 10 (MCTS) -- COMPLETE
-**Status:** Gumbel MCTS with Max^n backpropagation implemented. 41 MCTS-specific tests, 355 total unit tests, 0 clippy warnings. Sequential Halving root selection, progressive widening, progressive history injection points for Stage 11. Memory bounded with graceful degradation. All 9 acceptance criteria verified (AC3 partial — needs FEN4 position setup).
+**Stage:** 11 (Max^n → MCTS Integration) -- IN PROGRESS
+**Status:** Core implementation committed. HybridSearcher sequences Max^n → MCTS with history transfer and prior policy injection. 21 hybrid tests pass, 0 clippy warnings. Needs: full regression test run, post-audit, downstream log, user UI testing.
 
 ---
 
@@ -27,7 +27,7 @@
 | 8 | Quiescence Search | Complete | `stage-08-complete` / `v1.8` | 2026-03-07 |
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
-| 11 | Max^n -> MCTS Integration | Not Started | -- | -- |
+| 11 | Max^n -> MCTS Integration | In Progress | -- | -- |
 | 12 | Self-Play Framework | Not Started | -- | -- |
 | 13 | Time + Beam Tuning | Not Started | -- | -- |
 | 14 | Zone Control Features | Not Started | -- | -- |
@@ -66,15 +66,16 @@
 | Search NPS (release, post-TT) | ~89.7k depth 5 | Starting position, TT + move ordering |
 | Eval suite score | 17/39 (44%) at depth 2 | Baseline — systematic tuning deferred to Stage 13 |
 | MCTS tests | 41/41 pass | All 9 acceptance criteria |
+| Hybrid tests | 21/21 pass | AC1-AC8 coverage |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Tag Stage 10: `git tag stage-10-complete && git tag v1.10`
-2. Begin Stage 11 (Max^n → MCTS Integration) — read MASTERPLAN Stage 11 spec
-3. Read `masterplan/downstream_log_stage_10.md` for MCTS API contracts
-4. Read `masterplan/downstream_log_stage_09.md` for Max^n API contracts
+1. Run full test suite: `cargo test -p freyja-engine --lib` — verify all 380+ tests pass
+2. Test hybrid in UI: `position startpos` → `go movetime 5000`
+3. Create audit_log_stage_11.md and downstream_log_stage_11.md
+4. Get user sign-off for Stage 11 completion
 5. Address deferred debt if time allows
 
 ---
@@ -85,7 +86,7 @@
 - Session notes for Sessions 7, 8, 11, 12
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
-- Pre-existing slider corner changes in attacks.rs/move_gen.rs (review needed)
+- Stage 11 audit log and downstream log (next session)
 
 ---
 

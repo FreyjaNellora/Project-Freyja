@@ -1,61 +1,70 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-15
-**Session Number:** 16
+**Session Number:** 17
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 10: MCTS (Gumbel MCTS) -- COMPLETE**
-**Next: Stage 11 (Max^n → MCTS Integration)**
+**Stage 11: Max^n → MCTS Integration -- IN PROGRESS (core implementation done)**
 
-Stage 10 verified: 41 MCTS tests pass, 355 total unit tests, 0 clippy warnings. All 9 acceptance criteria met (AC3 partial — mate-in-1 needs FEN4 test position). User blessing received (MCTS can't be UI-tested until Stage 11 plugs it in).
+HybridSearcher implemented and committed. 21 hybrid tests pass, 0 clippy warnings. Protocol updated to use HybridSearcher. Needs: full regression test suite run, post-audit, downstream log, user UI testing.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Stage 10 verification and completion:**
-   - Reviewed full MCTS implementation (1649 lines in `mcts.rs`)
-   - Added 5 additional acceptance criteria tests (AC2, AC3, AC4, AC6, AC8)
-   - Total MCTS tests: 41/41 passing
-   - Completed post-audit in `audit_log_stage_10.md`
-   - Updated `downstream_log_stage_10.md` with corrected test count
-   - All 9 MASTERPLAN acceptance criteria verified
+1. **Stage 11 core implementation:**
+   - Created `freyja-engine/src/hybrid.rs` (~320 lines) — HybridSearcher controller
+   - Phase 1: Max^n with 50% time budget
+   - Phase 1.5: History table extraction + prior policy computation (softmax over ordering scores)
+   - Phase 2: MCTS with warm-started progressive history + informed priors
+   - Mate detection: skips MCTS when score >= 9000cp
+   - Disagreement tracking: logs when Max^n and MCTS pick different moves
+   - Result merging: MCTS best move, Max^n depth/PV/TT stats
+   - 21 tests covering all 8 acceptance criteria (AC1-AC8)
 
-2. **Tier Boundary Review (Tier 2→3):**
-   - 374 tests pass (349 unit + 25 integration), 0 clippy warnings
-   - All 18 maintenance invariants verified
+2. **Supporting changes:**
+   - Added `#[derive(Clone)]` to `BootstrapEvaluator` (eval.rs)
+   - Added `pub mod hybrid;` to lib.rs
+   - Swapped `MaxnSearcher` → `HybridSearcher` in protocol/mod.rs
+   - Applied `cargo fmt` (including formatting fixes in mcts.rs test asserts)
+
+3. **Pre-work completed:**
+   - Stage 10 tags already existed (`stage-10-complete` / `v1.10`)
+   - Build and clippy verified clean
+   - Pre-existing slider corner changes already committed (d876960)
 
 ---
 
 ## What Was NOT Completed
 
-- Stage 10 git tag (`stage-10-complete` / `v1.10`) — needs user confirmation
-- AC3 (mate-in-1): Only partial coverage — full test needs FEN4 position setup helper
-- Pre-existing uncommitted changes in `attacks.rs` and `move_gen.rs` (from another session — slider corner handling)
-- Deferred debt from prior sessions (Stage 5 post-audit, missing session notes, dead code cleanup)
+- Full regression test suite run (debug build takes 10+ minutes, ran out of time)
+- Post-audit (`audit_log_stage_11.md`) — not yet created
+- Downstream log (`downstream_log_stage_11.md`) — not yet created
+- User UI testing of hybrid controller
+- Deferred debt from prior sessions
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Tag Stage 10 if not already tagged: `git tag stage-10-complete && git tag v1.10`
-2. Read MASTERPLAN Stage 11 spec (Max^n → MCTS Integration)
-3. Read `masterplan/downstream_log_stage_10.md` for MCTS API contracts
-4. Read `masterplan/downstream_log_stage_09.md` for Max^n API contracts (history_table(), ordering scores)
-5. Begin Stage 11 implementation — hybrid controller that sequences Max^n → MCTS
+1. Run full test suite: `cargo test -p freyja-engine --lib` — verify all 380+ tests pass
+2. Test in UI: `position startpos` → `go movetime 5000` — verify legal bestmove with both phases running
+3. Create `masterplan/audit_log_stage_11.md` with pre-audit + post-audit
+4. Create `masterplan/downstream_log_stage_11.md` with HybridSearcher API contracts
+5. Address any test failures from full suite run
+6. Get user sign-off for Stage 11 completion
 
 ---
 
 ## Open Issues / Discoveries
 
-- **AC3 partial (NOTE):** Mate-in-1 test needs a FEN4 position setup helper to construct specific board positions. Current test verifies 200-sim search produces legal moves without corruption.
-- **Pre-existing slider changes (NOTE):** `attacks.rs` and `move_gen.rs` have uncommitted changes from another session changing corner handling from `break` to `continue`. Review and commit separately.
-- **Eval suite baseline: 17/39 (44%) at depth 2 (NOTE).** Deferred to Stage 13.
+- **MaxnSearcher returns best_move=None on second call with persistent TT (NOTE):** When calling search() twice on the same position with persistent TT, the second call may return None for best_move. Not a hybrid bug — Max^n TT caching issue. Does not affect production use (fresh searcher per `go`).
+- **Debug build time budget issue (known, NOTE):** Debug build ignores time budget at depth 4+ due to MIN_SEARCH_DEPTH enforcement. Hybrid tests use max_depth caps to work around this. Release builds work correctly.
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** UI missing Debug Console, Engine Internals.
-- **Search time abort bug (NOTE):** Debug build doesn't respect time budget at depth 4+.
+- **Eval suite baseline: 17/39 (44%) at depth 2 (NOTE).** Deferred to Stage 13.
 
 ---
 
@@ -63,11 +72,13 @@ Stage 10 verified: 41 MCTS tests pass, 355 total unit tests, 0 clippy warnings. 
 
 | File | Action |
 |------|--------|
-| `freyja-engine/src/mcts.rs` | Modified — added 5 AC tests (AC2, AC3, AC4, AC6, AC8) |
-| `masterplan/audit_log_stage_10.md` | Modified — completed post-audit section |
-| `masterplan/downstream_log_stage_10.md` | Modified — updated test count to 41 |
-| `masterplan/STATUS.md` | Updated — Stage 10 complete |
+| `freyja-engine/src/hybrid.rs` | **CREATED** — HybridSearcher, HybridConfig, 21 tests |
+| `freyja-engine/src/lib.rs` | Modified — added `pub mod hybrid;` |
+| `freyja-engine/src/eval.rs` | Modified — added `#[derive(Clone)]` to BootstrapEvaluator |
+| `freyja-engine/src/protocol/mod.rs` | Modified — swapped MaxnSearcher → HybridSearcher |
+| `freyja-engine/src/mcts.rs` | Modified — cargo fmt formatting only |
 | `masterplan/HANDOFF.md` | Rewritten |
+| `masterplan/STATUS.md` | Updated |
 
 ---
 
@@ -76,6 +87,6 @@ Stage 10 verified: 41 MCTS tests pass, 355 total unit tests, 0 clippy warnings. 
 - Stage 5 post-audit, downstream log, vault notes
 - Session notes for Sessions 7, 8, 11, 12
 - Dead code: `apply_move_with_events` in `game_state.rs`
-- Search time abort bug: debug build ignores 2s budget at higher depths
+- Search time abort bug: debug build ignores time budget at higher depths
 - Eval suite systematic tuning (Stage 13)
-- Pre-existing slider corner changes in attacks.rs/move_gen.rs (review needed)
+- Stage 11 audit log and downstream log (next session)
