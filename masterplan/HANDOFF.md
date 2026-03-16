@@ -7,64 +7,63 @@
 
 ## What Stage Are We On?
 
-**Stage 11: Max^n → MCTS Integration -- IN PROGRESS (core implementation done)**
+**Stage 11: Max^n → MCTS Integration -- COMPLETE**
+**Next: Stage 12 (Self-Play Framework)**
 
-HybridSearcher implemented and committed. 21 hybrid tests pass, 0 clippy warnings. Protocol updated to use HybridSearcher. Needs: full regression test suite run, post-audit, downstream log, user UI testing.
+HybridSearcher implemented, tested (381 tests, 21 hybrid-specific), and user-verified in UI. Engine played 28 ply of 4-player chess with MCTS overriding Max^n on strategic moves. Tagged `stage-11-complete` / `v1.11`.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Stage 11 core implementation:**
+1. **Stage 11 full implementation:**
    - Created `freyja-engine/src/hybrid.rs` (~320 lines) — HybridSearcher controller
-   - Phase 1: Max^n with 50% time budget
+   - Phase 1: Max^n with 50% time budget (tactical grounding)
    - Phase 1.5: History table extraction + prior policy computation (softmax over ordering scores)
    - Phase 2: MCTS with warm-started progressive history + informed priors
    - Mate detection: skips MCTS when score >= 9000cp
    - Disagreement tracking: logs when Max^n and MCTS pick different moves
-   - Result merging: MCTS best move, Max^n depth/PV/TT stats
+   - Result merging: MCTS best_move, Max^n depth/PV/TT stats
    - 21 tests covering all 8 acceptance criteria (AC1-AC8)
 
 2. **Supporting changes:**
    - Added `#[derive(Clone)]` to `BootstrapEvaluator` (eval.rs)
    - Added `pub mod hybrid;` to lib.rs
    - Swapped `MaxnSearcher` → `HybridSearcher` in protocol/mod.rs
-   - Applied `cargo fmt` (including formatting fixes in mcts.rs test asserts)
 
-3. **Pre-work completed:**
-   - Stage 10 tags already existed (`stage-10-complete` / `v1.10`)
-   - Build and clippy verified clean
-   - Pre-existing slider corner changes already committed (d876960)
+3. **Audit and documentation:**
+   - Created `masterplan/audit_log_stage_11.md` (pre-audit + post-audit)
+   - Created `masterplan/downstream_log_stage_11.md` (API contracts + integration flow)
+   - Full regression: 381 tests pass (318 foundation + 33 search + 41 MCTS + 21 hybrid)
+
+4. **User verification:**
+   - Launched Tauri UI, engine connected, played 7 rounds (28 ply)
+   - MCTS overrides Max^n on strategic moves (PV ≠ bestmove confirms both phases active)
+   - Stable performance, no crashes, reasonable scores
 
 ---
 
 ## What Was NOT Completed
 
-- Full regression test suite run (debug build takes 10+ minutes, ran out of time)
-- Post-audit (`audit_log_stage_11.md`) — not yet created
-- Downstream log (`downstream_log_stage_11.md`) — not yet created
-- User UI testing of hybrid controller
-- Deferred debt from prior sessions
+- Session note for Session 17 (create in next session)
+- Deferred debt from prior sessions (Stage 5 post-audit, missing session notes, dead code)
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Run full test suite: `cargo test -p freyja-engine --lib` — verify all 380+ tests pass
-2. Test in UI: `position startpos` → `go movetime 5000` — verify legal bestmove with both phases running
-3. Create `masterplan/audit_log_stage_11.md` with pre-audit + post-audit
-4. Create `masterplan/downstream_log_stage_11.md` with HybridSearcher API contracts
-5. Address any test failures from full suite run
-6. Get user sign-off for Stage 11 completion
+1. Read MASTERPLAN Stage 12 spec (Self-Play Framework)
+2. Read `masterplan/downstream_log_stage_11.md` for HybridSearcher API contracts
+3. Begin Stage 12 implementation
 
 ---
 
 ## Open Issues / Discoveries
 
-- **MaxnSearcher returns best_move=None on second call with persistent TT (NOTE):** When calling search() twice on the same position with persistent TT, the second call may return None for best_move. Not a hybrid bug — Max^n TT caching issue. Does not affect production use (fresh searcher per `go`).
-- **Debug build time budget issue (known, NOTE):** Debug build ignores time budget at depth 4+ due to MIN_SEARCH_DEPTH enforcement. Hybrid tests use max_depth caps to work around this. Release builds work correctly.
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** UI missing Debug Console, Engine Internals.
+- **Debug build time budget (NOTE):** Debug build ignores time budget at depth 4+ due to MIN_SEARCH_DEPTH. Release works correctly.
 - **Eval suite baseline: 17/39 (44%) at depth 2 (NOTE).** Deferred to Stage 13.
+- **MaxnSearcher persistent TT (NOTE):** Second search on same position with persistent TT can return best_move=None. Not a production issue (fresh searcher per `go`).
 
 ---
 
@@ -77,16 +76,17 @@ HybridSearcher implemented and committed. 21 hybrid tests pass, 0 clippy warning
 | `freyja-engine/src/eval.rs` | Modified — added `#[derive(Clone)]` to BootstrapEvaluator |
 | `freyja-engine/src/protocol/mod.rs` | Modified — swapped MaxnSearcher → HybridSearcher |
 | `freyja-engine/src/mcts.rs` | Modified — cargo fmt formatting only |
+| `masterplan/audit_log_stage_11.md` | **CREATED** |
+| `masterplan/downstream_log_stage_11.md` | **CREATED** |
+| `masterplan/STATUS.md` | Updated — Stage 11 complete |
 | `masterplan/HANDOFF.md` | Rewritten |
-| `masterplan/STATUS.md` | Updated |
 
 ---
 
 ## Deferred Debt
 
 - Stage 5 post-audit, downstream log, vault notes
-- Session notes for Sessions 7, 8, 11, 12
+- Session notes for Sessions 7, 8, 11, 12, 17
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - Search time abort bug: debug build ignores time budget at higher depths
 - Eval suite systematic tuning (Stage 13)
-- Stage 11 audit log and downstream log (next session)

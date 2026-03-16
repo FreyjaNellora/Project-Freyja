@@ -7,8 +7,8 @@
 
 ## Current Stage
 
-**Stage:** 11 (Max^n → MCTS Integration) -- IN PROGRESS
-**Status:** Core implementation committed. HybridSearcher sequences Max^n → MCTS with history transfer and prior policy injection. 21 hybrid tests pass, 0 clippy warnings. Needs: full regression test run, post-audit, downstream log, user UI testing.
+**Stage:** 11 (Max^n → MCTS Integration) -- COMPLETE
+**Status:** HybridSearcher sequences Max^n → MCTS with history transfer and prior policy injection. 381 total tests (21 hybrid-specific), 0 clippy warnings. User-verified in UI: 28 ply of 4-player play, MCTS overriding Max^n on strategic moves, stable performance.
 
 ---
 
@@ -27,7 +27,7 @@
 | 8 | Quiescence Search | Complete | `stage-08-complete` / `v1.8` | 2026-03-07 |
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
-| 11 | Max^n -> MCTS Integration | In Progress | -- | -- |
+| 11 | Max^n -> MCTS Integration | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
 | 12 | Self-Play Framework | Not Started | -- | -- |
 | 13 | Time + Beam Tuning | Not Started | -- | -- |
 | 14 | Zone Control Features | Not Started | -- | -- |
@@ -72,21 +72,18 @@
 
 ## What the Next Session Should Do First
 
-1. Run full test suite: `cargo test -p freyja-engine --lib` — verify all 380+ tests pass
-2. Test hybrid in UI: `position startpos` → `go movetime 5000`
-3. Create audit_log_stage_11.md and downstream_log_stage_11.md
-4. Get user sign-off for Stage 11 completion
-5. Address deferred debt if time allows
+1. Begin Stage 12 (Self-Play Framework) — read MASTERPLAN Stage 12 spec
+2. Read `masterplan/downstream_log_stage_11.md` for HybridSearcher API contracts
+3. Address deferred debt if time allows
 
 ---
 
 ## Deferred Debt
 
 - Stage 5 post-audit, downstream log, vault notes
-- Session notes for Sessions 7, 8, 11, 12
+- Session notes for Sessions 7, 8, 11, 12, 17
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
-- Stage 11 audit log and downstream log (next session)
 
 ---
 
@@ -101,7 +98,7 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 11 (Stages 0-10) | 2026-03-15 |
+| Stages complete | 12 (Stages 0-11) | 2026-03-15 |
 | Open blocking issues | 0 | 2026-03-15 |
 | Open warning issues | 1 | 2026-03-07 |
 | NPS baseline | ~89.7k (release, depth 5, TT+ordering) | 2026-03-08 |
