@@ -7,8 +7,8 @@
 
 ## Current Stage
 
-**Stage:** 12 (Self-Play Framework) -- AWAITING USER VERIFICATION
-**Status:** All deliverables implemented. Observer enhanced with FEN4 capture, behavioral metrics, stats, A/B comparison, SPRT, and training data extraction. 100 games @ depth 2 without crash. SPRT correctly identifies improvement (depth 1 vs 2). Training data extraction produces valid JSONL. No engine-side changes (pure observer/tooling). Awaiting user verification.
+**Stage:** 13 (Time + Beam Tuning) -- NOT STARTED
+**Status:** Stage 12 complete. Ready to begin Stage 13.
 
 ---
 
@@ -28,7 +28,7 @@
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
 | 11 | Max^n -> MCTS Integration | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
-| 12 | Self-Play Framework | Awaiting Verification | -- | -- |
+| 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Not Started | -- | -- |
 | 14 | Zone Control Features | Not Started | -- | -- |
 | 15 | NNUE Architecture | Not Started | -- | -- |
@@ -75,9 +75,9 @@
 
 ## What the Next Session Should Do First
 
-1. User verification of Stage 12 self-play framework
-2. If approved: tag `stage-12-complete` / `v1.12`
-3. Begin Stage 13 (Time + Beam Tuning) — needs opening randomization for meaningful A/B tests
+1. Begin Stage 13 (Time + Beam Tuning) — needs opening randomization for meaningful A/B tests
+2. Investigate depth 4 qsearch crash (Issue-Depth4-Engine-Crash)
+3. Consider qsearch node budget or beam-on-captures to bound explosion
 
 ---
 
@@ -102,8 +102,8 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 12 (Stages 0-11) | 2026-03-15 |
-| Stages awaiting verification | 1 (Stage 12) | 2026-03-16 |
+| Stages complete | 13 (Stages 0-12) | 2026-03-16 |
+| Stages awaiting verification | 0 | 2026-03-16 |
 | Open blocking issues | 0 | 2026-03-16 |
 | Open warning issues | 1 | 2026-03-07 |
 | NPS baseline | ~89.7k (release, depth 5, TT+ordering) | 2026-03-08 |

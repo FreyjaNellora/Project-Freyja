@@ -2,7 +2,7 @@
 
 > Single source of truth for all `[[wikilink]]` targets in the vault.
 
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-16
 
 ---
 
@@ -47,6 +47,11 @@
 | [[Session-006]] | `masterplan/sessions/Session-006.md` | Stage 3 closure + Stage 4 Protocol |
 | [[Session-009]] | `masterplan/sessions/Session-009.md` | Stage 7 planning session |
 | [[Session-010]] | `masterplan/sessions/Session-010.md` | Bug fixes, observer tool, UI feature gap analysis |
+| [[Session-013]] | `masterplan/sessions/Session-013.md` | Stage 9 closure, TT + move ordering |
+| [[Session-014]] | `masterplan/sessions/Session-014.md` | Stage 9 completion, Stage 10 MCTS start |
+| [[Session-015]] | `masterplan/sessions/Session-015.md` | MCTS implementation |
+| [[Session-016]] | `masterplan/sessions/Session-016.md` | Stage 10 closure, Stage 11 hybrid integration |
+| [[Session-019]] | `masterplan/sessions/Session-019.md` | Stage 12 completion, qsearch discussion |
 
 ---
 
@@ -64,6 +69,8 @@
 | [[downstream_log_stage_03]] | `masterplan/downstream_log_stage_03.md` | Stage 3 downstream log |
 | [[audit_log_stage_04]] | `masterplan/audit_log_stage_04.md` | Stage 4 audit log |
 | [[downstream_log_stage_04]] | `masterplan/downstream_log_stage_04.md` | Stage 4 downstream log |
+| [[audit_log_stage_12]] | `masterplan/audit_log_stage_12.md` | Stage 12 audit log |
+| [[downstream_log_stage_12]] | `masterplan/downstream_log_stage_12.md` | Stage 12 downstream log |
 
 ---
 
@@ -106,6 +113,7 @@
 |----------|------|-------------|
 | [[Issue-UI-Feature-Gaps]] | `masterplan/issues/Issue-UI-Feature-Gaps.md` | UI missing components needed for Stages 7-10 |
 | [[Issue-UI-AutoPlay-Broken]] | `masterplan/issues/Issue-UI-AutoPlay-Broken.md` | Start button does nothing — useEngine render cascade |
+| [[Issue-Depth4-Engine-Crash]] | `masterplan/issues/Issue-Depth4-Engine-Crash.md` | Engine crashes at depth 4 from qsearch explosion |
 
 ---
 

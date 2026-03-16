@@ -2,7 +2,7 @@
 
 > All open bugs, concerns, and tracked items.
 
-**Last scanned:** 2026-03-07 (Session 12)
+**Last scanned:** 2026-03-16 (Session 19)
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Note
 
-*None.*
+- [[Issue-Depth4-Engine-Crash]] — Engine crashes at depth 4 from qsearch explosion. Works at depth 2-3. To be addressed in Stage 13. (Session 18)
 
 ---
 

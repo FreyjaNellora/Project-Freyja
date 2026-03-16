@@ -1,73 +1,51 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-16
-**Session Number:** 18
+**Session Number:** 19
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 12: Self-Play Framework -- AWAITING USER VERIFICATION**
+**Stage 12: Self-Play Framework -- COMPLETE** (tagged `stage-12-complete` / `v1.12`)
 **Next: Stage 13 (Time + Beam Tuning)**
-
-All deliverables implemented and tested. No engine-side Rust changes — all work in the Node.js observer pipeline (`observer/`).
 
 ---
 
 ## What Was Completed This Session
 
-1. **Tier 4 Boundary Review:**
-   - Created `masterplan/tier_boundary_review_4.md`
-   - All maintenance invariants pass, no blocking issues
-   - Hot-path data structures verified fixed-size
-
-2. **Stage 12 Full Implementation:**
-   - Enhanced `observer/lib/engine.mjs` — FEN4 parsing, tthitrate/killerhitrate, sendOptions(), drainUntilReady()
-   - Enhanced `observer/observer.mjs` — FEN4 capture per ply via `d` command, game_result computation, setoptions support, movetime support, MaxRounds handling
-   - Created `observer/lib/fen4_parser.mjs` — Lightweight FEN4 parser (2-char `rP`/`bK`/`yQ`/`gN` encoding)
-   - Created `observer/lib/metrics.mjs` — Pawn ratio, queen activation, captures per 10 rounds, king moves, shuffle index
-   - Created `observer/lib/stats.mjs` — Mean/stddev/CI95, chi-squared, t-test, win rate aggregation
-   - Created `observer/lib/ab.mjs` — A/B comparison logic with Elo estimation
-   - Created `observer/ab_runner.mjs` — A/B runner with optional SPRT early stopping
-   - Created `observer/lib/sprt.mjs` — Gaussian SPRT on score differences
-   - Created `observer/lib/training_data.mjs` + `observer/extract_training.mjs` — JSONL training data extraction with filters
-
-3. **Validation:**
-   - 100 games @ depth 2: 0 errors, all FEN4 captured, metrics computed
-   - A/B smoke: depth 1 vs depth 2 comparison works
-   - SPRT smoke: accepted H1 after 2 pairs (depth 1 vs 2)
-   - Training data: 76 unique valid records from 100 games
-
-4. **Documentation:**
-   - Created `masterplan/audit_log_stage_12.md` (pre-audit + post-audit)
-   - Created `masterplan/downstream_log_stage_12.md`
-   - Created `masterplan/tier_boundary_review_4.md`
-   - Updated `masterplan/STATUS.md` and `masterplan/HANDOFF.md`
+1. **Stage 12 marked complete** — user gave green light
+2. **Tagged:** `stage-12-complete` / `v1.12`
+3. **Discussion:** Quiescence search explosion at depth 4, how to balance qsearch depth vs main search depth in 4-player chess. Key insight: qsearch isn't supposed to find brilliance — it resolves hanging pieces. Deep sacrifices are the main search's job (and eventually NNUE's).
 
 ---
 
 ## What Was NOT Completed
 
-- User verification of Stage 12
-- Cargo test verification in release mode (test compilation was slow)
-- 100 games at depth 4+ (takes hours — depth 2 was used for bulk stability)
-- Session note for Session 18
+- Stage 13 implementation (not started)
+- Depth 4 qsearch crash fix (filed as Issue-Depth4-Engine-Crash)
 
 ---
 
 ## What the Next Session Should Do First
 
-1. User verifies Stage 12 (run observer, check A/B, check training data)
-2. If approved: tag `stage-12-complete` / `v1.12`
-3. Begin Stage 13 (Time + Beam Tuning) — key need: opening randomization for non-deterministic A/B testing
+1. Read Stage 13 spec in MASTERPLAN
+2. Read upstream audit/downstream logs (Stage 9 + Stage 12)
+3. Key priorities for Stage 13:
+   - Opening randomization (needed for non-deterministic A/B testing)
+   - Qsearch node budget or beam-on-captures to bound explosion
+   - Time management (movetime → depth allocation)
+   - Beam width tuning experiments with data
+4. Investigate depth 4 crash — likely qsearch explosion, see [[Issue-Depth4-Engine-Crash]]
 
 ---
 
 ## Open Issues / Discoveries
 
-- **Deterministic self-play (NOTE):** At any fixed depth, all games produce identical results (same engine, same position). Need opening randomization for meaningful A/B comparisons. Deferred to Stage 13.
-- **[[Issue-UI-Feature-Gaps]] (WARNING):** Stale since Session 10, reviewed Session 18. Still relevant but not blocking self-play work.
-- **MCTS skipped with depth-only searches (NOTE):** `go depth N` only runs Max^n. Need `go movetime N` for full HybridSearcher. Documented in downstream_log_stage_12.
+- **[[Issue-Depth4-Engine-Crash]] (WARNING):** Engine crashes at depth 4 from qsearch explosion. Games run fine at depth 2 and 3. Qsearch generates too many capture chains at depth 4. Possible fixes: node budget, beam on captures, adaptive qsearch depth.
+- **Deterministic self-play (NOTE):** At any fixed depth, all games produce identical results. Need opening randomization for meaningful A/B comparisons. Stage 13 priority.
+- **[[Issue-UI-Feature-Gaps]] (WARNING):** Stale since Session 10. Still relevant but not blocking.
+- **First-mover advantage (NOTE):** Yellow wins 100% at shallow depth due to move order. Expected to diminish with deeper search and better eval.
 
 ---
 
@@ -75,25 +53,12 @@ All deliverables implemented and tested. No engine-side Rust changes — all wor
 
 | File | Action |
 |------|--------|
-| `observer/lib/engine.mjs` | Modified — FEN4 parsing, tthitrate/killerhitrate, sendOptions, getFEN4, drainUntilReady |
-| `observer/observer.mjs` | Modified — FEN4 capture, game_result, setoptions, movetime, MaxRounds handling |
-| `observer/lib/fen4_parser.mjs` | **CREATED** — Lightweight FEN4 parser |
-| `observer/lib/metrics.mjs` | **CREATED** — Behavioral metrics |
-| `observer/lib/stats.mjs` | **CREATED** — Statistical aggregation |
-| `observer/lib/ab.mjs` | **CREATED** — A/B comparison logic |
-| `observer/ab_runner.mjs` | **CREATED** — A/B runner entry point |
-| `observer/lib/sprt.mjs` | **CREATED** — SPRT implementation |
-| `observer/lib/training_data.mjs` | **CREATED** — Training data extraction |
-| `observer/extract_training.mjs` | **CREATED** — Training data CLI |
-| `observer/config_smoke.json` | **CREATED** — Smoke test config |
-| `observer/config_ab_smoke.json` | **CREATED** — A/B smoke test config |
-| `observer/config_sprt_smoke.json` | **CREATED** — SPRT smoke test config |
-| `observer/config_validation.json` | **CREATED** — Depth 3 validation config |
-| `masterplan/tier_boundary_review_4.md` | **CREATED** |
-| `masterplan/audit_log_stage_12.md` | **CREATED** |
-| `masterplan/downstream_log_stage_12.md` | **CREATED** |
-| `masterplan/STATUS.md` | Updated — Stage 12 status |
+| `masterplan/STATUS.md` | Updated — Stage 12 complete |
 | `masterplan/HANDOFF.md` | Rewritten |
+| `masterplan/sessions/Session-019.md` | **CREATED** |
+| `masterplan/_index/MOC-Sessions.md` | Updated |
+| `masterplan/_index/MOC-Active-Issues.md` | Updated |
+| `masterplan/_index/Wikilink-Registry.md` | Updated |
 
 ---
 

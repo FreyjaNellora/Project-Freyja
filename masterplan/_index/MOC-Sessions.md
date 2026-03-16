@@ -15,6 +15,13 @@
 | 6 | 2026-03-06 | 3→4 | Stage 3 closure + Stage 4 Protocol |
 | 9 | 2026-03-07 | 6→7 | Stage 7 planning session (no code) |
 | 10 | 2026-03-07 | 6→7 | Bug fixes (4), observer tool, UI feature gap analysis vs Odin |
+| 13 | 2026-03-14 | 9 | Stage 9 closure, TT + move ordering |
+| 14 | 2026-03-14 | 9→10 | Stage 9 completion, Stage 10 MCTS start |
+| 15 | 2026-03-15 | 10 | MCTS implementation |
+| 16 | 2026-03-15 | 10→11 | Stage 10 closure, Stage 11 hybrid integration |
+| 17 | 2026-03-15 | 11 | Stage 11 completion |
+| 18 | 2026-03-16 | 12 | Stage 12 self-play framework implementation |
+| 19 | 2026-03-16 | 12→ | Stage 12 completion, qsearch discussion |
 
 ---
 
@@ -27,6 +34,11 @@
 - [[Session-006]] — Stage 3 closure + Stage 4: Protocol
 - [[Session-009]] — Stage 7 planning session
 - [[Session-010]] — Bug fixes, observer tool, UI feature gap analysis
+- [[Session-013]] — Stage 9 closure, TT + move ordering
+- [[Session-014]] — Stage 9 completion, Stage 10 MCTS start
+- [[Session-015]] — MCTS implementation
+- [[Session-016]] — Stage 10 closure, Stage 11 hybrid integration
+- [[Session-019]] — Stage 12 completion, qsearch discussion
 
 ---
 
