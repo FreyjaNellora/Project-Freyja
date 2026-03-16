@@ -1,14 +1,14 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-15
-**Updated By:** Session 17
+**Last Updated:** 2026-03-16
+**Updated By:** Session 18
 
 ---
 
 ## Current Stage
 
-**Stage:** 11 (Max^n → MCTS Integration) -- COMPLETE
-**Status:** HybridSearcher sequences Max^n → MCTS with history transfer and prior policy injection. 381 total tests (21 hybrid-specific), 0 clippy warnings. User-verified in UI: 28 ply of 4-player play, MCTS overriding Max^n on strategic moves, stable performance.
+**Stage:** 12 (Self-Play Framework) -- AWAITING USER VERIFICATION
+**Status:** All deliverables implemented. Observer enhanced with FEN4 capture, behavioral metrics, stats, A/B comparison, SPRT, and training data extraction. 100 games @ depth 2 without crash. SPRT correctly identifies improvement (depth 1 vs 2). Training data extraction produces valid JSONL. No engine-side changes (pure observer/tooling). Awaiting user verification.
 
 ---
 
@@ -28,7 +28,7 @@
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
 | 11 | Max^n -> MCTS Integration | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
-| 12 | Self-Play Framework | Not Started | -- | -- |
+| 12 | Self-Play Framework | Awaiting Verification | -- | -- |
 | 13 | Time + Beam Tuning | Not Started | -- | -- |
 | 14 | Zone Control Features | Not Started | -- | -- |
 | 15 | NNUE Architecture | Not Started | -- | -- |
@@ -48,7 +48,7 @@
 
 ## Warning Issues
 
-- **[[Issue-UI-Feature-Gaps]]:** UI missing Debug Console, Engine Internals needed for Stage 8-10 development. Prioritized feature list with Odin source references. See `masterplan/issues/Issue-UI-Feature-Gaps.md`.
+- **[[Issue-UI-Feature-Gaps]]:** UI missing Debug Console, Engine Internals needed for Stage 8-10 development. Prioritized feature list with Odin source references. See `masterplan/issues/Issue-UI-Feature-Gaps.md`. (Stale — last updated Session 10, reviewed Session 18, still relevant but not blocking.)
 
 ---
 
@@ -67,14 +67,17 @@
 | Eval suite score | 17/39 (44%) at depth 2 | Baseline — systematic tuning deferred to Stage 13 |
 | MCTS tests | 41/41 pass | All 9 acceptance criteria |
 | Hybrid tests | 21/21 pass | AC1-AC8 coverage |
+| Self-play: 100 games @ d2 | 0 errors, 0 crashes | All FEN4 captured, metrics computed |
+| SPRT: depth 1 vs 2 | accept_h1 in 2 pairs | Gaussian SPRT working |
+| Training data: 100 games | 76 unique records, 0 invalid | JSONL format |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Begin Stage 12 (Self-Play Framework) — read MASTERPLAN Stage 12 spec
-2. Read `masterplan/downstream_log_stage_11.md` for HybridSearcher API contracts
-3. Address deferred debt if time allows
+1. User verification of Stage 12 self-play framework
+2. If approved: tag `stage-12-complete` / `v1.12`
+3. Begin Stage 13 (Time + Beam Tuning) — needs opening randomization for meaningful A/B tests
 
 ---
 
@@ -84,6 +87,7 @@
 - Session notes for Sessions 7, 8, 11, 12, 17
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
+- Opening randomization for non-deterministic self-play (needed for Stage 13)
 
 ---
 
@@ -99,6 +103,7 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
 | Stages complete | 12 (Stages 0-11) | 2026-03-15 |
-| Open blocking issues | 0 | 2026-03-15 |
+| Stages awaiting verification | 1 (Stage 12) | 2026-03-16 |
+| Open blocking issues | 0 | 2026-03-16 |
 | Open warning issues | 1 | 2026-03-07 |
 | NPS baseline | ~89.7k (release, depth 5, TT+ordering) | 2026-03-08 |

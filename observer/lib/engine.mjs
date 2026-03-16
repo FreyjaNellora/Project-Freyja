@@ -1,6 +1,7 @@
 // lib/engine.mjs — Engine process wrapper and protocol parser for Freyja
 //
 // Adapted from Odin's observer/lib/engine.mjs for Freyja protocol.
+// Stage 12: Added FEN4 parsing, tthitrate/killerhitrate, sendOptions.
 
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
@@ -85,6 +86,42 @@ export class Engine {
     await this.readUntil('readyok');
   }
 
+  async sendOptions(options) {
+    for (const [name, value] of Object.entries(options)) {
+      this.send(`setoption name ${name} value ${value}`);
+    }
+    this.send('isready');
+    await this.readUntil('readyok');
+  }
+
+  async drainUntilReady() {
+    this.send('isready');
+    const sideEffects = [];
+    while (true) {
+      const line = await this.readLine();
+      if (line === null) return sideEffects;
+      if (line === 'readyok') return sideEffects;
+      sideEffects.push(line);
+    }
+  }
+
+  async getFEN4() {
+    this.send('d');
+    // Read lines until we find the fen4 response, collecting side-effects
+    // After position replay, there can be many nextturn/eliminated events
+    const sideEffects = [];
+    for (let attempts = 0; attempts < 500; attempts++) {
+      const line = await this.readLine();
+      if (line === null) return { fen4: null, sideEffects };
+      if (line.startsWith('fen4 ')) {
+        return { fen4: line.slice(5), sideEffects };
+      }
+      // Collect any side-effect lines (nextturn, eliminated, etc.)
+      sideEffects.push(line);
+    }
+    return { fen4: null, sideEffects };
+  }
+
   close() {
     this.send('quit');
     setTimeout(() => this.#proc.kill(), 500);
@@ -95,6 +132,9 @@ export class Engine {
 // Parse one Freyja protocol line into a typed object
 // ---------------------------------------------------------------------------
 export function parseLine(line) {
+  if (line.startsWith('fen4 ')) {
+    return { type: 'fen4', fen4: line.slice(5), raw: line };
+  }
   if (line.startsWith('info string eliminated ')) {
     const rest = line.slice('info string eliminated '.length);
     const color = rest.split(' ')[0];
@@ -126,7 +166,10 @@ export function parseLine(line) {
           }
           break;
         case 'nodes': o.nodes = +t[++i]; break;
+        case 'qnodes': o.qnodes = +t[++i]; break;
         case 'nps': o.nps = +t[++i]; break;
+        case 'tthitrate': o.tthitrate = +t[++i]; break;
+        case 'killerhitrate': o.killerhitrate = +t[++i]; break;
         case 'pv': o.pv = t.slice(i+1).join(' '); i = t.length; break;
       }
     }
