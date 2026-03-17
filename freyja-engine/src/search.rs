@@ -123,6 +123,9 @@ pub struct SearchConfig {
     /// Opponent beam ratio: fraction of root player's beam width for opponent nodes.
     /// 0.25 = opponents get 1/4 of root beam (minimum 3 moves).
     pub opponent_beam_ratio: f32,
+    /// Noise seed: XOR'd with Zobrist hash for per-game randomization.
+    /// 0 = use Zobrist hash alone. Different seeds produce different games.
+    pub noise_seed: u64,
 }
 
 impl Default for SearchConfig {
@@ -136,6 +139,7 @@ impl Default for SearchConfig {
             move_noise: 0,
             adaptive_beam: false,
             opponent_beam_ratio: DEFAULT_OPPONENT_BEAM_RATIO,
+            noise_seed: 0,
         }
     }
 }
@@ -1178,8 +1182,8 @@ impl<E: Evaluator> MaxnSearcher<E> {
         // best move with a random top-3 move. Uses Zobrist hash as seed for
         // deterministic-per-position randomization.
         if self.config.move_noise > 0 && best_result.best_move.is_some() {
-            let hash = state.board().zobrist_hash();
-            // Simple xorshift from Zobrist hash
+            let hash = state.board().zobrist_hash() ^ self.config.noise_seed;
+            // Simple xorshift from Zobrist hash XOR'd with per-game seed
             let mut rng = hash ^ (hash >> 17);
             rng ^= rng << 13;
             rng ^= rng >> 7;

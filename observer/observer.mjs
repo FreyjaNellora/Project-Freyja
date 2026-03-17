@@ -301,8 +301,11 @@ async function main() {
 
   const games = [];
   for (let i = 1; i <= config.games; i++) {
-    // Reset engine state between games
+    // Reset engine state and set per-game noise seed for diversity
     engine.send('position startpos');
+    if (config.setoptions?.MoveNoise && parseInt(config.setoptions.MoveNoise) > 0) {
+      engine.send(`setoption name NoiseSeed value ${i}`);
+    }
     engine.send('isready');
     await engine.readUntil('readyok');
 

@@ -224,6 +224,10 @@ async function runGames(gameConfig, numGames, label) {
   const games = [];
   for (let i = 1; i <= numGames; i++) {
     engine.send('position startpos');
+    // Set per-game noise seed for diversity if MoveNoise is enabled
+    if (gameConfig.setoptions?.MoveNoise && parseInt(gameConfig.setoptions.MoveNoise) > 0) {
+      engine.send(`setoption name NoiseSeed value ${i}`);
+    }
     engine.send('isready');
     await engine.readUntil('readyok');
 

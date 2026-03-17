@@ -30,6 +30,8 @@ pub struct EngineOptions {
     pub adaptive_beam: bool,
     /// Opponent beam ratio: fraction of root player's beam for opponent nodes.
     pub opponent_beam_ratio: f32,
+    /// Noise seed: varies randomization per game. 0 = default.
+    pub noise_seed: u64,
 
     // ── MCTS parameters ──
     /// Gumbel Top-k for root candidate selection.
@@ -56,6 +58,7 @@ impl Default for EngineOptions {
             beam_schedule: None,
             adaptive_beam: false,
             opponent_beam_ratio: crate::search::DEFAULT_OPPONENT_BEAM_RATIO,
+            noise_seed: 0,
             gumbel_k: mcts_defaults.gumbel_k,
             prior_temperature: mcts_defaults.prior_temperature,
             ph_weight: mcts_defaults.ph_weight,
@@ -85,6 +88,7 @@ impl EngineOptions {
         config.move_noise = self.move_noise;
         config.adaptive_beam = self.adaptive_beam;
         config.opponent_beam_ratio = self.opponent_beam_ratio;
+        config.noise_seed = self.noise_seed;
         config
     }
 
@@ -219,6 +223,15 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             _ => SetOptionResult::InvalidValue(format!(
                 "AdaptiveBeam must be true/false, got '{value}'"
+            )),
+        },
+        "NoiseSeed" => match value.parse::<u64>() {
+            Ok(s) => {
+                options.noise_seed = s;
+                SetOptionResult::Ok
+            }
+            Err(_) => SetOptionResult::InvalidValue(format!(
+                "NoiseSeed must be a non-negative integer, got '{value}'"
             )),
         },
         "OpponentBeamRatio" => match value.parse::<f32>() {
