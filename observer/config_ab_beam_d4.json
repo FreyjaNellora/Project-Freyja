@@ -1,0 +1,16 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games_per_config": 10,
+  "depth": 4,
+  "max_ply": 80,
+  "sprt": { "elo0": 0, "elo1": 30, "alpha": 0.05, "beta": 0.05 },
+  "config_a": {
+    "label": "beam30",
+    "setoptions": { "BeamWidth": "30", "MoveNoise": "40" }
+  },
+  "config_b": {
+    "label": "beam15",
+    "setoptions": { "BeamWidth": "15", "MoveNoise": "40" }
+  },
+  "output_dir": "reports/ab_beam_d4"
+}

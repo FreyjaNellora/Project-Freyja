@@ -260,6 +260,10 @@ async function runWithSPRT(configA, configB, maxGames, sprtConfig) {
     let engine = new Engine(enginePath);
     await engine.handshake();
     if (configA.setoptions) await engine.sendOptions(configA.setoptions);
+    // Per-game NoiseSeed for diversity (same seed for both A and B for fair pairing)
+    if (configA.setoptions?.MoveNoise && parseInt(configA.setoptions.MoveNoise) > 0) {
+      engine.send(`setoption name NoiseSeed value ${i + 1}`);
+    }
     engine.send('position startpos');
     engine.send('isready');
     await engine.readUntil('readyok');
@@ -274,6 +278,9 @@ async function runWithSPRT(configA, configB, maxGames, sprtConfig) {
     engine = new Engine(enginePath);
     await engine.handshake();
     if (configB.setoptions) await engine.sendOptions(configB.setoptions);
+    if (configB.setoptions?.MoveNoise && parseInt(configB.setoptions.MoveNoise) > 0) {
+      engine.send(`setoption name NoiseSeed value ${i + 1}`);
+    }
     engine.send('position startpos');
     engine.send('isready');
     await engine.readUntil('readyok');

@@ -1,0 +1,16 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games_per_config": 10,
+  "depth": 4,
+  "max_ply": 80,
+  "sprt": { "elo0": 0, "elo1": 30, "alpha": 0.05, "beta": 0.05 },
+  "config_a": {
+    "label": "opp_ratio_025",
+    "setoptions": { "OpponentBeamRatio": "0.25", "MoveNoise": "40" }
+  },
+  "config_b": {
+    "label": "opp_ratio_050",
+    "setoptions": { "OpponentBeamRatio": "0.5", "MoveNoise": "40" }
+  },
+  "output_dir": "reports/ab_oppratio_d4"
+}
