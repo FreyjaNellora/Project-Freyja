@@ -1,14 +1,15 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-16
-**Updated By:** Session 18
+**Last Updated:** 2026-03-17
+**Updated By:** Session 20
 
 ---
 
 ## Current Stage
 
-**Stage:** 13 (Time + Beam Tuning) -- NOT STARTED
-**Status:** Stage 12 complete. Ready to begin Stage 13.
+**Stage:** 13 (Time + Beam Tuning) -- IN PROGRESS
+**Status:** Build order items 1-7 implemented and tested. A/B experiments and documentation pending.
+**Current Build-Order Step:** 8 (Self-play experiments)
 
 ---
 
@@ -29,7 +30,7 @@
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
 | 11 | Max^n -> MCTS Integration | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
-| 13 | Time + Beam Tuning | Not Started | -- | -- |
+| 13 | Time + Beam Tuning | In Progress | -- | -- |
 | 14 | Zone Control Features | Not Started | -- | -- |
 | 15 | NNUE Architecture | Not Started | -- | -- |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
@@ -48,7 +49,7 @@
 
 ## Warning Issues
 
-- **[[Issue-UI-Feature-Gaps]]:** UI missing Debug Console, Engine Internals needed for Stage 8-10 development. Prioritized feature list with Odin source references. See `masterplan/issues/Issue-UI-Feature-Gaps.md`. (Stale — last updated Session 10, reviewed Session 18, still relevant but not blocking.)
+- **[[Issue-UI-Feature-Gaps]]:** UI missing Debug Console, Engine Internals. (Stale — reviewed Session 20, still relevant but not blocking.)
 
 ---
 
@@ -60,34 +61,33 @@
 | Random playout avg | ~1004 half-moves | 1000 games, seeded LCG |
 | Protocol startup | <1ms | Header output only |
 | eval_4vec() | <100us debug, <50us release | Starting position |
-| Observer: 3 games depth 1 | 198 ply each, stable | No crashes, no infinite loops |
-| Search NPS (release, pre-qsearch) | ~84k depth 4 | Starting position, 2s budget |
-| Search NPS (release, post-qsearch) | ~33-60k depth 4 | Starting position, 5s budget, min depth 4 |
-| Search NPS (release, post-TT) | ~89.7k depth 5 | Starting position, TT + move ordering |
-| Eval suite score | 17/39 (44%) at depth 2 | Baseline — systematic tuning deferred to Stage 13 |
-| MCTS tests | 41/41 pass | All 9 acceptance criteria |
-| Hybrid tests | 21/21 pass | AC1-AC8 coverage |
-| Self-play: 100 games @ d2 | 0 errors, 0 crashes | All FEN4 captured, metrics computed |
-| SPRT: depth 1 vs 2 | accept_h1 in 2 pairs | Gaussian SPRT working |
-| Training data: 100 games | 76 unique records, 0 invalid | JSONL format |
+| Search NPS (release, post-TT, beam 30) | ~89.7k depth 5 | Starting position, beam 30 all players |
+| Search NPS (release, opponent ratio 0.25) | ~69k depth 5 | Starting position, root beam 30 / opponent beam 7 |
+| Depth 5 nodes (opponent ratio 0.25) | 409k total | 20x reduction from 8M with full beam |
+| Depth 6 nodes (opponent ratio 0.25) | 2.6M total | ~55 seconds from starting position |
+| Depth 7 nodes (opponent ratio 0.25, 4M qnodes) | 18M total | ~7.5 minutes from starting position |
+| Self-play: 20 games @ d4 | 0 errors, 0 crashes | Opponent beam ratio 0.25, 80 ply each |
+| Self-play diversity | 4 unique winners / 5 games | MoveNoise=40, NoiseSeed per game |
+| Unit tests | 398 pass | All existing + 17 new Stage 13 tests |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Begin Stage 13 (Time + Beam Tuning) — needs opening randomization for meaningful A/B tests
-2. Investigate depth 4 qsearch crash (Issue-Depth4-Engine-Crash)
-3. Consider qsearch node budget or beam-on-captures to bound explosion
+1. Run A/B experiments: beam width, opponent ratio, Gumbel parameters
+2. Document optimal settings in downstream_log_stage_13.md
+3. Complete post-audit
+4. User verification for stage completion
 
 ---
 
 ## Deferred Debt
 
 - Stage 5 post-audit, downstream log, vault notes
-- Session notes for Sessions 7, 8, 11, 12, 17
+- Session notes for Sessions 7, 8, 11, 12, 17, 18, 19
 - Dead code: `apply_move_with_events` in `game_state.rs`
-- Search time abort bug: debug build ignores 2s budget at higher depths (only affects debug, release works correctly)
-- Opening randomization for non-deterministic self-play (needed for Stage 13)
+- Search time abort bug: debug build ignores time budget at higher depths
+- Eval suite systematic tuning
 
 ---
 
@@ -103,7 +103,27 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
 | Stages complete | 13 (Stages 0-12) | 2026-03-16 |
-| Stages awaiting verification | 0 | 2026-03-16 |
-| Open blocking issues | 0 | 2026-03-16 |
+| Stages in progress | 1 (Stage 13) | 2026-03-17 |
+| Open blocking issues | 0 | 2026-03-17 |
 | Open warning issues | 1 | 2026-03-07 |
-| NPS baseline | ~89.7k (release, depth 5, TT+ordering) | 2026-03-08 |
+| NPS baseline (full beam) | ~89.7k (release, depth 5) | 2026-03-08 |
+| NPS baseline (opp ratio 0.25) | ~69k (release, depth 5) | 2026-03-17 |
+
+---
+
+## New setoptions Added (Stage 13)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| TimeSplitRatio | float | 0.5 | Max^n vs MCTS time split |
+| MaxNodes | u64 | 0 (off) | Total node budget |
+| MaxQnodes | u64 | 2000000 | Qsearch node budget |
+| MoveNoise | u32 | 0 | Opening randomization (0-100) |
+| NoiseSeed | u64 | 0 | Per-game noise seed |
+| BeamSchedule | csv | None | Per-depth beam widths |
+| AdaptiveBeam | bool | false | Complexity-based beam |
+| OpponentBeamRatio | float | 0.25 | Opponent beam fraction |
+| GumbelK | usize | 16 | MCTS root candidates |
+| PriorTemperature | float | 50.0 | Softmax temperature |
+| PHWeight | float | 1.0 | Progressive history weight |
+| CPrior | float | 1.5 | UCB prior coefficient |
