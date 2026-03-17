@@ -82,12 +82,16 @@ async function playGame(engine, gameNum) {
   let currentPlayer = 'Red';
   let gameOver = false;
   let ply = 0;
+  let lastFen4 = null; // Track FEN4 for position-by-fen mode
 
   while (!gameOver && ply < (config.max_ply ?? 400)) {
-    // Set position
-    const posCmd = moveList.length === 0
-      ? 'position startpos'
-      : `position startpos moves ${moveList.join(' ')}`;
+    // Set position — use FEN4 when available to avoid replaying long move lists
+    // (replaying 30+ moves from startpos causes crashes in deep search positions)
+    const posCmd = lastFen4
+      ? `position fen4 ${lastFen4}`
+      : moveList.length === 0
+        ? 'position startpos'
+        : `position startpos moves ${moveList.join(' ')}`;
     engine.send(posCmd);
 
     // Capture FEN4 before search — also process any side-effect lines
@@ -184,6 +188,28 @@ async function playGame(engine, gameNum) {
 
       moveList.push(bestmove);
       ply++;
+
+      // After making the move, capture the new FEN4 for next iteration.
+      // Use fen4 + single move instead of replaying full move history,
+      // which avoids crashes from long move list replays.
+      if (fen4) {
+        engine.send(`position fen4 ${fen4} moves ${bestmove}`);
+        const postFenResult = await engine.getFEN4();
+        lastFen4 = postFenResult.fen4;
+        // Process any side effects
+        for (const seLine of postFenResult.sideEffects) {
+          const se = parseLine(seLine);
+          if (se.type === 'eliminated') {
+            record.eliminations.push({ player: se.color, reason: se.reason, at_ply: ply });
+          } else if (se.type === 'nextturn') {
+            currentPlayer = se.player;
+          } else if (se.type === 'info_string') {
+            if (seLine.includes('game is over') || seLine.includes('no legal moves')) {
+              gameOver = true;
+            }
+          }
+        }
+      }
 
       // Advance to next non-eliminated player
       const eliminated = new Set(record.eliminations.map((e) => e.player));

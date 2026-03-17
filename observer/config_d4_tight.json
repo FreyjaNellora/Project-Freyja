@@ -1,0 +1,10 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 3,
+  "depth": 4,
+  "max_ply": 80,
+  "setoptions": {
+    "MaxQnodes": "500000"
+  },
+  "output_dir": "reports/d4_tight"
+}

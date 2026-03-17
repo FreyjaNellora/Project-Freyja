@@ -1,0 +1,10 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 10,
+  "depth": 3,
+  "max_ply": 80,
+  "setoptions": {
+    "MoveNoise": "30"
+  },
+  "output_dir": "reports/d3_noise"
+}
