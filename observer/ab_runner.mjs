@@ -58,12 +58,15 @@ async function playGame(engine, gameNum, gameConfig) {
   let currentPlayer = 'Red';
   let gameOver = false;
   let ply = 0;
+  let lastFen4 = null;
   const maxPly = config.max_ply ?? 400;
 
   while (!gameOver && ply < maxPly) {
-    const posCmd = moveList.length === 0
-      ? 'position startpos'
-      : `position startpos moves ${moveList.join(' ')}`;
+    const posCmd = lastFen4
+      ? `position fen4 ${lastFen4}`
+      : moveList.length === 0
+        ? 'position startpos'
+        : `position startpos moves ${moveList.join(' ')}`;
     engine.send(posCmd);
 
     // Capture FEN4 — getFEN4 handles side-effect lines from position replay
@@ -147,6 +150,25 @@ async function playGame(engine, gameNum, gameConfig) {
 
       moveList.push(bestmove);
       ply++;
+
+      // Capture post-move FEN4 for next iteration
+      if (fen4) {
+        engine.send(`position fen4 ${fen4} moves ${bestmove}`);
+        const postFenResult = await engine.getFEN4();
+        lastFen4 = postFenResult.fen4;
+        for (const seLine of postFenResult.sideEffects) {
+          const se = parseLine(seLine);
+          if (se.type === 'eliminated') {
+            record.eliminations.push({ player: se.color, reason: se.reason, at_ply: ply });
+          } else if (se.type === 'nextturn') {
+            currentPlayer = se.player;
+          } else if (se.type === 'info_string') {
+            if (seLine.includes('game is over') || seLine.includes('no legal moves')) {
+              gameOver = true;
+            }
+          }
+        }
+      }
 
       const eliminated = new Set(record.eliminations.map((e) => e.player));
       let next = PLAYERS[(PLAYERS.indexOf(currentPlayer) + 1) % 4];

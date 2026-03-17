@@ -43,6 +43,11 @@ pub const MAX_QSEARCH_DEPTH: u32 = 4;
 /// Prevents stack overflow from capture explosion on the 14x14 board.
 pub const DEFAULT_MAX_QNODES: u64 = 2_000_000;
 
+/// Default opponent beam ratio: opponents get this fraction of root player's beam.
+/// Based on BRS research (Schadd & Winands 2011) — narrowing opponent moves is the
+/// single biggest performance gain in multi-player search.
+pub const DEFAULT_OPPONENT_BEAM_RATIO: f32 = 0.25;
+
 /// Minimum search depth before time-based abort is allowed.
 /// Ensures the engine always completes at least this depth for quality decisions.
 pub const MIN_SEARCH_DEPTH: u32 = 4;
@@ -115,6 +120,9 @@ pub struct SearchConfig {
     pub move_noise: u32,
     /// Adaptive beam based on position complexity.
     pub adaptive_beam: bool,
+    /// Opponent beam ratio: fraction of root player's beam width for opponent nodes.
+    /// 0.25 = opponents get 1/4 of root beam (minimum 3 moves).
+    pub opponent_beam_ratio: f32,
 }
 
 impl Default for SearchConfig {
@@ -127,6 +135,7 @@ impl Default for SearchConfig {
             beam_schedule: None,
             move_noise: 0,
             adaptive_beam: false,
+            opponent_beam_ratio: DEFAULT_OPPONENT_BEAM_RATIO,
         }
     }
 }
@@ -312,31 +321,45 @@ impl<E: Evaluator> MaxnSearcher<E> {
         scores
     }
 
-    /// Get beam width for a given remaining depth, respecting schedule and adaptive beam.
+    /// Get beam width for a given depth and player role.
+    ///
+    /// Respects per-depth schedule, opponent beam ratio, and adaptive beam.
+    /// Opponent nodes use a fraction of root player's beam (BRS insight:
+    /// narrowing opponent moves is the biggest perf gain in multi-player search).
     #[inline]
-    fn beam_width_at_depth(&self, remaining_depth: u32, state: &mut GameState) -> usize {
+    fn beam_width_for(
+        &self,
+        remaining_depth: u32,
+        is_root_player: bool,
+        state: &mut GameState,
+    ) -> usize {
         let base = if let Some(ref schedule) = self.config.beam_schedule {
-            // Schedule is indexed by depth level (0 = shallowest remaining depth)
-            // Use remaining_depth as index, capping at schedule length
             let idx = (remaining_depth as usize).min(schedule.len() - 1);
             schedule[idx].max(1)
         } else {
             self.config.beam_width
         };
 
+        // Apply opponent beam ratio for non-root players
+        let role_adjusted = if is_root_player {
+            base
+        } else {
+            ((base as f32 * self.config.opponent_beam_ratio) as usize).max(3)
+        };
+
         if !self.config.adaptive_beam {
-            return base;
+            return role_adjusted;
         }
 
         // Adaptive beam: widen for tactical positions (many captures), narrow for quiet
         let captures = generate_captures_only(state.board_mut());
         let capture_count = captures.len();
         if capture_count > 8 {
-            (base * 3 / 2).min(MAX_MOVES) // 50% wider for highly tactical
+            (role_adjusted * 3 / 2).min(MAX_MOVES)
         } else if capture_count == 0 {
-            (base * 2 / 3).max(4) // 33% narrower for quiet
+            (role_adjusted * 2 / 3).max(3)
         } else {
-            base
+            role_adjusted
         }
     }
 
@@ -520,8 +543,9 @@ impl<E: Evaluator> MaxnSearcher<E> {
             tt_move = None;
         }
 
-        // Generate moves with beam selection (respects schedule and adaptive beam)
-        let beam = self.beam_width_at_depth(depth, state);
+        // Generate moves with beam selection (respects schedule, opponent ratio, adaptive)
+        let is_root = current == root_player;
+        let beam = self.beam_width_for(depth, is_root, state);
         let moves = self.beam_select(state, current, beam, tt_move, ply);
 
         // No legal moves (stalemate/checkmate)

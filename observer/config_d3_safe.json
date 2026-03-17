@@ -1,0 +1,11 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 20,
+  "depth": 3,
+  "max_ply": 80,
+  "setoptions": {
+    "MoveNoise": "30",
+    "MaxQnodes": "200000"
+  },
+  "output_dir": "reports/d3_safe"
+}

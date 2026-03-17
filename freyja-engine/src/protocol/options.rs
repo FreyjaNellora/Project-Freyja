@@ -28,6 +28,8 @@ pub struct EngineOptions {
     pub beam_schedule: Option<Vec<usize>>,
     /// Adaptive beam based on position complexity.
     pub adaptive_beam: bool,
+    /// Opponent beam ratio: fraction of root player's beam for opponent nodes.
+    pub opponent_beam_ratio: f32,
 
     // ── MCTS parameters ──
     /// Gumbel Top-k for root candidate selection.
@@ -53,6 +55,7 @@ impl Default for EngineOptions {
             move_noise: 0,
             beam_schedule: None,
             adaptive_beam: false,
+            opponent_beam_ratio: crate::search::DEFAULT_OPPONENT_BEAM_RATIO,
             gumbel_k: mcts_defaults.gumbel_k,
             prior_temperature: mcts_defaults.prior_temperature,
             ph_weight: mcts_defaults.ph_weight,
@@ -81,6 +84,7 @@ impl EngineOptions {
         }
         config.move_noise = self.move_noise;
         config.adaptive_beam = self.adaptive_beam;
+        config.opponent_beam_ratio = self.opponent_beam_ratio;
         config
     }
 
@@ -215,6 +219,15 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             _ => SetOptionResult::InvalidValue(format!(
                 "AdaptiveBeam must be true/false, got '{value}'"
+            )),
+        },
+        "OpponentBeamRatio" => match value.parse::<f32>() {
+            Ok(r) if (0.0..=1.0).contains(&r) => {
+                options.opponent_beam_ratio = r;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "OpponentBeamRatio must be a float in [0.0, 1.0], got '{value}'"
             )),
         },
 
