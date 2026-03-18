@@ -1084,7 +1084,13 @@ impl<E: Evaluator> MaxnSearcher<E> {
         // (depth 8 with 4 players) once NNUE enables tighter beam and faster search.
         let active = active_count_in_search(state.board());
         let rotation = if active >= 2 { active as u32 } else { 1 };
-        let max_depth = raw_max_depth.min(rotation);
+        // Round down to nearest full rotation for symmetric evaluation.
+        // Allows depth 4, 8, 12, etc. with 4 active players.
+        let max_depth = if raw_max_depth >= rotation {
+            (raw_max_depth / rotation) * rotation
+        } else {
+            raw_max_depth
+        };
 
         // Prepare TT and killers for this search
         self.tt.new_search();

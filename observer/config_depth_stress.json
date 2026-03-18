@@ -1,0 +1,10 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 10,
+  "depth": 8,
+  "max_ply": 48,
+  "setoptions": {
+    "MoveNoise": "40"
+  },
+  "output_dir": "reports/depth8_stress"
+}

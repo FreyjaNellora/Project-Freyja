@@ -1,86 +1,56 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-18
-**Session Number:** 20 (continued)
+**Session Number:** 20
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 13: Time + Beam Tuning -- NEARLY COMPLETE**
-All core features implemented. Phase separation added. Awaiting final testing.
+**Stage 13: Time + Beam Tuning -- COMPLETE** (tagged `stage-13-complete` / `v1.13`)
+**Next: Stage 14**
 
 ---
 
 ## What Was Completed This Session
 
-1. **All Stage 13 build order items** (Steps 1-7) — qsearch budget, option wiring, MoveNoise, beam schedule, opponent beam ratio, ID time management, Gumbel params
-2. **A/B experiments completed:**
-   - Opponent ratio 0.25 vs 0.5: 0.25 is stronger (Elo -28.6, p=0.04)
-   - Beam 30 vs 15: no significant difference (p=0.59)
-3. **Phase-separated hybrid controller:**
-   - Opening (ply < 32): Max^n only, depth 4 cap, instant moves
-   - Midgame (ply >= 32): MCTS only, full time budget
-   - PhaseCutoverPly setoption (default 32)
-4. **Depth 4 crash permanently fixed** via opponent beam ratio 0.25
-5. **Game diversity** via MoveNoise + NoiseSeed per game
+1. **Qsearch node budget** (2M default) — fixes depth 4 crash
+2. **EngineOptions → Searcher wiring** — fixed latent bug where BeamWidth was ignored
+3. **15 new setoptions** — TimeSplitRatio, MaxNodes, MaxQnodes, MoveNoise, NoiseSeed, BeamSchedule, AdaptiveBeam, OpponentBeamRatio, PhaseCutoverPly, GumbelK, PriorTemperature, PHWeight, CPrior, NoiseSeed
+4. **Opponent beam ratio** (0.25 default) — BRS-inspired, validated via A/B (Elo -28.6, p=0.04)
+5. **MoveNoise + NoiseSeed** — per-game randomization for diverse self-play
+6. **Beam width schedule** — per-depth array, BeamSchedule setoption
+7. **ID time management** — 4x branching factor heuristic
+8. **Phase-separated hybrid** — Max^n opening (ply < 32), MCTS midgame (ply >= 32)
+9. **Depth rotation rounding** — search depth rounds to nearest multiple of active players
+10. **256MB stack thread** — prevents stack overflow in deep recursion
+11. **A/B experiments:** opponent ratio 0.25 > 0.5; beam 30 ≈ 15
 
----
-
-## What Was NOT Completed
-
-1. **MCTS warmup at cutover** — When MCTS takes over at ply 32, it starts cold. Need to transfer Max^n's accumulated history table and compute prior policy at the cutover point (the `set_history_table()` and `set_prior_policy()` APIs already exist).
-2. **Info output during MCTS** — UI looks frozen during MCTS thinking because no `info` lines are sent. Need periodic info output from MCTS simulations.
-3. **Checkpoint visibility** — Need protocol output that shows Max^n thinking and MCTS thinking separately so the user can debug each phase.
-4. **Depth 8 testing** — User wants to test depth 8 with beam schedule. Should be feasible with opponent beam ratio 0.25 + beam schedule (narrower at deeper depths).
-5. **Gumbel parameter tuning** — Infrastructure ready, experiments not run.
-6. **Stage 13 sign-off** — User hasn't given green light yet.
+### Depth Testing Results
+- Depth 4: stable (20 games, 0 crashes)
+- Depth 5: works from startpos (409k nodes)
+- Depth 6: works from startpos (2.6M nodes, ~55s)
+- Depth 7: works from startpos (18M nodes, ~7.5min)
+- Depth 8+: too slow for practical play with bootstrap eval
+- Depth 12: did not complete depth 8 in 10 minutes
 
 ---
 
 ## What the Next Session Should Do First
 
-1. **MCTS warmup at cutover:** In hybrid.rs, when `game_ply == phase_cutover_ply` (first MCTS move), run a quick Max^n depth 4 search, extract history table + priors, and pass to MCTS before its search. Only do this once at the transition.
-2. **MCTS info output:** In mcts.rs, emit `info` lines every N simulations (sims, sps, best move so far). The protocol layer already handles `info` output.
-3. **Checkpoint protocol messages:** Add `info string phase opening` and `info string phase midgame` so the UI knows which engine is thinking.
-4. **Depth 8 test:** Try `go depth 8` with beam schedule `30,30,20,20,12,12,8,8` and opponent ratio 0.25. May need beam schedule wired through observer configs.
-5. **Commit and get user sign-off for Stage 13.**
+1. Read Stage 14 spec in MASTERPLAN
+2. Key items carried forward from Stage 13:
+   - **MCTS warmup at cutover:** Transfer Max^n history table + priors at ply 32
+   - **MCTS info output:** Periodic info lines during MCTS thinking (UI looks frozen)
+   - **Phase checkpoint messages:** `info string phase opening/midgame`
+3. Depth 8+ requires NNUE (Stages 15-17) for tighter beam and faster search
 
 ---
 
 ## Open Issues
 
+- **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
 - **[[Issue-Depth4-Engine-Crash]]:** RESOLVED by opponent beam ratio 0.25.
-- **[[Issue-UI-Feature-Gaps]]:** Still open, not blocking.
-- **MCTS freeze at cutover:** Not a crash — MCTS takes full 5s budget with no visible output. Fix: info output during MCTS + warmup for faster convergence.
-
----
-
-## Key Decisions Made This Session
-
-- **OpponentBeamRatio=0.25 validated** — A/B tested, statistically stronger than 0.5
-- **Beam 30 vs 15 equivalent** — No significant difference with opponent pruning active
-- **Phase separation** — Max^n opening only, MCTS midgame only (no blending)
-- **Depth 4 cap on Max^n** — One full rotation, extra time to MCTS
-- **PhaseCutoverPly=32** — 8 rounds of opening before MCTS takes over
-
----
-
-## Files Modified This Session
-
-| File | Action |
-|------|--------|
-| `freyja-engine/src/search.rs` | Qsearch budget, beam schedule, opponent ratio, MoveNoise, NoiseSeed, ID time mgmt, depth cap |
-| `freyja-engine/src/hybrid.rs` | Phase separation (Max^n opening / MCTS midgame), PhaseCutoverPly |
-| `freyja-engine/src/protocol/options.rs` | 15 new setoptions including PhaseCutoverPly |
-| `freyja-engine/src/protocol/mod.rs` | Wire options into HybridConfig, game_ply in SearchLimits |
-| `freyja-engine/src/main.rs` | 256MB stack thread |
-| `observer/observer.mjs` | FEN4 positioning, NoiseSeed per game |
-| `observer/ab_runner.mjs` | FEN4 positioning, NoiseSeed in SPRT path |
-| `masterplan/audit_log_stage_13.md` | Pre-audit + post-audit |
-| `masterplan/downstream_log_stage_13.md` | Full API docs + A/B results |
-| `masterplan/STATUS.md` | Updated by user |
-| `masterplan/sessions/Session-020.md` | Session note |
 
 ---
 
@@ -89,3 +59,5 @@ All core features implemented. Phase separation added. Awaiting final testing.
 - Stage 5 post-audit, downstream log, vault notes
 - Session notes for Sessions 7, 8, 11, 12, 17, 18, 19
 - Dead code: `apply_move_with_events` in `game_state.rs`
+- MCTS warmup at phase cutover (carried to Stage 14)
+- MCTS info output during thinking (carried to Stage 14)
