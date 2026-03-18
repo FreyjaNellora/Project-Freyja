@@ -1,71 +1,68 @@
 # Project Freyja -- HANDOFF
 
-**Session Date:** 2026-03-17
-**Session Number:** 20
+**Session Date:** 2026-03-18
+**Session Number:** 20 (continued)
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 13: Time + Beam Tuning -- IN PROGRESS**
-Build order items 1-7 complete. Experiments partially done. Post-audit pending.
+**Stage 13: Time + Beam Tuning -- NEARLY COMPLETE**
+All core features implemented. Phase separation added. Awaiting final testing.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Qsearch node budget** — `max_qnodes` field in SearchConfig (default 2M). Soft abort in qsearch() and qsearch_2p() when budget exhausted. Fixes Issue-Depth4-Engine-Crash.
-2. **EngineOptions → Searcher wiring** — Fixed latent bug where `options.beam_width` was parsed but ignored. `handle_go()` now constructs HybridConfig from options via `search_config()` and `mcts_config()` helpers.
-3. **Node budget enforcement** — `MaxNodes` setoption flows through to SearchLimits. `max_nodes` in `should_abort()` was already checking it.
-4. **MoveNoise + NoiseSeed** — Opening randomization. MoveNoise (0-100) replaces best move with random top-3 using xorshift from Zobrist hash XOR NoiseSeed. Observer sets NoiseSeed per game automatically.
-5. **Beam width schedule** — Per-depth array in SearchConfig. `beam_width_for()` replaces flat `beam_width`. BeamSchedule setoption accepts comma-separated values.
-6. **Opponent beam ratio** — BRS-inspired pruning. Opponents get `beam * opponent_beam_ratio` (default 0.25 = 1/4 beam, minimum 3 moves). **This fixed the depth 4 crash** by reducing branching factor enough to prevent stack overflow.
-7. **ID time management** — Per-depth timing with 4x branching factor heuristic to predict if next depth fits in remaining budget.
-8. **Gumbel parameters** — GumbelK, PriorTemperature, PHWeight, CPrior all exposed via setoption.
-9. **Adaptive beam** — AdaptiveBeam setoption widens beam 50% for tactical positions, narrows 33% for quiet.
-10. **Large stack thread** — Engine protocol runs on 256MB stack thread.
-11. **Observer FEN4 positioning** — Uses `position fen4` instead of replaying full move history.
-
-### Key Results
-- **Depth 4: STABLE** — 20 games, 80 plies each, zero crashes (with opponent beam ratio 0.25)
-- **Depth 5: Works** — 172k + 236k nodes from starting position (vs 8M without opponent ratio)
-- **Depth 6: Works** — 1.3M + 1.3M nodes, ~55 seconds from starting position
-- **Depth 7: Works** — 8.8M + 9.2M nodes, ~7.5 minutes from starting position
-- **Game diversity: Confirmed** — 5 games at depth 3 produce 4 different winners with MoveNoise=40
+1. **All Stage 13 build order items** (Steps 1-7) — qsearch budget, option wiring, MoveNoise, beam schedule, opponent beam ratio, ID time management, Gumbel params
+2. **A/B experiments completed:**
+   - Opponent ratio 0.25 vs 0.5: 0.25 is stronger (Elo -28.6, p=0.04)
+   - Beam 30 vs 15: no significant difference (p=0.59)
+3. **Phase-separated hybrid controller:**
+   - Opening (ply < 32): Max^n only, depth 4 cap, instant moves
+   - Midgame (ply >= 32): MCTS only, full time budget
+   - PhaseCutoverPly setoption (default 32)
+4. **Depth 4 crash permanently fixed** via opponent beam ratio 0.25
+5. **Game diversity** via MoveNoise + NoiseSeed per game
 
 ---
 
 ## What Was NOT Completed
 
-- Gumbel parameter tuning experiments (infrastructure ready, deferred to Stage 14+)
-- Adaptive beam experiments (infrastructure ready)
-- Vault notes (Component-Search update, patterns)
-
-## A/B Experiment Results
-
-1. **Opponent ratio 0.25 vs 0.5:** 0.25 is stronger (Elo -28.6, p=0.04). SPRT accepted H0 in 6 pairs.
-2. **Beam 30 vs 15:** No significant difference (Elo +4.5, p=0.59). Inconclusive after 10 pairs.
-3. **32 total games at depth 4, zero crashes.**
+1. **MCTS warmup at cutover** — When MCTS takes over at ply 32, it starts cold. Need to transfer Max^n's accumulated history table and compute prior policy at the cutover point (the `set_history_table()` and `set_prior_policy()` APIs already exist).
+2. **Info output during MCTS** — UI looks frozen during MCTS thinking because no `info` lines are sent. Need periodic info output from MCTS simulations.
+3. **Checkpoint visibility** — Need protocol output that shows Max^n thinking and MCTS thinking separately so the user can debug each phase.
+4. **Depth 8 testing** — User wants to test depth 8 with beam schedule. Should be feasible with opponent beam ratio 0.25 + beam schedule (narrower at deeper depths).
+5. **Gumbel parameter tuning** — Infrastructure ready, experiments not run.
+6. **Stage 13 sign-off** — User hasn't given green light yet.
 
 ---
 
 ## What the Next Session Should Do First
 
-1. **Run beam width experiments:** A/B test beam 30 vs 15 vs schedule at depth 4 with MoveNoise=40 + NoiseSeed
-2. **Run opponent beam ratio experiments:** A/B test ratio 0.25 vs 0.5 vs 1.0
-3. **Run Gumbel parameter experiments:** A/B test GumbelK 8 vs 16, PriorTemperature 25 vs 50
-4. **Document findings** in downstream_log_stage_13.md and DECISIONS.md
-5. **Complete post-audit** in audit_log_stage_13.md
-6. **User verification** — user tests in UI, confirms stage complete
+1. **MCTS warmup at cutover:** In hybrid.rs, when `game_ply == phase_cutover_ply` (first MCTS move), run a quick Max^n depth 4 search, extract history table + priors, and pass to MCTS before its search. Only do this once at the transition.
+2. **MCTS info output:** In mcts.rs, emit `info` lines every N simulations (sims, sps, best move so far). The protocol layer already handles `info` output.
+3. **Checkpoint protocol messages:** Add `info string phase opening` and `info string phase midgame` so the UI knows which engine is thinking.
+4. **Depth 8 test:** Try `go depth 8` with beam schedule `30,30,20,20,12,12,8,8` and opponent ratio 0.25. May need beam schedule wired through observer configs.
+5. **Commit and get user sign-off for Stage 13.**
 
 ---
 
-## Open Issues / Discoveries
+## Open Issues
 
-- **Depth 4 crash root cause:** Stack overflow from deep recursion in 4-player Max^n + qsearch. Fixed by opponent beam ratio (0.25) which reduces effective branching factor 4x. Pure beam 30 at depth 4 still crashes in midgame.
-- **NPS with opponent ratio:** 69k at depth 5 (was 100k). Lower NPS but 20x fewer nodes for same depth due to tighter pruning.
-- **[[Issue-Depth4-Engine-Crash]]:** Can be updated to RESOLVED — opponent beam ratio is the permanent fix.
+- **[[Issue-Depth4-Engine-Crash]]:** RESOLVED by opponent beam ratio 0.25.
 - **[[Issue-UI-Feature-Gaps]]:** Still open, not blocking.
+- **MCTS freeze at cutover:** Not a crash — MCTS takes full 5s budget with no visible output. Fix: info output during MCTS + warmup for faster convergence.
+
+---
+
+## Key Decisions Made This Session
+
+- **OpponentBeamRatio=0.25 validated** — A/B tested, statistically stronger than 0.5
+- **Beam 30 vs 15 equivalent** — No significant difference with opponent pruning active
+- **Phase separation** — Max^n opening only, MCTS midgame only (no blending)
+- **Depth 4 cap on Max^n** — One full rotation, extra time to MCTS
+- **PhaseCutoverPly=32** — 8 rounds of opening before MCTS takes over
 
 ---
 
@@ -73,17 +70,17 @@ Build order items 1-7 complete. Experiments partially done. Post-audit pending.
 
 | File | Action |
 |------|--------|
-| `freyja-engine/src/search.rs` | **MODIFIED** — qsearch budget, beam schedule, opponent ratio, MoveNoise, NoiseSeed, ID time mgmt |
-| `freyja-engine/src/protocol/options.rs` | **MODIFIED** — All new setoptions (14 new options) |
-| `freyja-engine/src/protocol/mod.rs` | **MODIFIED** — Wire EngineOptions into HybridConfig |
-| `freyja-engine/src/main.rs` | **MODIFIED** — 256MB stack thread |
-| `observer/observer.mjs` | **MODIFIED** — FEN4 positioning, NoiseSeed per game |
-| `observer/ab_runner.mjs` | **MODIFIED** — FEN4 positioning, NoiseSeed per game |
-| `observer/config_d3_*.json` | **CREATED** — Experiment configs |
-| `observer/config_d4_*.json` | **CREATED** — Experiment configs |
-| `observer/config_mt2s.json` | **CREATED** — Movetime config |
-| `observer/config_ab_beam.json` | **CREATED** — A/B beam width config |
-| `masterplan/audit_log_stage_13.md` | **CREATED** — Pre-audit complete |
+| `freyja-engine/src/search.rs` | Qsearch budget, beam schedule, opponent ratio, MoveNoise, NoiseSeed, ID time mgmt, depth cap |
+| `freyja-engine/src/hybrid.rs` | Phase separation (Max^n opening / MCTS midgame), PhaseCutoverPly |
+| `freyja-engine/src/protocol/options.rs` | 15 new setoptions including PhaseCutoverPly |
+| `freyja-engine/src/protocol/mod.rs` | Wire options into HybridConfig, game_ply in SearchLimits |
+| `freyja-engine/src/main.rs` | 256MB stack thread |
+| `observer/observer.mjs` | FEN4 positioning, NoiseSeed per game |
+| `observer/ab_runner.mjs` | FEN4 positioning, NoiseSeed in SPRT path |
+| `masterplan/audit_log_stage_13.md` | Pre-audit + post-audit |
+| `masterplan/downstream_log_stage_13.md` | Full API docs + A/B results |
+| `masterplan/STATUS.md` | Updated by user |
+| `masterplan/sessions/Session-020.md` | Session note |
 
 ---
 
@@ -92,6 +89,3 @@ Build order items 1-7 complete. Experiments partially done. Post-audit pending.
 - Stage 5 post-audit, downstream log, vault notes
 - Session notes for Sessions 7, 8, 11, 12, 17, 18, 19
 - Dead code: `apply_move_with_events` in `game_state.rs`
-- Search time abort bug: debug build ignores time budget at higher depths
-- Eval suite systematic tuning
-- Stage 13 post-audit and downstream log (in progress)
