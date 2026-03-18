@@ -32,6 +32,8 @@ pub struct EngineOptions {
     pub opponent_beam_ratio: f32,
     /// Noise seed: varies randomization per game. 0 = default.
     pub noise_seed: u64,
+    /// Phase cutover ply: below this Max^n only, at or above MCTS only.
+    pub phase_cutover_ply: u32,
 
     // ── MCTS parameters ──
     /// Gumbel Top-k for root candidate selection.
@@ -59,6 +61,7 @@ impl Default for EngineOptions {
             adaptive_beam: false,
             opponent_beam_ratio: crate::search::DEFAULT_OPPONENT_BEAM_RATIO,
             noise_seed: 0,
+            phase_cutover_ply: 32,
             gumbel_k: mcts_defaults.gumbel_k,
             prior_temperature: mcts_defaults.prior_temperature,
             ph_weight: mcts_defaults.ph_weight,
@@ -232,6 +235,15 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             Err(_) => SetOptionResult::InvalidValue(format!(
                 "NoiseSeed must be a non-negative integer, got '{value}'"
+            )),
+        },
+        "PhaseCutoverPly" => match value.parse::<u32>() {
+            Ok(n) => {
+                options.phase_cutover_ply = n;
+                SetOptionResult::Ok
+            }
+            Err(_) => SetOptionResult::InvalidValue(format!(
+                "PhaseCutoverPly must be a non-negative integer, got '{value}'"
             )),
         },
         "OpponentBeamRatio" => match value.parse::<f32>() {

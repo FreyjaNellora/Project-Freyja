@@ -35,7 +35,8 @@ pub struct SearchConfig {
 ### New setoption Commands
 | Option | Type | Default | Range | Description |
 |--------|------|---------|-------|-------------|
-| TimeSplitRatio | f32 | 0.5 | [0.0, 1.0] | Max^n vs MCTS time split |
+| TimeSplitRatio | f32 | 0.5 | [0.0, 1.0] | DEPRECATED — phases no longer overlap |
+| PhaseCutoverPly | u32 | 32 | >= 0 | Ply at which hybrid switches from Max^n to MCTS |
 | MaxNodes | u64 | 0 (off) | >= 0 | Total node budget for search |
 | MaxQnodes | u64 | 2000000 | >= 0 | Qsearch node budget |
 | MoveNoise | u32 | 0 | [0, 100] | Probability of random top-3 move |

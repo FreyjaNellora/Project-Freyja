@@ -7,22 +7,20 @@
 //!
 //! Implements the Searcher trait as a drop-in replacement.
 
-use std::time::Instant;
-
 use arrayvec::ArrayVec;
 
 use crate::board::types::*;
 use crate::eval::Evaluator;
 use crate::game_state::GameState;
 use crate::mcts::{MctsConfig, MctsSearcher};
-use crate::move_gen::{MAX_MOVES, Move, generate_legal_moves};
+use crate::move_gen::{MAX_MOVES, Move};
 use crate::move_order::{HistoryTable, KillerTable, score_move};
 use crate::search::{MaxnSearcher, SearchConfig, SearchLimits, SearchResult, Searcher};
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 /// Default fraction of time budget allocated to Max^n Phase 1.
-/// Remainder goes to MCTS Phase 2. Adaptive splitting deferred to Stage 13.
+/// Only used during the transition window (if implemented later).
 const DEFAULT_TIME_SPLIT_RATIO: f32 = 0.5;
 
 /// Score threshold for skipping MCTS when Max^n finds a decisive advantage.
@@ -32,6 +30,10 @@ const DEFAULT_MATE_SKIP_THRESHOLD: i16 = 9000;
 /// Softmax temperature for computing prior policy from ordering scores.
 /// Matches MCTS default (ADR-006).
 const PRIOR_TEMPERATURE: f32 = 50.0;
+
+/// Default phase cutover ply: below this, Max^n only; at or above, MCTS only.
+/// 32 plies = 8 moves per player = ~2 full opening cycles.
+const DEFAULT_PHASE_CUTOVER_PLY: u32 = 32;
 
 // ─── Hybrid Configuration ─────────────────────────────────────────────────
 
@@ -43,9 +45,12 @@ pub struct HybridConfig {
     /// MCTS search configuration.
     pub mcts_config: MctsConfig,
     /// Fraction of time budget for Max^n Phase 1 (0.0-1.0).
+    /// Only used if both phases run (future transition window).
     pub time_split_ratio: f32,
     /// Skip MCTS if Max^n root player score >= this threshold.
     pub mate_skip_threshold: i16,
+    /// Phase cutover ply: below this Max^n only, at or above MCTS only.
+    pub phase_cutover_ply: u32,
 }
 
 impl Default for HybridConfig {
@@ -55,6 +60,7 @@ impl Default for HybridConfig {
             mcts_config: MctsConfig::default(),
             time_split_ratio: DEFAULT_TIME_SPLIT_RATIO,
             mate_skip_threshold: DEFAULT_MATE_SKIP_THRESHOLD,
+            phase_cutover_ply: DEFAULT_PHASE_CUTOVER_PLY,
         }
     }
 }
@@ -105,6 +111,11 @@ impl<E: Evaluator + Clone> HybridSearcher<E> {
 
 // ─── Prior Policy Computation ─────────────────────────────────────────────
 
+// These functions are retained for a future transition window where Max^n
+// seeds MCTS priors during a soft cutover. Currently unused since phases
+// are fully separated (opening = Max^n only, midgame = MCTS only).
+
+#[allow(dead_code)]
 /// Compute softmax prior policy from Max^n ordering scores.
 ///
 /// For each root move, computes `score_move()` using the Max^n history table,
@@ -143,6 +154,7 @@ fn compute_hybrid_priors(
     exp_scores.iter().map(|&e| e / sum).collect()
 }
 
+#[allow(dead_code)]
 /// Compute entropy of a probability distribution: -sum(p * ln(p)).
 fn prior_entropy(priors: &[f32]) -> f32 {
     -priors
@@ -152,6 +164,7 @@ fn prior_entropy(priors: &[f32]) -> f32 {
         .sum::<f32>()
 }
 
+#[allow(dead_code)]
 /// Count nonzero entries in the history table.
 fn count_history_nonzero(history: &HistoryTable) -> usize {
     let raw = history.raw();
@@ -170,148 +183,62 @@ fn count_history_nonzero(history: &HistoryTable) -> usize {
 
 impl<E: Evaluator + Clone> Searcher for HybridSearcher<E> {
     fn search(&mut self, state: &mut GameState, limits: &SearchLimits) -> SearchResult {
-        let search_start = Instant::now();
-        let root_player = state.board().side_to_move();
-        let root_player_idx = root_player as usize;
-
-        // ── Step 2: Time allocation ───────────────────────────────────────
-        // Depth-only or node-only searches: run Max^n only (MCTS needs time budget).
-        // Infinite mode: give generous time to both phases.
-        let has_time = limits.max_time_ms.is_some() || limits.infinite;
-
-        if !has_time {
-            // No time budget — depth/node only → Max^n only
-            return self.maxn.search(state, limits);
-        }
-
-        let total_time_ms = limits.max_time_ms.unwrap_or(30_000); // 30s default for infinite
-        let maxn_time_ms = (total_time_ms as f32 * self.config.time_split_ratio) as u64;
-
-        let maxn_limits = SearchLimits {
-            max_depth: limits.max_depth,
-            max_nodes: None, // Let time control Max^n
-            max_time_ms: Some(maxn_time_ms),
-            infinite: false,
-        };
-
-        // ── Step 3: Phase 1 — Run Max^n ──────────────────────────────────
-        let phase1_start = Instant::now();
-        let maxn_result = self.maxn.search(state, &maxn_limits);
-        let phase1_elapsed_ms = phase1_start.elapsed().as_millis() as u64;
-
-        tracing::info!(
-            depth = maxn_result.depth,
-            nodes = maxn_result.nodes,
-            time_ms = phase1_elapsed_ms,
-            best_move = ?maxn_result.best_move,
-            scores = ?maxn_result.scores,
-            "Hybrid Phase 1 (Max^n) complete"
-        );
-
-        // If Max^n found no legal moves, return immediately
-        if maxn_result.best_move.is_none() {
-            return maxn_result;
-        }
-
-        // ── Step 4: Mate detection (AC5) ─────────────────────────────────
-        if maxn_result.scores[root_player_idx] >= self.config.mate_skip_threshold {
-            tracing::info!(
-                score = maxn_result.scores[root_player_idx],
-                threshold = self.config.mate_skip_threshold,
-                "Mate/decisive advantage detected — skipping MCTS"
-            );
-            self.total_searches += 1;
-            return maxn_result;
-        }
-
-        // ── Step 5: History extraction (AC3) ─────────────────────────────
-        let history = self.maxn.history_table();
-        let nonzero_count = count_history_nonzero(history);
-        tracing::info!(
-            nonzero_entries = nonzero_count,
-            "History table extracted from Max^n"
-        );
-
-        // ── Step 6: Prior policy computation (AC4) ────────────────────────
-        let root_moves = generate_legal_moves(state.board_mut());
-        let priors = compute_hybrid_priors(&root_moves, history, root_player, PRIOR_TEMPERATURE);
-        let entropy = prior_entropy(&priors);
-
-        tracing::info!(
-            num_moves = root_moves.len(),
-            num_priors = priors.len(),
-            entropy = format!("{:.3}", entropy),
-            "Prior policy computed for MCTS root"
-        );
-
-        // ── Step 7: MCTS injection + Phase 2 ─────────────────────────────
-        self.mcts.set_history_table(history);
-        self.mcts.set_prior_policy(priors);
-
-        // Compute remaining time from wall clock (accounts for Phase 1 + overhead)
-        let total_elapsed_ms = search_start.elapsed().as_millis() as u64;
-        let remaining_ms = total_time_ms.saturating_sub(total_elapsed_ms);
-
-        if remaining_ms < 10 {
-            // Not enough time for MCTS — return Max^n result
-            tracing::info!(
-                remaining_ms = remaining_ms,
-                "Insufficient time for MCTS Phase 2 — returning Max^n result"
-            );
-            self.total_searches += 1;
-            return maxn_result;
-        }
-
-        let mcts_limits = SearchLimits {
-            max_depth: None,
-            max_nodes: limits.max_nodes,
-            max_time_ms: Some(remaining_ms),
-            infinite: false,
-        };
-
-        let phase2_start = Instant::now();
-        let mcts_result = self.mcts.search(state, &mcts_limits);
-        let phase2_elapsed_ms = phase2_start.elapsed().as_millis() as u64;
-
-        tracing::info!(
-            sims = mcts_result.nodes,
-            time_ms = phase2_elapsed_ms,
-            best_move = ?mcts_result.best_move,
-            scores = ?mcts_result.scores,
-            "Hybrid Phase 2 (MCTS) complete"
-        );
-
-        // ── Step 9: Disagreement tracking (AC6) ──────────────────────────
         self.total_searches += 1;
-        let disagree = maxn_result.best_move != mcts_result.best_move;
-        if disagree {
-            self.disagreement_count += 1;
-        }
 
-        let rate = self.disagreement_rate();
-        tracing::info!(
-            maxn_move = ?maxn_result.best_move,
-            mcts_move = ?mcts_result.best_move,
-            disagree = disagree,
-            disagreement_rate = format!("{:.1}%", rate * 100.0),
-            total_searches = self.total_searches,
-            "Hybrid move selection"
-        );
+        // ── Phase separation ─────────────────────────────────────────────
+        // Opening (ply < cutover): Max^n only. Depth 4 = one full 4-player
+        // rotation for tactical grounding. Fast, correct, no MCTS overhead.
+        // Midgame+ (ply >= cutover): MCTS only. Full time budget for strategic
+        // sampling. Max^n can't search deep enough to matter here.
+        let in_opening = limits.game_ply < self.config.phase_cutover_ply;
 
-        // ── Step 8: Result merging ───────────────────────────────────────
-        // Use MCTS's best move (Sequential Halving winner) as final choice.
-        // Enrich with Max^n's depth, PV, and TT/killer stats.
-        let final_move = mcts_result.best_move.or(maxn_result.best_move);
+        if in_opening {
+            // ── Opening phase: Max^n only ────────────────────────────────
+            // Depth-only or no constraints: use full limits directly
+            let has_time = limits.max_time_ms.is_some() || limits.infinite;
+            let maxn_limits = if has_time && limits.max_depth.is_none() {
+                // Time-based with no explicit depth: give Max^n the full budget
+                limits.clone()
+            } else {
+                limits.clone()
+            };
 
-        SearchResult {
-            best_move: final_move,
-            scores: mcts_result.scores,
-            depth: maxn_result.depth,
-            nodes: maxn_result.nodes + mcts_result.nodes,
-            qnodes: maxn_result.qnodes,
-            pv: maxn_result.pv,
-            tt_hit_rate: maxn_result.tt_hit_rate,
-            killer_hit_rate: maxn_result.killer_hit_rate,
+            let result = self.maxn.search(state, &maxn_limits);
+
+            tracing::info!(
+                phase = "opening",
+                game_ply = limits.game_ply,
+                cutover = self.config.phase_cutover_ply,
+                depth = result.depth,
+                nodes = result.nodes,
+                best_move = ?result.best_move,
+                "Max^n only (opening phase)"
+            );
+
+            result
+        } else {
+            // ── Midgame phase: MCTS only ─────────────────────────────────
+            // Full time budget goes to MCTS. No Max^n warmup.
+            let mcts_limits = SearchLimits {
+                max_depth: None, // MCTS doesn't use depth limits
+                max_nodes: limits.max_nodes,
+                max_time_ms: limits.max_time_ms.or(Some(5000)),
+                infinite: limits.infinite,
+                game_ply: limits.game_ply,
+            };
+
+            let result = self.mcts.search(state, &mcts_limits);
+
+            tracing::info!(
+                phase = "midgame",
+                game_ply = limits.game_ply,
+                cutover = self.config.phase_cutover_ply,
+                sims = result.nodes,
+                best_move = ?result.best_move,
+                "MCTS only (midgame phase)"
+            );
+
+            result
         }
     }
 }
@@ -321,9 +248,14 @@ impl<E: Evaluator + Clone> Searcher for HybridSearcher<E> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
+
+    use arrayvec::ArrayVec;
+
     use crate::board::Board;
     use crate::eval::BootstrapEvaluator;
     use crate::game_state::GameState;
+    use crate::move_gen::{Move, generate_legal_moves};
 
     fn make_searcher() -> HybridSearcher<BootstrapEvaluator> {
         HybridSearcher::new(BootstrapEvaluator::new(), HybridConfig::default())

@@ -28,11 +28,11 @@
 | 8 | Quiescence Search | Complete | `stage-08-complete` / `v1.8` | 2026-03-07 |
 | 9 | TT + Move Ordering | Complete | `stage-09-complete` / `v1.9` | 2026-03-14 |
 | 10 | MCTS | Complete | `stage-10-complete` / `v1.10` | 2026-03-15 |
-| 11 | Max^n -> MCTS Integration | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
+| 11 | Phase-Separated Hybrid Controller | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | In Progress | -- | -- |
-| 14 | Zone Control Features | Not Started | -- | -- |
-| 15 | NNUE Architecture | Not Started | -- | -- |
+| 14 | MCTS Opponent Move Abstraction (OMA) | Not Started | -- | -- |
+| 15 | Progressive Widening + Zone Control | Not Started | -- | -- |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
 | 17 | NNUE Integration | Not Started | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |
@@ -115,7 +115,8 @@ Observer eval suite infrastructure created in `observer/baselines/`. 25 tactical
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| TimeSplitRatio | float | 0.5 | Max^n vs MCTS time split |
+| TimeSplitRatio | float | 0.5 | DEPRECATED — phases no longer overlap. Kept for backward compat. |
+| PhaseCutoverPly | u32 | 32 | Ply at which hybrid switches from Max^n to MCTS |
 | MaxNodes | u64 | 0 (off) | Total node budget |
 | MaxQnodes | u64 | 2000000 | Qsearch node budget |
 | MoveNoise | u32 | 0 | Opening randomization (0-100) |

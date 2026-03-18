@@ -205,12 +205,14 @@ impl<W: Write> Protocol<W> {
                 params.movetime
             },
             infinite: params.infinite,
+            game_ply: self.ply_count,
         };
 
         let hybrid_config = HybridConfig {
             maxn_config: self.options.search_config(),
             mcts_config: self.options.mcts_config(),
             time_split_ratio: self.options.time_split_ratio,
+            phase_cutover_ply: self.options.phase_cutover_ply,
             ..HybridConfig::default()
         };
         let mut searcher = HybridSearcher::new(BootstrapEvaluator::new(), hybrid_config);

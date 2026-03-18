@@ -76,6 +76,8 @@ pub struct SearchLimits {
     pub max_time_ms: Option<u64>,
     /// Search until explicitly stopped.
     pub infinite: bool,
+    /// Current game ply (for phase-based search selection).
+    pub game_ply: u32,
 }
 
 // ─── Search Result ─────────────────────────────────────────────────────────
@@ -1074,20 +1076,15 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         let root_player = state.board().side_to_move();
 
-        // Round max_depth down to nearest full rotation (multiple of active players).
-        // Odd depths give the first mover an asymmetric "last word" advantage.
-        // With 4 active players, depth 5 → 4, depth 7 → 4, depth 8 → 8.
-        // NOTE: This is a temporary constraint while Max^n operates at depth 4.
-        // Future stages (NNUE, Stage 15-17) should enable depth 8 within time
-        // budget, at which point this rounding becomes less impactful but should
-        // be kept for correctness.
+        // Cap Max^n at one full rotation (number of active players).
+        // Extra time is better spent on MCTS (strategic depth) than deeper Max^n
+        // (which creates asymmetric evaluations at non-rotation depths).
+        // NOTE: This cap is temporary while the bootstrap eval limits depth.
+        // Future stages (NNUE, Stages 15-17) should raise this to 2 rotations
+        // (depth 8 with 4 players) once NNUE enables tighter beam and faster search.
         let active = active_count_in_search(state.board());
         let rotation = if active >= 2 { active as u32 } else { 1 };
-        let max_depth = if raw_max_depth >= rotation {
-            (raw_max_depth / rotation) * rotation
-        } else {
-            raw_max_depth // Don't go below requested depth if it's already < 1 rotation
-        };
+        let max_depth = raw_max_depth.min(rotation);
 
         // Prepare TT and killers for this search
         self.tt.new_search();
