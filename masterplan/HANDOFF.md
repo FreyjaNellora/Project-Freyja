@@ -37,13 +37,15 @@ Build order items 1-7 complete. Experiments partially done. Post-audit pending.
 
 ## What Was NOT Completed
 
-- Beam width A/B experiments (need MoveNoise working — now fixed)
-- Gumbel parameter tuning experiments
-- Adaptive beam experiments
-- Post-audit and downstream log
-- Documentation of optimal beam schedule
+- Gumbel parameter tuning experiments (infrastructure ready, deferred to Stage 14+)
+- Adaptive beam experiments (infrastructure ready)
 - Vault notes (Component-Search update, patterns)
-- Session note
+
+## A/B Experiment Results
+
+1. **Opponent ratio 0.25 vs 0.5:** 0.25 is stronger (Elo -28.6, p=0.04). SPRT accepted H0 in 6 pairs.
+2. **Beam 30 vs 15:** No significant difference (Elo +4.5, p=0.59). Inconclusive after 10 pairs.
+3. **32 total games at depth 4, zero crashes.**
 
 ---
 

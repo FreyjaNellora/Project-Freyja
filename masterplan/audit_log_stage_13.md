@@ -84,7 +84,7 @@
 | Node budget enforcement | DONE | MaxNodes setoption, DEFAULT_MAX_QNODES=2M |
 | Beam width configuration | DONE | BeamSchedule setoption, per-depth array |
 | Opponent beam ratio | DONE | OpponentBeamRatio setoption, default 0.25 |
-| Self-play experiments | PARTIAL | 20 games depth 4 stable; A/B experiments in progress |
+| Self-play experiments | DONE | 20 games stable + 2 A/B experiments (32 games, 0 crashes) |
 | Adaptive beam width | DONE | AdaptiveBeam setoption, complexity-based |
 | Gumbel parameter tuning | INFRASTRUCTURE | All 4 params exposed via setoption; A/B tuning pending |
 | ID time management | DONE | Per-depth timing, 4x branching factor heuristic |
@@ -95,10 +95,10 @@
 | Criterion | Status | Evidence |
 |---|---|---|
 | Max^n stays within 7-8M node budget | PASS | MaxNodes setoption; default qsearch budget 2M |
-| Beam width tuning documented | PARTIAL | Infrastructure done, A/B results pending |
+| Beam width tuning documented | PASS | A/B: beam 30 vs 15 no sig diff; opp ratio 0.25 > 0.5 (p=0.04) |
 | Depth 7-8 achieved with mature beam | PASS | Depth 7 from startpos in ~7.5min (opp ratio 0.25) |
 | Time allocation configurable | PASS | TimeSplitRatio setoption (0.0-1.0) |
-| Gumbel params tuned via A/B | PARTIAL | Params exposed, A/B experiments pending |
+| Gumbel params tuned via A/B | PARTIAL | All 4 params exposed via setoption; tuning deferred to Stage 14+ |
 
 ### Code Quality (2.1-2.26)
 

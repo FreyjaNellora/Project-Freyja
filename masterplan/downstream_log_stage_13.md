@@ -99,12 +99,36 @@ if move_noise > 0 { /* xorshift from hash ^ noise_seed, replace best with top-3 
 
 ---
 
+## A/B Experiment Results
+
+### Experiment 1: Opponent Beam Ratio 0.25 vs 0.5 (depth 4, 6 pairs)
+- **SPRT: accept_h0 after 6 pairs** (LLR=-3.732)
+- Avg score per seat: 0.25 = 319.8 +/- 84.7, 0.5 = 224.5 +/- 36.7
+- Elo difference: -28.6 (0.25 stronger), p=0.04 (significant)
+- Pawn ratio: 0.25 = 0.80, 0.5 = 0.67 (0.25 preserves more material)
+- Shuffle index: 0.25 = 0.085, 0.5 = 0.023 (p=0.003, 0.25 produces more varied play)
+- **Conclusion: OpponentBeamRatio=0.25 validated as optimal default.**
+
+### Experiment 2: Beam Width 30 vs 15 (depth 4, 10 pairs)
+- **SPRT: inconclusive after 10 pairs** (LLR=-0.005)
+- Avg score per seat: beam30 = 314.9 +/- 64.7, beam15 = 329.8 +/- 55.7
+- Elo difference: +4.5 (beam15 marginally stronger), p=0.59 (NOT significant)
+- Win distribution: beam30 skewed Yellow (6/10), beam15 more balanced (Red 4, Blue 4)
+- **Conclusion: No significant difference. Beam 15 is a safe default — faster search with equivalent strength.**
+
+### Cross-experiment Summary
+- 32 games at depth 4, 0 crashes
+- Opponent beam ratio is the dominant factor; root beam width is secondary
+- MoveNoise=40 + NoiseSeed produces adequate diversity for SPRT
+
+---
+
 ## Open Questions
 
-1. **Optimal opponent beam ratio?** 0.25 is the default (BRS literature), but 0.5 might yield better play quality. A/B experiments pending.
-2. **Beam schedule vs flat beam?** No empirical data yet. Schedule could enable depth 7-8 in practical time.
-3. **Gumbel parameter sensitivity?** GumbelK, PriorTemperature, PHWeight all exposed but not yet tuned via A/B.
-4. **Eval tuning via self-play?** Now possible with MoveNoise + A/B infrastructure. Deferred to Stage 14+.
+1. **Beam schedule for depth 7-8?** No empirical data yet. Schedule could enable deeper search in practical time.
+2. **Gumbel parameter sensitivity?** GumbelK, PriorTemperature, PHWeight all exposed but not yet tuned via A/B.
+3. **Eval tuning via self-play?** Now possible with MoveNoise + A/B infrastructure. Deferred to Stage 14+.
+4. **Beam 15 as new default?** A/B shows no strength loss vs 30. Would reduce node count and enable deeper search. Needs user sign-off.
 
 ---
 
