@@ -1,0 +1,16 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games_per_config": 3,
+  "max_ply": 80,
+  "config_a": {
+    "label": "depth_1",
+    "depth": 1,
+    "setoptions": {}
+  },
+  "config_b": {
+    "label": "depth_2",
+    "depth": 2,
+    "setoptions": {}
+  },
+  "output_dir": "reports/ab_smoke"
+}

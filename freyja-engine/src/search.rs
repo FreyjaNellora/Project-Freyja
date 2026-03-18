@@ -1070,9 +1070,24 @@ impl<E: Evaluator> MaxnSearcher<E> {
         limits: &SearchLimits,
     ) -> SearchResult {
         let mut ss = SearchState::new(limits.clone(), self.config.max_qnodes);
-        let max_depth = limits.max_depth.unwrap_or(MAX_DEPTH as u32);
+        let raw_max_depth = limits.max_depth.unwrap_or(MAX_DEPTH as u32);
 
         let root_player = state.board().side_to_move();
+
+        // Round max_depth down to nearest full rotation (multiple of active players).
+        // Odd depths give the first mover an asymmetric "last word" advantage.
+        // With 4 active players, depth 5 → 4, depth 7 → 4, depth 8 → 8.
+        // NOTE: This is a temporary constraint while Max^n operates at depth 4.
+        // Future stages (NNUE, Stage 15-17) should enable depth 8 within time
+        // budget, at which point this rounding becomes less impactful but should
+        // be kept for correctness.
+        let active = active_count_in_search(state.board());
+        let rotation = if active >= 2 { active as u32 } else { 1 };
+        let max_depth = if raw_max_depth >= rotation {
+            (raw_max_depth / rotation) * rotation
+        } else {
+            raw_max_depth // Don't go below requested depth if it's already < 1 rotation
+        };
 
         // Prepare TT and killers for this search
         self.tt.new_search();

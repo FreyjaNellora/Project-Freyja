@@ -1,0 +1,7 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 3,
+  "depth": 2,
+  "max_ply": 80,
+  "output_dir": "reports/smoke_test"
+}

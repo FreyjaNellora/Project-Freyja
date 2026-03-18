@@ -1,0 +1,8 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 10,
+  "depth": 3,
+  "max_ply": 80,
+  "setoptions": { "MaxRounds": "15" },
+  "output_dir": "reports/validation_d3"
+}

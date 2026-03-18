@@ -1,0 +1,7 @@
+{
+  "engine": "../target/release/freyja.exe",
+  "games": 10,
+  "movetime": 2000,
+  "max_ply": 120,
+  "output_dir": "reports/10games_mt"
+}
