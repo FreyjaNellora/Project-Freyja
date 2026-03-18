@@ -384,4 +384,66 @@ All module names now follow Rust snake_case convention uniformly.
 
 ---
 
+## ADR-017: Phase-Separated Hybrid Controller (Supersedes original Stage 11 design)
+
+**Date:** 2026-03-18
+**Status:** Accepted (supersedes "Max^n → MCTS sequential pipeline on every move")
+**Stage:** Stage 11 (corrected), Stage 13 (implementation)
+
+**Context:**
+The original Stage 11 design ran Max^n Phase 1 → knowledge transfer → MCTS Phase 2 on every single move with a 50/50 time split. In practice, this caused two problems:
+
+1. **MCTS burned 5 seconds on opening moves** where Max^n depth 4 already had the right answer. MCTS is weak at openings — it samples positions it doesn't understand and can override Max^n's correct tactical answer.
+2. **Max^n wasted time in the midgame** where it can't search deep enough to matter. Depth 4 is one 4-player cycle — not enough to see strategic patterns. The time spent on Max^n could go entirely to MCTS.
+
+**Decision:**
+Phase separation. The hybrid controller selects Max^n OR MCTS based on game phase — never both on the same move:
+
+- **Opening (ply < phase_cutover_ply):** Max^n only, full time budget
+- **Midgame+ (ply >= phase_cutover_ply):** MCTS only, full time budget
+- Default cutover at ply 32 (8 moves per player = ~2 full opening cycles)
+- Configurable via `setoption name PhaseCutoverPly value N`
+
+**Rationale:**
+- Each algorithm excels at different game phases. Running both wastes time.
+- Max^n handles structured openings where tactical precision matters (captures, development, immediate threats).
+- MCTS handles chaotic midgame where sampling handles multi-player branching better than exhaustive search.
+- Opening moves now complete in <1s instead of ~6s.
+- MCTS gets the FULL time budget in the midgame instead of sharing with Max^n.
+
+**Consequences:**
+- History transfer from Max^n to MCTS (ADR-007) is no longer used during normal play. The APIs (`set_history_table`, `set_prior_policy`) remain for potential future use but are not called in the phase-separated flow.
+- `TimeSplitRatio` setoption is deprecated (kept for backward compatibility).
+- MCTS must work from cold start in the midgame — uses its own lightweight move ordering (MVV-LVA, killer moves) for priors.
+- Disagreement tracking between Max^n and MCTS is no longer applicable.
+
+---
+
+## ADR-018: MCTS Opponent Move Abstraction (OMA) for Stage 14
+
+**Date:** 2026-03-18
+**Status:** Accepted (replaces original "Zone Control Features" as Stage 14)
+**Stage:** Stage 14
+
+**Context:**
+The original Stage 14 was "Zone Control Features" — territorial evaluation enhancements. While valuable, this was reprioritized after analyzing Freyja's identity: Phase 1 (Max^n) stays dumb and fast, Phase 2 (MCTS) is where strategic intelligence lives. The highest-impact improvement to MCTS is reducing opponent branching, not enhancing eval.
+
+**Decision:**
+Stage 14 implements Opponent Move Abstraction (OMA) per Baier & Kaisers (IEEE CoG 2020). During MCTS simulations, root player nodes expand fully while opponent nodes pick ONE move via a lightweight policy. This lets MCTS search 3-4x deeper into root player's decision space.
+
+Zone Control features move to Stage 15 (combined with Progressive Widening).
+
+**Rationale:**
+- MCTS wastes simulation budget expanding all 4 players equally
+- OMA focuses simulations on root player decisions, which is what matters
+- Research shows MCTS-OMA outperforms Paranoid and BRS+ in multi-player games
+- Zone Control is still valuable but less impactful than fixing the branching factor problem
+
+**Consequences:**
+- Stage 14 is now MCTS-focused, not eval-focused
+- Stage 15 combines Progressive Widening (OMA enhancement) with Zone Control
+- NNUE stages shift to 16-17
+
+---
+
 *New ADRs should be added below this line, following the same format.*

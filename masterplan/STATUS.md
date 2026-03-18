@@ -30,8 +30,8 @@
 | 11 | Phase-Separated Hybrid Controller | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Complete | `stage-13-complete` / `v1.13` | 2026-03-18 |
-| 14 | Zone Control Features | Not Started | -- | -- |
-| 15 | NNUE Architecture | Not Started | -- | -- |
+| 14 | MCTS Opponent Move Abstraction (OMA) | Not Started | -- | -- |
+| 15 | Progressive Widening + Zone Control | Not Started | -- | -- |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
 | 17 | NNUE Integration | Not Started | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |

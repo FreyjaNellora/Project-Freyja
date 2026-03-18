@@ -1,4 +1,10 @@
-# Audit Log — Stage 11: Max^n → MCTS Integration (Hybrid Controller)
+# Audit Log — Stage 11: Phase-Separated Hybrid Controller
+
+> **CORRECTED (2026-03-18):** The original Stage 11 design ran both Max^n and MCTS
+> sequentially on every move with a 50/50 time split. This has been corrected to
+> phase separation: Max^n only in opening (ply < cutover), MCTS only after cutover.
+> The audit below reflects the original implementation; the downstream log and
+> MASTERPLAN have been updated to reflect the corrected architecture.
 
 **Date:** 2026-03-15
 **Auditor:** Session 17

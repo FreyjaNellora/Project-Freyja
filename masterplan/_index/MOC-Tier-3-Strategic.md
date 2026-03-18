@@ -1,6 +1,6 @@
 # MOC — Tier 3: Strategic Layer (Stages 10-11)
 
-> MCTS and its integration with Max^n.
+> MCTS and phase-separated hybrid controller. Max^n handles opening, MCTS handles midgame+.
 
 ---
 

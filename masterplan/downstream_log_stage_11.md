@@ -1,14 +1,16 @@
-# Downstream Log -- Stage 11: Max^n → MCTS Integration (Hybrid Controller)
+# Downstream Log -- Stage 11: Phase-Separated Hybrid Controller
 
 ## Must-Know
 
-1. **Protocol now uses HybridSearcher, not MaxnSearcher.** Every `go` command runs the hybrid pipeline: Max^n Phase 1 → knowledge transfer → MCTS Phase 2.
-2. **50/50 time split is hardcoded.** Max^n gets 50% of the time budget, MCTS gets the remainder. Adaptive splitting deferred to Stage 13.
-3. **Depth-only searches bypass MCTS entirely.** If `SearchLimits` has no `max_time_ms` and `infinite=false`, HybridSearcher delegates to Max^n only.
-4. **Mate detection skips MCTS.** If Max^n's root player score >= 9000cp, MCTS Phase 2 is skipped and Max^n's result is returned directly.
-5. **MCTS best move is the final choice.** The merged SearchResult uses MCTS's Sequential Halving winner as `best_move`, but Max^n's depth, PV, TT stats, and qnodes.
+1. **Protocol uses HybridSearcher, not MaxnSearcher.** The hybrid controller selects Max^n OR MCTS based on game phase — never both on the same move.
+2. **Opening (ply < cutover): Max^n ONLY.** Full time budget goes to Max^n. MCTS is never called. Opening moves complete in <1s at depth 4.
+3. **Midgame+ (ply >= cutover): MCTS ONLY.** Full time budget goes to MCTS. Max^n is never called. MCTS handles the chaotic multi-player branching through sampling.
+4. **Phase cutover is configurable.** `setoption name PhaseCutoverPly value 32` (default 32 = 8 moves per player = ~2 full opening cycles).
+5. **Mate detection in opening.** If Max^n found mate (score >= 9000cp), return immediately.
 6. **Evaluator must implement Clone.** `HybridSearcher<E: Evaluator + Clone>` clones the evaluator for each sub-searcher. BootstrapEvaluator now derives Clone. Future evaluators (NNUE, Stage 17) must also implement Clone.
-7. **HybridSearcher is created fresh per `go` command.** No persistent state across moves. History and TT are rebuilt each search. Persistence deferred to Stage 13.
+7. **HybridSearcher is created fresh per `go` command.** No persistent state across moves.
+
+**CORRECTED (2026-03-18):** The original Stage 11 design ran both Max^n and MCTS sequentially on every move with a 50/50 time split. This was wrong — MCTS is weak at openings (wastes time on positions it doesn't understand), and Max^n is too shallow for midgame (can't search deep enough to matter). The corrected design uses phase separation: each algorithm runs alone in the phase where it excels.
 
 ## API Contracts
 
@@ -38,32 +40,30 @@ impl<E: Evaluator + Clone> Searcher for HybridSearcher<E> {
 
 ### SearchResult from Hybrid
 
-| Field | Source | Notes |
-|---|---|---|
-| `best_move` | MCTS (Sequential Halving winner) | Falls back to Max^n if MCTS returns None |
-| `scores` | MCTS | Q-vector from winner node |
-| `depth` | Max^n | Meaningful iterative deepening depth |
-| `nodes` | Max^n + MCTS | Combined node count from both phases |
-| `qnodes` | Max^n | MCTS has no quiescence |
-| `pv` | Max^n | Multi-move PV (MCTS only has single-move) |
-| `tt_hit_rate` | Max^n | MCTS doesn't use TT |
-| `killer_hit_rate` | Max^n | MCTS doesn't use killers |
+The result comes from whichever phase handled the move:
 
-### Knowledge Transfer Flow
+| Game Phase | Source | Notes |
+|---|---|---|
+| Opening (ply < cutover) | Max^n | depth, scores, pv, nodes, qnodes, TT/killer stats |
+| Midgame+ (ply >= cutover) | MCTS | best_move from Sequential Halving, depth=0, nodes from simulations |
+
+### Phase Selection Flow
 
 ```rust
-// Phase 1: Max^n with 50% time
-let maxn_result = self.maxn.search(state, &maxn_limits);
+fn search(&mut self, state: &GameState, limits: &SearchLimits) -> SearchResult {
+    let ply = state.ply_count();
 
-// Phase 1.5: Extract + compute
-let history = self.maxn.history_table();           // &HistoryTable
-let priors = compute_hybrid_priors(&moves, history, player, 50.0);  // Vec<f32>
-
-// Phase 2: Inject + run MCTS with remaining time
-self.mcts.set_history_table(history);
-self.mcts.set_prior_policy(priors);
-let mcts_result = self.mcts.search(state, &mcts_limits);
+    if ply < self.config.phase_cutover_ply {
+        // Opening: Max^n only, full time budget
+        self.maxn.search(state, limits)
+    } else {
+        // Midgame+: MCTS only, full time budget
+        self.mcts.search(state, limits)
+    }
+}
 ```
+
+**Note:** The original design included a "knowledge transfer flow" where Max^n's history table and prior policy were passed to MCTS via `set_history_table()` and `set_prior_policy()`. This is no longer needed because the phases don't overlap. MCTS uses its own lightweight move ordering (MVV-LVA, history from previous MCTS searches) for priors.
 
 ### Tracing Points
 
@@ -78,11 +78,9 @@ All tracing uses `tracing::info!`:
 
 ## Known Limitations
 
-1. **Fixed 50/50 time split.** Not adaptive. Optimal ratio likely depends on position complexity. Stage 13 should tune this.
-2. **No persistent history across moves.** History is rebuilt each search. Persisting Max^n history between moves could give MCTS a head start. Stage 13 should measure impact.
-3. **AC8 not fully verified.** Warm-start vs cold-start comparison requires self-play A/B testing (Stage 12). Current test only verifies both phases run and produce combined results.
-4. **No training data export.** Hybrid search data (disagreements, phase timings) could be valuable for NNUE training. Deferred to future work.
-5. **Softmax prior computation duplicated.** `compute_hybrid_priors()` in hybrid.rs and `compute_prior_policy()` in mcts.rs implement the same algorithm. Could be extracted to `move_order.rs` if a third consumer appears.
+1. **Hard cutover between phases.** The transition from Max^n to MCTS is a sharp boundary at `phase_cutover_ply`. A future refinement could add a transition window where Max^n runs at reduced depth to seed MCTS priors, but the hard cutover is simpler and solves the immediate problem.
+2. **MCTS starts cold in midgame.** Without Max^n warming it up, MCTS relies on its own history accumulation and lightweight move ordering for priors. This is acceptable — MCTS is designed to work from cold start.
+3. **Cutover ply is fixed, not adaptive.** The optimal cutover point likely depends on position complexity and opening type. Future work could detect opening completion dynamically (e.g., when development score plateaus).
 
 ## Performance Baselines
 
@@ -95,13 +93,13 @@ All tracing uses `tracing::info!`:
 
 ## Open Questions
 
-1. Should Stage 12 (self-play) use HybridSearcher or allow choosing between MaxnSearcher/MctsSearcher/HybridSearcher per player?
-2. Should disagreement data be exported for analysis in Stage 13?
-3. Should the time split become a protocol option (`setoption name TimeSplit value 0.5`)?
+1. Should the phase cutover be adaptive (detect opening completion dynamically) rather than fixed ply count?
+2. Should there be a brief transition window where both phases contribute, or is a hard cutover sufficient?
 
 ## Reasoning
 
-- **50/50 split over other ratios:** Simplest default. No empirical data yet to prefer any other ratio. Stage 13 will tune based on self-play results.
-- **MCTS best move over Max^n best move:** MCTS with Gumbel Sequential Halving is designed for robust selection. Max^n provides tactical grounding that informs MCTS via priors and history, but MCTS's exploration covers strategic depth Max^n misses.
+- **Phase separation over sequential pipeline:** MCTS is weak at openings — it wastes time sampling positions it doesn't understand. Max^n is too shallow for midgame — depth 4 is one cycle, not enough to see strategic patterns. Each algorithm should run alone in the phase where it excels.
+- **Hard cutover over soft transition:** Simpler implementation, easier to test, solves the immediate problem (5s MCTS burn on opening moves). Soft transition can be added later if A/B data shows a gap.
+- **Default cutover at ply 32:** 8 moves per player = ~2 full opening cycles. By this point pieces are developed, the position is complex, and MCTS's sampling approach becomes more valuable than Max^n's exhaustive search.
 - **Fresh per `go` over persistent:** Avoids cross-move state bugs. Persistence requires careful cache invalidation (position changed, player eliminated, etc.). Simple and correct first; optimize later.
 - **Clone bound over Arc<E>:** Clone is simpler and zero-cost for unit structs. Arc adds indirection and atomic reference counting overhead. Revisit in Stage 17 if NNUE evaluator is expensive to clone.

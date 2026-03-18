@@ -18,17 +18,23 @@ Freyja is the teacher. Odin is the student. Freyja prioritizes truth (accurate m
 ### 1.1 Core Architecture
 
 ```
-MCTS (Max^n backpropagation, Gumbel root selection, Progressive History)
-  │  Strategic exploration + diverse training data generation
+Phase-Separated Hybrid Controller
+  │  Opening (ply < cutover): Max^n ONLY
+  │  Midgame+ (ply >= cutover): MCTS ONLY
   │
-Max^n Search (depth 7-8, NNUE-guided beam search)
-  │  Iterative deepening, shallow pruning
-  │  Beam width adapts to NNUE maturity
-  │  2 players remaining → negamax with full alpha-beta
+  ├── Max^n Search (opening phase, depth 4-8)
+  │     Iterative deepening, beam search
+  │     Opponent beam ratio 0.25 (BRS-inspired)
+  │     2 players remaining → negamax with full alpha-beta
+  │     ├── Quiescence (root-player captures, capped depth)
+  │     └── Move ordering (TT + killer + history + MVV-LVA)
   │
-  ├── Quiescence (root-player captures, capped depth)
-  ├── Move ordering (TT + killer + history + MVV-LVA)
-  │
+  └── MCTS (midgame+ phase, Gumbel root selection)
+        Opponent Move Abstraction (OMA) — skip opponent expansion
+        Progressive widening at opponent nodes
+        Max^n backpropagation
+        Strategic exploration + training data generation
+
 NNUE Evaluation
   ├── Material + Piece-Square Tables
   ├── Mobility (safe squares, piece activity)
@@ -38,6 +44,8 @@ NNUE Evaluation
   ├── Tension / vulnerability maps
   └── Tactical features (captures, threats, checks)
 ```
+
+**Key design principle:** Max^n and MCTS are never run on the same move. Max^n handles the structured opening where tactical precision matters. MCTS handles the chaotic midgame where sampling and strategic evaluation matter. Each does what it's good at, neither does what it's bad at.
 
 ### 1.2 Key Design Principles
 
@@ -55,11 +63,12 @@ NNUE Evaluation
 
 ### 1.3 Node Budget
 
-| Component | Nodes | Time @ 1M NPS |
-|-----------|-------|---------------|
-| Max^n depth 7-8 | 7-8M | ~7-8s |
-| MCTS | remaining time budget | varies |
-| **Total per move** | **7-8M + MCTS** | **~10-20s typical** |
+| Phase | Component | Nodes | Time @ 1M NPS |
+|-------|-----------|-------|---------------|
+| Opening (ply < cutover) | Max^n depth 4 | ~170k-800k | <1s |
+| Midgame+ (ply >= cutover) | MCTS only | full time budget | 2-10s typical |
+
+Max^n and MCTS never run on the same move. Opening moves are fast (Max^n depth 4 with opponent beam ratio 0.25). Midgame moves use the full time budget for MCTS.
 
 ### 1.4 Beam Width Schedule
 
@@ -124,14 +133,14 @@ The observer pipeline (Stage 4 LogFile + Stage 12 runner) is the concrete implem
 │  Stage 20: Optimization                                       │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 5: Intelligence                                         │
-│  Stage 14: Zone Control    Stage 15: NNUE Architecture        │
-│  Stage 16: NNUE Training   Stage 17: NNUE Integration         │
+│  Stage 14: MCTS OMA       Stage 15: PW + Zone Control        │
+│  Stage 16: NNUE Arch+Train Stage 17: NNUE Integration         │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 4: Measurement                                          │
 │  Stage 12: Self-Play Framework   Stage 13: Time + Beam Tuning │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 3: Strategic Layer                                      │
-│  Stage 10: MCTS   Stage 11: Max^n → MCTS Integration          │
+│  Stage 10: MCTS   Stage 11: Phase-Separated Hybrid            │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 2: Core Search                                          │
 │  Stage 6: Bootstrap Eval   Stage 7: Max^n Search              │
@@ -157,12 +166,12 @@ Stage 0: Skeleton
                            └─ Stage 8: Quiescence
                                 └─ Stage 9: TT + Move Ordering
                                      ├─ Stage 10: MCTS
-                                     │    └─ Stage 11: Integration
+                                     │    └─ Stage 11: Phase-Separated Hybrid
                                      └─ Stage 12: Self-Play
                                           └─ Stage 13: Time + Beam Tuning
-                                               └─ Stage 14: Zone Control
-                                                    └─ Stage 15: NNUE Arch
-                                                         └─ Stage 16: NNUE Training
+                                               └─ Stage 14: MCTS OMA
+                                                    └─ Stage 15: PW + Zone Control
+                                                         └─ Stage 16: NNUE Arch+Train
                                                               └─ Stage 17: NNUE Integration
                                                                    └─ Stage 18: Game Modes
                                                                         └─ Stage 19: Full UI
@@ -852,47 +861,43 @@ The score is a 4-vector, not a scalar. TT flag semantics:
 
 ---
 
-### Stage 11: Max^n → MCTS Integration
+### Stage 11: Phase-Separated Hybrid Controller
 
 **ADRs:** [[ADR-006]] (Gumbel MCTS), [[ADR-007]] (Progressive History)
 
-**The problem:** Max^n and MCTS are separate systems. Need a controller that runs Max^n first (for tactical grounding), then extracts knowledge (history table, ordering scores) to warm-start MCTS for strategic exploration.
+**The problem:** Max^n and MCTS serve different purposes. Max^n excels at structured opening positions where tactical precision matters. MCTS excels at chaotic midgame positions where sampling handles the multi-player branching. Running both on every move wastes time — MCTS is weak at openings, Max^n is too shallow for midgame.
 
 **What you're building:**
 - Hybrid controller implementing the `Searcher` trait
-- Phase 1: Run Max^n to depth 7-8 with iterative deepening
-- **History handoff:** After Max^n completes, extract the history heuristic table and pass it to MctsSearcher via `set_history_table()` for Progressive History warm-start
-- **Prior policy computation:** Compute `pi(a) = softmax(ordering_score(a) / PRIOR_TEMPERATURE)` for surviving moves using Max^n's move ordering infrastructure, pass to MctsSearcher via `set_prior_policy()` for Gumbel root selection
-- Phase 2: Run MCTS with remaining time budget (Gumbel root selection + Progressive History at non-root)
-- MCTS uses NNUE (not Max^n) as leaf evaluator — Max^n is too slow per simulation
-- Final move selection: MCTS's Sequential Halving winner, but if MCTS and Max^n disagree on best move, flag for review (tracing)
+- **Phase separation:** Controller selects Max^n OR MCTS based on game phase, never both
+- **Opening (ply < cutover):** Max^n only, full time budget, depth 4 with opponent beam ratio 0.25
+- **Midgame+ (ply >= cutover):** MCTS only, full time budget, Gumbel root selection
+- `phase_cutover_ply` configurable via `setoption name PhaseCutoverPly value 32` (default 32 = 8 moves per player)
+- MCTS uses lightweight move ordering (MVV-LVA, killer moves) for priors — does not depend on Max^n warmup
 
 **Build order:**
 1. Hybrid controller struct holding both `MaxnSearcher` and `MctsSearcher`
-2. Time allocation: Max^n gets N seconds, MCTS gets the rest
-3. Max^n runs, produces best move + score vector + PV
-4. History table extraction from MaxnSearcher (expose `pub fn history_table(&self)`)
-5. Prior policy computation (softmax over ordering scores for root moves)
-6. `set_history_table()` and `set_prior_policy()` calls before MCTS search
-7. MCTS runs with Gumbel root + Progressive History warm-start
-8. Final move selection logic
-9. Info output: report both Max^n and MCTS perspectives
-10. Disagreement detection and logging
+2. Phase detection: compare current ply against `phase_cutover_ply`
+3. Opening path: delegate entirely to Max^n, return result directly
+4. Midgame path: delegate entirely to MCTS, return result directly
+5. Mate detection: if Max^n found mate in opening, return immediately
+6. Info output: report which phase was used
+7. Expose `PhaseCutoverPly` via setoption
 
 **Acceptance criteria:**
-- AC1: Controller correctly sequences Max^n → MCTS
-- AC2: MCTS receives remaining time (not total time)
-- AC3: History table successfully transfers from Max^n to MCTS (nonzero entries, measurable via tracing)
-- AC4: Prior policy computed and passed to MCTS root (entropy logged)
-- AC5: If Max^n found mate, MCTS skipped (no need to explore)
-- AC6: Disagreement rate logged (Max^n best ≠ MCTS best)
-- AC7: Total time usage within budget
-- AC8: MCTS with Progressive History warm-start outperforms cold-start MCTS (measurable via A/B self-play)
+- AC1: `ply < cutover` → Max^n only, MCTS never called
+- AC2: `ply >= cutover` → MCTS only, Max^n never called
+- AC3: Opening moves complete in <1s at depth 4
+- AC4: Midgame moves use full time budget for MCTS
+- AC5: If Max^n found mate in opening, return immediately
+- AC6: `setoption name PhaseCutoverPly value N` is configurable
+- AC7: All existing tests still pass
 
 **What you DON'T need:**
-- Adaptive time splitting (Stage 13)
-- Training data export (future Odin integration)
-- Persistent history across moves (measure in Stage 13)
+- Running both phases on the same move (this is the old design — rejected)
+- History transfer from Max^n to MCTS (not needed when phases don't overlap)
+- Disagreement tracking (phases don't produce competing results)
+- Adaptive time splitting between phases (each phase gets the full budget)
 
 ---
 
@@ -963,39 +968,62 @@ The score is a 4-vector, not a scalar. TT flag semantics:
 
 ---
 
-### Stage 14: Zone Control Features
+### Stage 14: MCTS Opponent Move Abstraction (OMA)
 
-**The problem:** Standard chess eval (material + PST + mobility) misses the territorial dynamics that dominate 4-player chess. Zone control features are cheap to compute on 160 squares and provide rich positional information.
+**The problem:** MCTS wastes simulation budget expanding all 4 players' moves equally. In 4-player chess, the branching factor at opponent nodes kills search depth. The engine should focus simulations on root player decisions, not opponent exploration.
+
+**Research basis:** Baier & Kaisers, "Guiding Multiplayer MCTS by Focusing on Yourself," IEEE CoG 2020. MCTS-OMA outperformed Paranoid and BRS+ baselines in multi-player games.
 
 **What you're building:**
-- Enhanced zone control features (upgrading bootstrap eval's basic territory):
-  1. **Territory (BFS Voronoi):** Multi-source BFS from all pieces, assigns territory per player. Count, frontier length, encirclement ratio.
-  2. **Influence maps:** Per-player influence with distance decay (exponential or linear). Piece-weighted (queen emits more influence than pawn).
-  3. **King safety zones:** King zone influence ratio (friendly vs enemy), pawn shelter integrity, escape route count, virtual mobility (queen-replacement attack vectors).
-  4. **Tension maps:** Sum of all players' influence per square. High tension = active combat zone. Low tension = quiet backwater.
-  5. **Vulnerability maps:** Enemy influence minus friendly influence per square. Highlights danger areas.
-  6. **Square control scoring:** Weighted by reciprocal piece value (pawn controlling > queen controlling).
-- All features output as numeric vectors suitable for NNUE input
-
-**Computational budget:** All features combined < 5us on 160 squares.
+- **Opponent Move Abstraction:** At root player MCTS nodes, expand fully (Gumbel selection, all legal moves). At opponent nodes, pick ONE move via a lightweight policy and advance immediately. Each simulation reaches root player's next decision 3-4x faster.
+- **Lightweight opponent policy (no full eval):**
+  1. Captures — prioritize by MVV-LVA
+  2. Checks — always consider
+  3. If no captures/checks — pick highest-scored move from history table
+  4. Fallback — random legal move
+- Configurable via `setoption name OpponentAbstraction value true/false`
 
 **Build order:**
-1. Enhanced BFS Voronoi with frontier and encirclement metrics
-2. Influence map with configurable decay function
-3. King safety zone computation
-4. Tension and vulnerability derivation from influence maps
-5. Square control scoring with reciprocal piece weights
-6. Integration into bootstrap evaluator (replacing basic territory)
-7. Feature vector export (for future NNUE training)
-8. Self-play validation: zone control features improve eval quality
+1. Add `OmaPolicy` struct for lightweight opponent move selection
+2. In MCTS `select_action()`, branch on `is_root_player`: full expansion for root, OMA for opponents
+3. Add `use_oma: bool` to `MctsConfig` (default true)
+4. Wire via setoption
+5. A/B test: OMA on vs off at movetime 5000
 
 **Acceptance criteria:**
-- Territory count distinguishes between expanding and contracting players
-- Influence maps correctly show piece projection patterns
-- King safety detects exposed kings (low shelter, many attackers)
-- Tension maps highlight contested zones
-- All features compute in < 5us combined
-- Self-play: zone-control-enhanced eval beats basic eval at 95% confidence
+- AC1: MCTS simulations reach 3-4x deeper into root player's future turns
+- AC2: Opponent nodes use lightweight policy, no full eval call
+- AC3: `setoption name OpponentAbstraction value false` restores current behavior exactly
+- AC4: A/B test via self-play — OMA on vs OMA off, expect higher win rate for OMA
+
+---
+
+### Stage 15: Progressive Widening + Zone Control
+
+**The problem (Part A — Progressive Widening):** Pure OMA (Stage 14) always picks exactly one opponent move. In longer time controls, this is too aggressive — the engine should widen opponent awareness as visit count grows.
+
+**Research basis:** Same Baier & Kaisers 2020 paper. MCTS-OMA-PW outperformed pure OMA in longer time controls.
+
+**What you're building (Part A):**
+- Progressive widening at opponent nodes: `max_children(visits) = floor(2 * visits^0.5)`
+- Early simulations skip opponents (fast, deep). Later simulations widen (accurate).
+- Configurable via `setoption name PWExponent value 0.5`
+
+**The problem (Part B — Zone Control):** Standard chess eval misses territorial dynamics that dominate 4-player chess.
+
+**What you're building (Part B):**
+- Enhanced zone control features:
+  1. **Territory (BFS Voronoi):** Multi-source BFS, territory per player, frontier length, encirclement
+  2. **Influence maps:** Per-player, piece-weighted distance decay
+  3. **King safety zones:** Shelter integrity, escape routes, zone influence ratio
+  4. **Tension / vulnerability maps:** Combat zones vs quiet backwaters
+- All features < 5us combined, suitable for NNUE input
+
+**Acceptance criteria:**
+- AC1: Opponent nodes start narrow, widen with visits
+- AC2: A/B test: OMA-PW vs pure OMA at movetime 5000 and 15000
+- AC3: Zone features compute in < 5us
+- AC4: Self-play: zone-enhanced eval beats basic eval at 95% confidence
 
 ---
 
