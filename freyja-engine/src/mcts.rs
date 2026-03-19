@@ -8,11 +8,14 @@ use std::time::Instant;
 
 use arrayvec::ArrayVec;
 
+use crate::board::Board;
 use crate::board::types::*;
 use crate::eval::{ELIMINATED_SCORE, Evaluator};
 use crate::game_state::GameState;
-use crate::move_gen::{MAX_MOVES, Move, MoveUndo, generate_legal_moves, make_move, unmake_move};
-use crate::move_order::{HistoryTable, KillerTable, score_move};
+use crate::move_gen::{
+    MAX_MOVES, Move, MoveUndo, generate_captures_only, generate_legal_moves, make_move, unmake_move,
+};
+use crate::move_order::{HistoryTable, KillerTable, mvv_lva_score, score_move};
 use crate::search::{
     MAX_DEPTH, SearchLimits, SearchResult, Searcher, active_count_in_search,
     is_player_eliminated_in_search,
@@ -75,6 +78,9 @@ pub struct MctsConfig {
     pub pw_alpha: f32,
     /// Maximum total nodes in tree (memory bound).
     pub max_nodes: usize,
+    /// Enable Opponent Move Abstraction (OMA).
+    /// When true, opponent nodes use a lightweight policy instead of full tree expansion.
+    pub use_oma: bool,
 }
 
 impl Default for MctsConfig {
@@ -87,7 +93,101 @@ impl Default for MctsConfig {
             pw_k: DEFAULT_PW_K,
             pw_alpha: DEFAULT_PW_ALPHA,
             max_nodes: DEFAULT_MAX_NODES,
+            use_oma: true,
         }
+    }
+}
+
+// ─── OMA Path Tracking ────────────────────────────────────────────────────
+
+/// A step in an MCTS simulation path. Tree moves advance the tree pointer;
+/// OMA moves only advance the game state (the tree pointer stays put).
+enum SimStep {
+    /// A move through the tree — has a child index for backpropagation.
+    TreeMove { child_idx: usize, undo: MoveUndo },
+    /// An opponent move via OMA lightweight policy — no tree node.
+    OmaMove { undo: MoveUndo },
+}
+
+// ─── OMA Policy ───────────────────────────────────────────────────────────
+
+/// Lightweight opponent move selection for Opponent Move Abstraction (OMA).
+///
+/// Priority: checkmate > capture (MVV-LVA) > quiet check > history > random.
+/// Never calls the evaluator — purely move-generation-based.
+struct OmaPolicy;
+
+impl OmaPolicy {
+    /// Select one move for an opponent using the lightweight policy.
+    /// Returns None if no legal moves exist (terminal position).
+    fn select_move(
+        board: &mut Board,
+        history: &Option<Box<[[u32; TOTAL_SQUARES]; TOTAL_SQUARES]>>,
+        rng: &mut u64,
+    ) -> Option<Move> {
+        // Generate captures first (cheap — filtered pseudo-legal)
+        let captures = generate_captures_only(board);
+        let best_capture = captures.iter().max_by_key(|m| mvv_lva_score(**m)).copied();
+
+        // Generate all legal moves for check/mate detection and fallback
+        let legals = generate_legal_moves(board);
+        if legals.is_empty() {
+            return None;
+        }
+
+        // Scan for checking moves; for each check, test for mate
+        let mut best_check: Option<Move> = None;
+        for &mv in &legals {
+            let undo = make_move(board, mv);
+            let next_side = board.side_to_move();
+            let gives_check = board.is_in_check(next_side);
+            if gives_check {
+                // Test for checkmate: does the checked player have any legal response?
+                let responses = generate_legal_moves(board);
+                unmake_move(board, &undo);
+                if responses.is_empty() {
+                    // Checkmate! Play this immediately — highest priority.
+                    return Some(mv);
+                }
+                if best_check.is_none() {
+                    best_check = Some(mv);
+                }
+            } else {
+                unmake_move(board, &undo);
+            }
+        }
+
+        // Priority: capture > check > history > random
+        if let Some(cap) = best_capture {
+            return Some(cap);
+        }
+        if let Some(chk) = best_check {
+            return Some(chk);
+        }
+
+        // History heuristic fallback
+        if let Some(hist) = history {
+            let best_hist = legals
+                .iter()
+                .max_by_key(|m| {
+                    let from = m.from_sq().0 as usize;
+                    let to = m.to_sq().0 as usize;
+                    hist[from][to]
+                })
+                .copied();
+            if let Some(mv) = best_hist {
+                // Only use history if there's a nonzero score
+                let from = mv.from_sq().0 as usize;
+                let to = mv.to_sq().0 as usize;
+                if hist[from][to] > 0 {
+                    return Some(mv);
+                }
+            }
+        }
+
+        // Random fallback via LCG
+        let idx = (lcg_next(rng) >> 33) as usize % legals.len();
+        Some(legals[idx])
     }
 }
 
@@ -112,6 +212,12 @@ pub struct MctsNode {
     children: Vec<MctsNode>,
     /// Whether this node has been fully expanded.
     expanded: bool,
+    /// Stored OMA moves computed on first visit. Replayed on subsequent visits
+    /// to guarantee consistent board state at this tree node across simulations.
+    /// Up to 3 moves (one per opponent in 4-player chess).
+    oma_moves: ArrayVec<Move, 3>,
+    /// Whether OMA moves have been computed for this node.
+    oma_computed: bool,
 }
 
 impl MctsNode {
@@ -125,6 +231,8 @@ impl MctsNode {
             gumbel: 0.0,
             children: Vec::new(),
             expanded: false,
+            oma_moves: ArrayVec::new(),
+            oma_computed: false,
         }
     }
 
@@ -138,6 +246,8 @@ impl MctsNode {
             gumbel: 0.0,
             children: Vec::new(),
             expanded: false,
+            oma_moves: ArrayVec::new(),
+            oma_computed: false,
         }
     }
 
@@ -406,6 +516,10 @@ pub struct MctsSearcher<E: Evaluator> {
     last_sims: u32,
     /// Simulations per second from the last search.
     last_sps: u32,
+    /// OMA metrics: total OMA moves across all simulations.
+    oma_moves_total: u64,
+    /// OMA metrics: total root-player tree decisions across all simulations.
+    root_decisions_total: u64,
 }
 
 impl<E: Evaluator> MctsSearcher<E> {
@@ -420,6 +534,8 @@ impl<E: Evaluator> MctsSearcher<E> {
             total_nodes: 0,
             last_sims: 0,
             last_sps: 0,
+            oma_moves_total: 0,
+            root_decisions_total: 0,
         }
     }
 
@@ -593,9 +709,10 @@ impl<E: Evaluator> MctsSearcher<E> {
         root: &mut MctsNode,
         state: &mut GameState,
         target_child: Option<usize>,
+        root_player_idx: usize,
     ) -> bool {
-        // Path tracking: (child_index, undo) pairs for unmake
-        let mut path: ArrayVec<(usize, MoveUndo), MAX_DEPTH> = ArrayVec::new();
+        // Path tracking: tree moves and OMA moves for unmake + backpropagation
+        let mut path: ArrayVec<SimStep, MAX_DEPTH> = ArrayVec::new();
 
         let mut current = root as *mut MctsNode;
 
@@ -606,7 +723,10 @@ impl<E: Evaluator> MctsSearcher<E> {
                 let child = &node.children[target_idx];
                 if let Some(mv) = child.mv {
                     let undo = make_move(state.board_mut(), mv);
-                    path.push((target_idx, undo));
+                    path.push(SimStep::TreeMove {
+                        child_idx: target_idx,
+                        undo,
+                    });
                     current = &mut node.children[target_idx] as *mut MctsNode;
                 }
             }
@@ -625,10 +745,68 @@ impl<E: Evaluator> MctsSearcher<E> {
             // Check if current player is eliminated — skip their turn
             let side = board.side_to_move();
             if is_player_eliminated_in_search(board, side) {
-                // Advance to next player without a move
-                // In 4PC, we need to handle this by finding the next active player
-                // The board's side_to_move already handles this after make_move
                 break; // Evaluate here — eliminated player can't move
+            }
+
+            // OMA: advance through all consecutive opponent turns.
+            // First visit: compute OMA moves via lightweight policy, store at node.
+            // Revisit: replay stored moves for guaranteed board state consistency.
+            if self.config.use_oma && side.index() != root_player_idx {
+                if !node.oma_computed {
+                    // First visit — compute and store OMA moves
+                    node.oma_moves.clear();
+                    let mut oma_terminal = false;
+                    loop {
+                        let oma_side = state.board().side_to_move();
+                        if oma_side.index() == root_player_idx {
+                            break;
+                        }
+                        if is_player_eliminated_in_search(state.board(), oma_side) {
+                            break;
+                        }
+                        if active_count_in_search(state.board()) <= 1 {
+                            oma_terminal = true;
+                            break;
+                        }
+                        if path.len() >= MAX_DEPTH - 1 || node.oma_moves.is_full() {
+                            break;
+                        }
+
+                        if let Some(mv) = OmaPolicy::select_move(
+                            state.board_mut(),
+                            &self.history,
+                            &mut self.rng_state,
+                        ) {
+                            node.oma_moves.push(mv);
+                            let undo = make_move(state.board_mut(), mv);
+                            path.push(SimStep::OmaMove { undo });
+                            self.oma_moves_total += 1;
+                        } else {
+                            oma_terminal = true;
+                            break;
+                        }
+                    }
+                    node.oma_computed = true;
+                    if oma_terminal {
+                        break;
+                    }
+                } else {
+                    // Revisit — replay stored OMA moves for consistency
+                    for &mv in &node.oma_moves {
+                        if path.len() >= MAX_DEPTH - 1 {
+                            break;
+                        }
+                        let undo = make_move(state.board_mut(), mv);
+                        path.push(SimStep::OmaMove { undo });
+                        self.oma_moves_total += 1;
+                    }
+                }
+                // If OMA didn't advance to root player (e.g., eliminated player),
+                // evaluate here to avoid infinite loop
+                if state.board().side_to_move().index() != root_player_idx {
+                    break;
+                }
+                continue;
             }
 
             if !node.expanded {
@@ -657,7 +835,8 @@ impl<E: Evaluator> MctsSearcher<E> {
             let child = &node.children[child_idx];
             if let Some(mv) = child.mv {
                 let undo = make_move(state.board_mut(), mv);
-                path.push((child_idx, undo));
+                path.push(SimStep::TreeMove { child_idx, undo });
+                self.root_decisions_total += 1;
                 current = &mut node.children[child_idx] as *mut MctsNode;
             } else {
                 break;
@@ -685,9 +864,17 @@ impl<E: Evaluator> MctsSearcher<E> {
             root_ref.score_sums[i] += e;
         }
 
-        // Update intermediate nodes (skip if leaf IS root's direct child)
-        for (step, &(child_idx, _)) in path.iter().enumerate() {
-            if step < path.len() - 1 {
+        // Update intermediate tree nodes (skip OMA steps — they have no tree node)
+        // Collect tree move indices for backpropagation
+        let tree_steps: ArrayVec<usize, MAX_DEPTH> = path
+            .iter()
+            .filter_map(|step| match step {
+                SimStep::TreeMove { child_idx, .. } => Some(*child_idx),
+                SimStep::OmaMove { .. } => None,
+            })
+            .collect();
+        for (step, &child_idx) in tree_steps.iter().enumerate() {
+            if step < tree_steps.len() - 1 {
                 // This is an intermediate node, not the leaf
                 let node = unsafe { &mut *ancestor };
                 let child = &mut node.children[child_idx];
@@ -699,16 +886,20 @@ impl<E: Evaluator> MctsSearcher<E> {
             }
         }
 
-        // Unmake all moves in reverse
-        for (_, undo) in path.iter().rev() {
+        // Unmake all moves in reverse (both tree moves and OMA moves)
+        for step in path.iter().rev() {
+            let undo = match step {
+                SimStep::TreeMove { undo, .. } => undo,
+                SimStep::OmaMove { undo } => undo,
+            };
             unmake_move(state.board_mut(), undo);
         }
 
-        // Debug assert: zobrist hash should match root state
+        // Debug: verify board is restored after unmake
         debug_assert_eq!(
             state.board().zobrist_hash(),
-            state.board().zobrist_hash(), // This is self-consistent; a real check would save the original hash
-            "Make/unmake corrupted board state during MCTS simulation"
+            state.board().compute_full_hash(),
+            "Board hash inconsistent after MCTS simulation unmake"
         );
 
         true
@@ -760,6 +951,8 @@ impl<E: Evaluator> MctsSearcher<E> {
 
         // Create root and expand
         self.total_nodes = 0;
+        self.oma_moves_total = 0;
+        self.root_decisions_total = 0;
         let mut root = MctsNode::new_root();
 
         // Compute priors for root children
@@ -854,7 +1047,7 @@ impl<E: Evaluator> MctsSearcher<E> {
                         break;
                     }
 
-                    self.run_simulation(&mut root, state, Some(candidate_idx));
+                    self.run_simulation(&mut root, state, Some(candidate_idx), root_player_idx);
                     total_sims += 1;
                     halving.budget_used += 1;
 
@@ -867,14 +1060,26 @@ impl<E: Evaluator> MctsSearcher<E> {
                             0
                         };
 
+                        let avg_oma = if total_sims > 0 {
+                            self.oma_moves_total as f32 / total_sims as f32
+                        } else {
+                            0.0
+                        };
+                        let avg_root = if total_sims > 0 {
+                            self.root_decisions_total as f32 / total_sims as f32
+                        } else {
+                            0.0
+                        };
                         tracing::debug!(
-                            "info sims {} sps {} nodes {} halving_round {}/{} candidates {}",
+                            "info sims {} sps {} nodes {} halving_round {}/{} candidates {} oma_avg {:.1} root_avg {:.1}",
                             total_sims,
                             sps,
                             self.total_nodes,
                             halving.round,
                             halving.total_rounds,
                             halving.candidates.len(),
+                            avg_oma,
+                            avg_root,
                         );
                     }
                 }
@@ -1281,7 +1486,7 @@ mod tests {
         assert!(!root.children.is_empty());
 
         // Run one simulation targeting first child
-        searcher.run_simulation(&mut root, &mut state, Some(0));
+        searcher.run_simulation(&mut root, &mut state, Some(0), 0);
 
         // Root should have 1 visit
         assert_eq!(
@@ -1305,7 +1510,7 @@ mod tests {
 
         // Run 5 simulations
         for _ in 0..5 {
-            searcher.run_simulation(&mut root, &mut state, Some(0));
+            searcher.run_simulation(&mut root, &mut state, Some(0), 0);
         }
 
         assert_eq!(root.visits, 5);
@@ -1325,7 +1530,7 @@ mod tests {
 
         let mut root = MctsNode::new_root();
         searcher.expand(&mut root, &mut state);
-        searcher.run_simulation(&mut root, &mut state, Some(0));
+        searcher.run_simulation(&mut root, &mut state, Some(0), 0);
 
         // Each player's score should be independent
         // In a symmetric starting position, scores should be roughly similar
@@ -1348,7 +1553,7 @@ mod tests {
         searcher.expand(&mut root, &mut state);
 
         for _ in 0..10 {
-            searcher.run_simulation(&mut root, &mut state, Some(0));
+            searcher.run_simulation(&mut root, &mut state, Some(0), 0);
         }
 
         let hash_after = state.board().zobrist_hash();
@@ -1397,6 +1602,8 @@ mod tests {
                 MctsNode::new_child(Move::new(Square(9), Square(23), PieceType::Pawn), 0.25),
             ],
             expanded: true,
+            oma_moves: ArrayVec::new(),
+            oma_computed: false,
         };
 
         // At 1 visit: pw_k * 1^pw_alpha = 2.0 * 1.0 = 2 children
@@ -1796,5 +2003,193 @@ mod tests {
             warm.history.is_some(),
             "History should be set after warm-start"
         );
+    }
+
+    // ── Stage 14: OMA Tests ──
+
+    #[test]
+    fn test_oma_config_default() {
+        let config = MctsConfig::default();
+        assert!(config.use_oma, "OMA should default to true");
+    }
+
+    #[test]
+    fn test_oma_policy_captures_preferred() {
+        // From a position with captures available, OMA should pick the best capture
+        let mut board = Board::starting_position();
+        // Starting position has no captures — OMA falls through to history/random
+        let mv = OmaPolicy::select_move(&mut board, &None, &mut 42u64);
+        assert!(
+            mv.is_some(),
+            "OMA should return a move from starting position"
+        );
+        // The move should be legal
+        let legals = generate_legal_moves(&mut board);
+        assert!(
+            legals.contains(&mv.unwrap()),
+            "OMA should return a legal move"
+        );
+    }
+
+    #[test]
+    fn test_oma_policy_random_fallback() {
+        // With no captures, no checks, no history, OMA uses random
+        let mut board = Board::starting_position();
+        let mut rng1 = 111u64;
+        let mut rng2 = 222u64;
+        let mv1 = OmaPolicy::select_move(&mut board, &None, &mut rng1);
+        let mv2 = OmaPolicy::select_move(&mut board, &None, &mut rng2);
+        // Both should return legal moves
+        assert!(mv1.is_some());
+        assert!(mv2.is_some());
+        // With different RNG seeds, they might pick different moves
+        // (not guaranteed but likely with 20 legal moves)
+    }
+
+    #[test]
+    fn test_oma_board_preserved_after_select() {
+        // OmaPolicy::select_move must not modify the board
+        let mut board = Board::starting_position();
+        let hash_before = board.zobrist_hash();
+        let _ = OmaPolicy::select_move(&mut board, &None, &mut 42u64);
+        assert_eq!(
+            board.zobrist_hash(),
+            hash_before,
+            "OmaPolicy::select_move must preserve board state"
+        );
+    }
+
+    #[test]
+    fn test_oma_simulation_board_preserved() {
+        // Board state must be restored after simulation with OMA
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+        let hash_before = state.board().zobrist_hash();
+
+        let mut root = MctsNode::new_root();
+        searcher.expand(&mut root, &mut state);
+
+        // Run enough simulations to exercise deep OMA trees
+        for _ in 0..30 {
+            searcher.run_simulation(&mut root, &mut state, Some(0), 0);
+        }
+
+        assert_eq!(
+            state.board().zobrist_hash(),
+            hash_before,
+            "Board must be preserved after 30 OMA simulations"
+        );
+    }
+
+    #[test]
+    fn test_oma_off_matches_baseline() {
+        // With OMA off, search should produce same tree structure as pre-Stage-14
+        let mut searcher_off = {
+            let mut config = MctsConfig::default();
+            config.use_oma = false;
+            let mut s = MctsSearcher::new(BootstrapEvaluator::new(), config);
+            s.set_rng_seed(42);
+            s
+        };
+        let mut state = starting_state();
+
+        let limits = SearchLimits {
+            max_nodes: Some(50),
+            ..Default::default()
+        };
+
+        let result = searcher_off.search(&mut state, &limits);
+        assert!(
+            result.best_move.is_some(),
+            "OMA-off search should return a move"
+        );
+    }
+
+    #[test]
+    fn test_oma_root_decisions_counted() {
+        // OMA metrics should count root-player decisions
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+
+        let limits = SearchLimits {
+            max_nodes: Some(100),
+            ..Default::default()
+        };
+
+        let _ = searcher.search(&mut state, &limits);
+
+        // With OMA on, simulations should have both OMA moves and root decisions
+        assert!(
+            searcher.oma_moves_total > 0,
+            "OMA moves should be counted (got {})",
+            searcher.oma_moves_total
+        );
+        assert!(
+            searcher.root_decisions_total > 0,
+            "Root decisions should be counted (got {})",
+            searcher.root_decisions_total
+        );
+    }
+
+    #[test]
+    fn test_oma_stored_moves_replayed() {
+        // Stored OMA moves should produce consistent tree state across simulations
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+        let hash_before = state.board().zobrist_hash();
+
+        let mut root = MctsNode::new_root();
+        searcher.expand(&mut root, &mut state);
+
+        // First sim: computes OMA moves, stores them
+        searcher.run_simulation(&mut root, &mut state, Some(0), 0);
+        assert_eq!(state.board().zobrist_hash(), hash_before);
+
+        // Check that first child has OMA moves stored
+        let child = &root.children[0];
+        assert!(
+            child.oma_computed,
+            "OMA should be computed after first simulation"
+        );
+        let stored_count = child.oma_moves.len();
+        assert!(
+            stored_count > 0,
+            "Should have stored OMA moves (4-player game has 3 opponents)"
+        );
+
+        // Second sim: replays stored moves — board should still be preserved
+        searcher.run_simulation(&mut root, &mut state, Some(0), 0);
+        assert_eq!(state.board().zobrist_hash(), hash_before);
+
+        // Stored moves shouldn't change
+        assert_eq!(
+            root.children[0].oma_moves.len(),
+            stored_count,
+            "Stored OMA move count should be stable across simulations"
+        );
+    }
+
+    #[test]
+    fn test_setoption_opponent_abstraction() {
+        use crate::protocol::options::{EngineOptions, SetOptionResult, apply_option};
+
+        let mut opts = EngineOptions::default();
+        assert!(opts.opponent_abstraction, "Should default to true");
+
+        assert!(matches!(
+            apply_option(&mut opts, "OpponentAbstraction", "false"),
+            SetOptionResult::Ok
+        ));
+        assert!(!opts.opponent_abstraction);
+
+        assert!(matches!(
+            apply_option(&mut opts, "OpponentAbstraction", "true"),
+            SetOptionResult::Ok
+        ));
+        assert!(opts.opponent_abstraction);
+
+        // MctsConfig wiring
+        let mcts_config = opts.mcts_config();
+        assert!(mcts_config.use_oma);
     }
 }

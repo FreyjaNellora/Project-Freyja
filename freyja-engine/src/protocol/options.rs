@@ -44,6 +44,10 @@ pub struct EngineOptions {
     pub ph_weight: f32,
     /// Prior coefficient in non-root UCB selection.
     pub c_prior: f32,
+
+    // ── Stage 14: OMA ──
+    /// Enable Opponent Move Abstraction in MCTS.
+    pub opponent_abstraction: bool,
 }
 
 impl Default for EngineOptions {
@@ -66,6 +70,7 @@ impl Default for EngineOptions {
             prior_temperature: mcts_defaults.prior_temperature,
             ph_weight: mcts_defaults.ph_weight,
             c_prior: mcts_defaults.c_prior,
+            opponent_abstraction: true,
         }
     }
 }
@@ -102,6 +107,7 @@ impl EngineOptions {
             prior_temperature: self.prior_temperature,
             ph_weight: self.ph_weight,
             c_prior: self.c_prior,
+            use_oma: self.opponent_abstraction,
             ..MctsConfig::default()
         }
     }
@@ -291,6 +297,20 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             _ => SetOptionResult::InvalidValue(format!(
                 "CPrior must be a non-negative float, got '{value}'"
+            )),
+        },
+
+        "OpponentAbstraction" => match value.to_lowercase().as_str() {
+            "true" | "1" | "on" => {
+                options.opponent_abstraction = true;
+                SetOptionResult::Ok
+            }
+            "false" | "0" | "off" => {
+                options.opponent_abstraction = false;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "OpponentAbstraction must be true/false, got '{value}'"
             )),
         },
 
