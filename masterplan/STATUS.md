@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-20
-**Updated By:** Session 22
+**Updated By:** Session 23
 
 ---
 
 ## Current Stage
 
-**Stage:** 14 -- COMPLETE (user signed off 2026-03-20)
-**Status:** Complete. OMA implemented, sigma fix, stress tests, post-audit done.
-**Next:** Stage 15 (Progressive Widening + Zone Control)
+**Stage:** 15 -- IN PROGRESS
+**Status:** PW complete. Ray-attenuation zone control implemented. Swarm model next. A/B testing pending.
+**Next:** Swarm model implementation, A/B tests (PW + zone), performance benchmark
 
 ---
 
@@ -32,7 +32,7 @@
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Complete | `stage-13-complete` / `v1.13` | 2026-03-18 |
 | 14 | MCTS Opponent Move Abstraction (OMA) | Complete | `stage-14-complete` / `v1.14` | 2026-03-20 |
-| 15 | Progressive Widening + Zone Control | Not Started | -- | -- |
+| 15 | Progressive Widening + Zone Control | In Progress | -- | -- |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
 | 17 | NNUE Integration | Not Started | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |
@@ -68,7 +68,7 @@
 | A/B: opp ratio 0.25 vs 0.5 | 0.25 stronger | Elo -28.6, p=0.04, 6 pairs |
 | A/B: beam 30 vs 15 | No difference | p=0.59, 10 pairs |
 | A/B: OMA on vs off | No difference | Elo -4.8, p=0.993, 10 pairs |
-| Unit tests | 408 pass | 24 new in Stage 14 |
+| Unit tests | 441 pass | 33 new in Stage 15 (PW + zone control) |
 
 ---
 
@@ -77,7 +77,7 @@
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 14 (Stages 0-13) | 2026-03-18 |
-| Stage 14 status | Complete (pending sign-off) | 2026-03-20 |
+| Stages complete | 15 (Stages 0-14) | 2026-03-20 |
+| Stage 15 status | In Progress | 2026-03-20 |
 | Open blocking issues | 0 | 2026-03-20 |
 | Open warning issues | 1 | 2026-03-07 |

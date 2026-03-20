@@ -1,54 +1,85 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-20
-**Session Number:** 22
+**Session Number:** 23
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 14: MCTS Opponent Move Abstraction (OMA) -- COMPLETE (signed off 2026-03-20)**
-**Next: Stage 15 (Progressive Widening + Zone Control)**
+**Stage 15: Progressive Widening + Zone Control -- IN PROGRESS**
+
+Part A (PW) complete. Part B (Zone Control) has working ray-attenuation implementation. Swarm model planned as alternative for A/B comparison.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Post-audit documentation** — Rewrote audit_log_stage_14.md, downstream_log_stage_14.md with full bug/fix details, test coverage, and acceptance criteria status
-2. **Session note** — Session-022.md covering all Stage 14 work across Sessions 21-22
-3. **Prior session work (Session 21, documented here):**
-   - OMA core implementation (SimStep, OmaPolicy, stored moves per node, setoption, diagnostics)
-   - Sigma transform saturation fix (c_scale=200.0) — Gumbel exploration was pure exploitation since Stage 10
-   - Observer player label off-by-one fix
-   - Ply bounds guard in qsearch/maxn/negamax for eliminated-player skip
-   - 24 new tests (9 OMA, 10 EP near-cutout, 2 MCTS handoff, 3 qsearch elimination)
-   - A/B test: OMA on vs off, Elo -4.8, p=0.993 (neutral, as expected pre-PW)
+1. **Progressive Widening (Part A) -- COMPLETE**
+   - PW at root-player nodes (paper-faithful, Baier & Kaisers 2020)
+   - Children sorted by prior after expansion (best-first for PW window)
+   - `root_decisions_total` renamed to `tree_moves_total` + new `root_player_decisions` counter
+   - PW diagnostic tracking (`pw_limited_selections`)
+   - Setoptions: `PWConstant` (k), `PWExponent` (alpha)
+   - 9 new PW tests
+
+2. **Zone Control (Part B) -- RAY-ATTENUATION MODEL IMPLEMENTED**
+   - BFS territory enhanced with contested squares + frontier detection
+   - Ray-attenuated influence maps: directional force projection with blocker degradation
+   - Tension/vulnerability scoring from overlapping influence
+   - King escape routes
+   - Configurable zone weights via setoption
+   - DKW players correctly skipped (`is_active_for_zones`)
+   - 11 new zone tests
+   - 441 total tests pass
+
+3. **Research & Design Direction**
+   - Extensive research into BFS Voronoi limitations, influence map models
+   - User identified critical flaw: distance-decay is circular, pieces project along vectors
+   - Pivoted from exponential distance-decay to ray-attenuation (directional, obstacle-aware)
+   - User proposed swarm mechanics as next evolution (to replace BFS Voronoi)
+   - Architecture: ray-attenuation = individual piece voice, swarm = collective chord
 
 ---
 
 ## What Was NOT Completed
 
-- **User UI testing** for Stage 14 sign-off
-- **AC1 at scale:** "3-4x deeper root decisions" needs longer time control testing (deferred to Stage 15 validation)
-- **MCTS noise mechanism:** MoveNoise doesn't work in MCTS phase. Unresolved.
+- **Swarm model implementation** -- Designed but not coded. Next session.
+- **A/B testing** -- No A/B tests run yet (PW or zone control)
+- **Performance benchmark** -- Zone features not benchmarked yet (<5us target)
+- **Stage 15 audit/downstream logs** -- Not written
+- **k=2 vs k=4 A/B test** -- User approved test, not yet run
 
 ---
 
 ## What the Next Session Should Do First
 
-1. **Get user sign-off on Stage 14** from UI testing
-2. If approved, tag `stage-14-complete` / `v1.14`
-3. Read Stage 15 spec (Progressive Widening + Zone Control) in MASTERPLAN.md
-4. Review downstream_log_stage_14.md for open questions about PW interaction with stored OMA moves
+1. **Implement swarm model** as alternative to BFS Voronoi territory
+   - Layer on top of ray-attenuation: cluster cohesion, mutual defense, attack coordination
+   - Separate setoption toggle to enable swarm vs Voronoi
+2. **A/B test: swarm vs ray-attenuation vs baseline** (all zone features off)
+3. **A/B test: PW enabled vs disabled** at movetime 5000 and 15000
+4. **A/B test: k=2 vs k=4** for PW constant
+5. **Performance benchmark** zone features (<5us target)
+6. Stage 15 audit log, downstream log
 
 ---
 
 ## Open Issues
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
-- **[[Issue-Sigma-Transform-Saturation]] (RESOLVED):** Fixed in Session 21. c_scale=200.0.
-- **MoveNoise in MCTS:** Not yet addressed. MCTS-only mode produces identical games.
-- **Crash at ply 32 in Tauri:** Reported during testing but may have been a Claude Code crash, not an engine crash. Not reproduced in unit tests (MCTS handoff stress test at ply 32 passes). Monitor but do not block on this.
+- **MoveNoise in MCTS:** Still unresolved. Use hybrid mode for A/B diversity.
+- **Crash at ply 32 in Tauri:** Not reproduced in unit tests. Monitor.
+- **MASTERPLAN numbering error:** Two "Stage 15" headers (line 1001, 1030). Second should be Stage 16.
+
+---
+
+## Design Decisions Made This Session
+
+- **PW at root-player nodes** (not opponent nodes). Paper-faithful approach. OMA handles opponents.
+- **Ray-attenuation replaces distance-decay** for influence maps. Directional, obstacle-aware.
+- **Swarm model planned** to replace BFS Voronoi. Will A/B test against ray-attenuation.
+- **Friendly vs enemy attenuation asymmetry** in ray model: friendly blockers attenuate mildly (1.5x), enemy blockers attenuate strongly (2.0 + piece value scaled).
 
 ---
 
@@ -62,12 +93,17 @@
 
 ---
 
-## Files Modified This Session (Session 22)
+## Files Modified This Session (Session 23)
 
 | File | Changes |
 |------|---------|
-| `masterplan/audit_log_stage_14.md` | REWRITTEN — full post-audit with bugs, tests, deviations |
-| `masterplan/downstream_log_stage_14.md` | REWRITTEN — downstream impacts by stage, sigma change |
-| `masterplan/sessions/Session-022.md` | NEW — session note |
-| `masterplan/STATUS.md` | UPDATED — Stage 14 complete pending sign-off |
-| `masterplan/HANDOFF.md` | UPDATED — Session 22 handoff |
+| `freyja-engine/src/eval.rs` | Ray-attenuation influence, BFS territory enhanced, tension, king escape, ZoneWeights, tests |
+| `freyja-engine/src/mcts.rs` | PW metrics, child sorting, PW diagnostics, tests |
+| `freyja-engine/src/protocol/options.rs` | PW + zone weight setoptions |
+| `freyja-engine/src/protocol/mod.rs` | Wire zone weights to evaluator |
+| `freyja-engine/src/search.rs` | cargo fmt only |
+| `freyja-engine/src/hybrid.rs` | cargo fmt only |
+| `freyja-engine/src/move_gen.rs` | cargo fmt only |
+| `masterplan/HANDOFF.md` | This file |
+| `masterplan/STATUS.md` | Updated |
+| `masterplan/sessions/Session-023.md` | New |
