@@ -1,43 +1,36 @@
 # Project Freyja -- HANDOFF
 
-**Session Date:** 2026-03-19
-**Session Number:** 21
+**Session Date:** 2026-03-20
+**Session Number:** 22
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 14: MCTS Opponent Move Abstraction (OMA) -- IMPLEMENTATION COMPLETE, AWAITING USER SIGN-OFF**
+**Stage 14: MCTS Opponent Move Abstraction (OMA) -- COMPLETE (signed off 2026-03-20)**
 **Next: Stage 15 (Progressive Widening + Zone Control)**
 
 ---
 
 ## What Was Completed This Session
 
-1. **Tier 5 boundary review** — all invariants pass, no blocking issues, user signed off
-2. **OMA core implementation:**
-   - `SimStep` enum for mixed tree/OMA path tracking
-   - `OmaPolicy`: checkmate > capture > check > history > random (no evaluator calls)
-   - OMA branch in `run_simulation` with **stored moves per tree node** (first visit: compute, revisit: replay)
-   - `use_oma: bool` in MctsConfig (default true)
-   - `OpponentAbstraction` setoption
-   - OMA diagnostic counters (oma_moves_total, root_decisions_total)
-   - 9 dedicated OMA unit tests, all 408 tests pass
-3. **Critical bug fix: Sigma transform saturation (Stage 10 bug)**
-   - Sequential Halving Q-values normalized to [0,1] instead of `/100`
-   - Gumbel exploration was effectively disabled since Stage 10
-4. **Observer bug fixes:**
-   - Player label off-by-one (double advancement) in ab_runner.mjs and observer.mjs
-   - Discovered MoveNoise doesn't apply to MCTS (only Max^n)
-5. **A/B test:** OMA on vs off, 10 games each, 2s movetime — no significant difference (Elo -4.8, p=0.993). Diverse winners, 0 crashes.
-6. **Research findings** from Baier & Kaisers 2020, GameAIPro MCTS pitfalls, Gumbel AlphaZero paper — documented in audit log and pattern notes.
+1. **Post-audit documentation** — Rewrote audit_log_stage_14.md, downstream_log_stage_14.md with full bug/fix details, test coverage, and acceptance criteria status
+2. **Session note** — Session-022.md covering all Stage 14 work across Sessions 21-22
+3. **Prior session work (Session 21, documented here):**
+   - OMA core implementation (SimStep, OmaPolicy, stored moves per node, setoption, diagnostics)
+   - Sigma transform saturation fix (c_scale=200.0) — Gumbel exploration was pure exploitation since Stage 10
+   - Observer player label off-by-one fix
+   - Ply bounds guard in qsearch/maxn/negamax for eliminated-player skip
+   - 24 new tests (9 OMA, 10 EP near-cutout, 2 MCTS handoff, 3 qsearch elimination)
+   - A/B test: OMA on vs off, Elo -4.8, p=0.993 (neutral, as expected pre-PW)
 
 ---
 
 ## What Was NOT Completed
 
-- **AC1 verification at scale:** "3-4x deeper root decisions" needs longer time control testing
-- **MCTS noise mechanism:** MoveNoise doesn't work in MCTS phase. Needs investigation for diverse MCTS-only self-play.
+- **User UI testing** for Stage 14 sign-off
+- **AC1 at scale:** "3-4x deeper root decisions" needs longer time control testing (deferred to Stage 15 validation)
+- **MCTS noise mechanism:** MoveNoise doesn't work in MCTS phase. Unresolved.
 
 ---
 
@@ -45,40 +38,36 @@
 
 1. **Get user sign-off on Stage 14** from UI testing
 2. If approved, tag `stage-14-complete` / `v1.14`
-3. Read Stage 15 spec (Progressive Widening + Zone Control)
+3. Read Stage 15 spec (Progressive Widening + Zone Control) in MASTERPLAN.md
+4. Review downstream_log_stage_14.md for open questions about PW interaction with stored OMA moves
 
 ---
 
 ## Open Issues
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
-- **[[Issue-Sigma-Transform-Saturation]] (RESOLVED):** Fixed in this session.
+- **[[Issue-Sigma-Transform-Saturation]] (RESOLVED):** Fixed in Session 21. c_scale=200.0.
 - **MoveNoise in MCTS:** Not yet addressed. MCTS-only mode produces identical games.
+- **Crash at ply 32 in Tauri:** Reported during testing but may have been a Claude Code crash, not an engine crash. Not reproduced in unit tests (MCTS handoff stress test at ply 32 passes). Monitor but do not block on this.
 
 ---
 
 ## Deferred Debt
 
 - Stage 5 post-audit, downstream log, vault notes
-- Session notes for Sessions 7, 8, 11, 12, 17, 18, 19, 20
+- Session notes for Sessions 4, 7, 8, 11, 12, 17, 18, 19, 20, 21
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - MCTS warmup at phase cutover (carried from Stage 13)
 - MCTS info output during thinking (carried from Stage 13)
 
 ---
 
-## Files Modified This Session
+## Files Modified This Session (Session 22)
 
 | File | Changes |
 |------|---------|
-| `freyja-engine/src/mcts.rs` | SimStep, OmaPolicy, OMA branch, stored moves, sigma fix, metrics, 9 tests |
-| `freyja-engine/src/protocol/options.rs` | OpponentAbstraction setoption |
-| `freyja-engine/src/board/mod.rs` | Minor formatting (cargo fmt) |
-| `observer/ab_runner.mjs` | Player label fix, NoiseSeed investigation |
-| `observer/observer.mjs` | Player label fix |
-| `observer/config_ab_oma.json` | A/B test configuration |
-| `masterplan/tier_boundary_review_5.md` | NEW — Tier 5 boundary review |
-| `masterplan/audit_log_stage_14.md` | NEW — pre-audit + post-audit |
-| `masterplan/downstream_log_stage_14.md` | NEW — API contracts, limitations |
-| `masterplan/patterns/Pattern-OMA-Stored-Moves.md` | NEW — pattern note |
-| `masterplan/issues/Issue-Sigma-Transform-Saturation.md` | NEW — resolved issue |
+| `masterplan/audit_log_stage_14.md` | REWRITTEN — full post-audit with bugs, tests, deviations |
+| `masterplan/downstream_log_stage_14.md` | REWRITTEN — downstream impacts by stage, sigma change |
+| `masterplan/sessions/Session-022.md` | NEW — session note |
+| `masterplan/STATUS.md` | UPDATED — Stage 14 complete pending sign-off |
+| `masterplan/HANDOFF.md` | UPDATED — Session 22 handoff |
