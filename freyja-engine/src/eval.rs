@@ -673,6 +673,128 @@ fn compute_tension(state: &GameState, influence: &InfluenceInfo) -> [i16; PLAYER
     scores
 }
 
+// ─── Swarm Mechanics ────────────────────────────────────────────────────────
+
+/// Swarm analysis result per player.
+pub struct SwarmInfo {
+    /// Mutual defense: count of own pieces defended by at least one friendly piece.
+    pub defended_pieces: [i16; PLAYERS],
+    /// Undefended pieces: count of own pieces NOT defended by any friendly piece.
+    pub undefended_pieces: [i16; PLAYERS],
+    /// Attack coordination: count of squares where 2+ of your pieces project influence.
+    /// Uses the ray-attenuation grid — squares with influence > single-piece weight
+    /// indicate overlapping projection from multiple pieces.
+    pub coordinated_squares: [i16; PLAYERS],
+    /// Pawn chain length: count of pawns defended by friendly pawns.
+    pub pawn_chain: [i16; PLAYERS],
+}
+
+/// Compute swarm features: mutual defense, attack coordination, pawn chains.
+///
+/// Swarm mechanics model the emergent strength of coordinated piece groups.
+/// Individual piece force comes from ray-attenuation; swarm captures how
+/// those individual forces reinforce each other.
+fn compute_swarm(state: &GameState, influence: &InfluenceInfo) -> SwarmInfo {
+    let board = state.board();
+    let mut defended = [0i16; PLAYERS];
+    let mut undefended = [0i16; PLAYERS];
+    let mut coordinated = [0i16; PLAYERS];
+    let mut pawn_chain = [0i16; PLAYERS];
+
+    for player in Player::all() {
+        if !is_active_for_zones(state, player) {
+            continue;
+        }
+        let pi = player.index();
+
+        // Mutual defense: for each piece, is it defended by a friendly piece?
+        // A piece is "defended" if any other friendly piece attacks its square.
+        for (piece_type, sq) in board.pieces(player) {
+            let mut is_defended = false;
+
+            // Check if any friendly piece attacks this square
+            // For efficiency, check piece-type-specific patterns:
+
+            // Check friendly pawn defense (pawn captures this square)
+            for &(dr, df) in &PAWN_CAPTURE_DELTAS[pi] {
+                let pr = sq.rank() as i8 - dr;
+                let pf = sq.file() as i8 - df;
+                if pr >= 0
+                    && pr < BOARD_SIZE as i8
+                    && pf >= 0
+                    && pf < BOARD_SIZE as i8
+                    && is_valid_square(pr as u8, pf as u8)
+                {
+                    let pidx = pr as usize * BOARD_SIZE + pf as usize;
+                    if let Some(p) = board.piece_at(Square(pidx as u8))
+                        && p.player == player
+                        && p.piece_type == PieceType::Pawn
+                    {
+                        is_defended = true;
+                        break;
+                    }
+                }
+            }
+
+            // If not pawn-defended, check if any friendly slider/knight/king defends
+            if !is_defended {
+                // Use the influence grid as a proxy: if friendly influence > own piece weight,
+                // another piece also projects here
+                let own_weight = INFLUENCE_WEIGHTS[piece_type.index()];
+                if influence.grid[sq.index() as usize][pi] > own_weight + 0.5 {
+                    is_defended = true;
+                }
+            }
+
+            if is_defended {
+                defended[pi] += 1;
+            } else {
+                undefended[pi] += 1;
+            }
+
+            // Pawn chain: pawn defended by pawn
+            if piece_type == PieceType::Pawn {
+                for &(dr, df) in &PAWN_CAPTURE_DELTAS[pi] {
+                    let pr = sq.rank() as i8 - dr;
+                    let pf = sq.file() as i8 - df;
+                    if pr >= 0
+                        && pr < BOARD_SIZE as i8
+                        && pf >= 0
+                        && pf < BOARD_SIZE as i8
+                        && is_valid_square(pr as u8, pf as u8)
+                    {
+                        let pidx = pr as usize * BOARD_SIZE + pf as usize;
+                        if let Some(p) = board.piece_at(Square(pidx as u8))
+                            && p.player == player
+                            && p.piece_type == PieceType::Pawn
+                        {
+                            pawn_chain[pi] += 1;
+                            break; // Count each pawn once
+                        }
+                    }
+                }
+            }
+        }
+
+        // Attack coordination: count squares where influence > threshold for overlap
+        // A single queen contributes 9.0 at its square. If a square has > 9.5,
+        // at least two pieces project there. Use a lower threshold for coordination.
+        let coordination_threshold = 5.0f32; // Two minor pieces or one major + support
+        for &idx in VALID_SQUARES_LIST.iter() {
+            if influence.grid[idx as usize][pi] >= coordination_threshold {
+                coordinated[pi] += 1;
+            }
+        }
+    }
+
+    SwarmInfo {
+        defended_pieces: defended,
+        undefended_pieces: undefended,
+        coordinated_squares: coordinated,
+        pawn_chain,
+    }
+}
+
 // ─── King Safety Enhancement ────────────────────────────────────────────────
 
 /// Count escape routes: empty king-adjacent squares not attacked by any opponent.
@@ -747,6 +869,8 @@ pub struct ZoneWeights {
     pub influence: i16,
     /// Tension/vulnerability weight. 0 = disabled.
     pub tension: i16,
+    /// Swarm mechanics weight. 0 = disabled.
+    pub swarm: i16,
 }
 
 impl Default for ZoneWeights {
@@ -755,6 +879,7 @@ impl Default for ZoneWeights {
             territory: 2,
             influence: 1,
             tension: 1,
+            swarm: 3,
         }
     }
 }
@@ -1052,14 +1177,20 @@ impl Evaluator for BootstrapEvaluator {
         let territory = bfs_territory_enhanced(state);
         let zw = &self.zone_weights;
 
-        // Only compute influence/tension if weights are nonzero
-        let influence = if zw.influence > 0 || zw.tension > 0 {
+        // Only compute influence/tension/swarm if weights are nonzero
+        let needs_influence = zw.influence > 0 || zw.tension > 0 || zw.swarm > 0;
+        let influence = if needs_influence {
             Some(compute_influence(state))
         } else {
             None
         };
         let tension_scores = if zw.tension > 0 {
             influence.as_ref().map(|inf| compute_tension(state, inf))
+        } else {
+            None
+        };
+        let swarm = if zw.swarm > 0 {
+            influence.as_ref().map(|inf| compute_swarm(state, inf))
         } else {
             None
         };
@@ -1093,6 +1224,17 @@ impl Evaluator for BootstrapEvaluator {
                 0
             };
 
+            // Swarm mechanics (Stage 15)
+            let swarm_score = if let Some(ref sw) = swarm {
+                let defense_bonus = sw.defended_pieces[pi] * 4; // 4cp per defended piece
+                let isolation_penalty = sw.undefended_pieces[pi] * 6; // 6cp per undefended piece
+                let coordination_bonus = sw.coordinated_squares[pi]; // 1cp per coordinated square
+                let chain_bonus = sw.pawn_chain[pi] * 5; // 5cp per chain pawn
+                (defense_bonus - isolation_penalty + coordination_bonus + chain_bonus) * zw.swarm
+            } else {
+                0
+            };
+
             // King safety (base + escape routes enhancement)
             let king_safety = Self::king_safety_score(state, player);
             let escape = king_escape_routes(state, player) * 15; // 15cp per escape route
@@ -1108,6 +1250,7 @@ impl Evaluator for BootstrapEvaluator {
                 + frontier_penalty
                 + influence_score
                 + tension_score
+                + swarm_score
                 + king_safety
                 + escape
                 + castled
@@ -1124,6 +1267,7 @@ impl Evaluator for BootstrapEvaluator {
                 frontier = frontier_penalty,
                 influence = influence_score,
                 tension = tension_score,
+                swarm = swarm_score,
                 king_safety,
                 escape,
                 castled,
@@ -1632,6 +1776,7 @@ mod tests {
             territory: 0,
             influence: 0,
             tension: 0,
+            swarm: 0,
         });
         let scores_zero = eval_zero.eval_4vec(&state);
 

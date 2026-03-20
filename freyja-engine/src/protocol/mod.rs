@@ -219,6 +219,7 @@ impl<W: Write> Protocol<W> {
             territory: self.options.territory_weight,
             influence: self.options.influence_weight,
             tension: self.options.tension_weight,
+            swarm: self.options.swarm_weight,
         });
         let mut searcher = HybridSearcher::new(eval, hybrid_config);
         let start = std::time::Instant::now();

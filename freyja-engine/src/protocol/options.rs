@@ -60,6 +60,8 @@ pub struct EngineOptions {
     pub influence_weight: i16,
     /// Tension/vulnerability weight for zone control eval (0 = disabled).
     pub tension_weight: i16,
+    /// Swarm mechanics weight for zone control eval (0 = disabled).
+    pub swarm_weight: i16,
 }
 
 impl Default for EngineOptions {
@@ -88,6 +90,7 @@ impl Default for EngineOptions {
             territory_weight: 2,
             influence_weight: 1,
             tension_weight: 1,
+            swarm_weight: 3,
         }
     }
 }
@@ -377,6 +380,15 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             _ => SetOptionResult::InvalidValue(format!(
                 "TensionWeight must be a non-negative integer, got '{value}'"
+            )),
+        },
+        "SwarmWeight" => match value.parse::<i16>() {
+            Ok(w) if w >= 0 => {
+                options.swarm_weight = w;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "SwarmWeight must be a non-negative integer, got '{value}'"
             )),
         },
 
