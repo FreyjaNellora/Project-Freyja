@@ -1472,6 +1472,508 @@ mod tests {
         assert_eq!(ep_moves.len(), 1, "Green should have 1 EP move");
     }
 
+    // ── En passant near cutout corners ──
+
+    #[test]
+    fn test_en_passant_near_sw_cutout_red_captures_blue() {
+        // Red pawn on d3 (rank=2, file=3), Blue double-pushed b4→d4
+        // EP target = c4 (rank=3, file=2) — just outside SW cutout
+        // Red should be able to EP capture at c4 from d3
+        let mut board = Board::empty();
+        // Red pawn on d3
+        board.set_piece(
+            Square::new(2, 3).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        // Red king somewhere safe
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
+        // Blue pawn on d4 (landed after double push)
+        board.set_piece(
+            Square::new(3, 3).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        // EP target at c4 (the square Blue passed through)
+        let ep_sq = Square::new(3, 2).unwrap();
+        board.set_en_passant(Some(ep_sq), Some(Player::Blue));
+        board.set_side_to_move(Player::Red);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Red on d3 should EP capture Blue at c4 near SW cutout"
+        );
+        // Verify the EP move goes to c4
+        assert_eq!(ep_moves[0].to_sq(), ep_sq);
+    }
+
+    #[test]
+    fn test_en_passant_near_se_cutout_red_captures_green() {
+        // Red pawn on k3 (rank=2, file=10), Green double-pushed m4→k4
+        // EP target = l4 (rank=3, file=11) — just outside SE cutout
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(2, 10).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
+        // Green pawn on k4 (landed after double push)
+        board.set_piece(
+            Square::new(3, 10).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        // EP target at l4 (rank=3, file=11)
+        let ep_sq = Square::new(3, 11).unwrap();
+        board.set_en_passant(Some(ep_sq), Some(Player::Green));
+        board.set_side_to_move(Player::Red);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Red on k3 should EP capture Green at l4 near SE cutout"
+        );
+    }
+
+    #[test]
+    fn test_en_passant_near_nw_cutout_yellow_captures_blue() {
+        // Yellow pawn on d12 (rank=11, file=3), Blue double-pushed b11→d11
+        // EP target = c11 (rank=10, file=2) — just outside NW cutout
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(11, 3).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        // Blue pawn on d11 (rank=10, file=3)
+        board.set_piece(
+            Square::new(10, 3).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        // EP target at c11 (rank=10, file=2)
+        let ep_sq = Square::new(10, 2).unwrap();
+        board.set_en_passant(Some(ep_sq), Some(Player::Blue));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Yellow on d12 should EP capture Blue at c11 near NW cutout"
+        );
+    }
+
+    #[test]
+    fn test_en_passant_near_ne_cutout_yellow_captures_green() {
+        // Yellow pawn on k12 (rank=11, file=10), Green double-pushed m11→k11
+        // EP target = l11 (rank=10, file=11) — just outside NE cutout
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(11, 10).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        // Green pawn on k11 (rank=10, file=10)
+        board.set_piece(
+            Square::new(10, 10).unwrap(),
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        // EP target at l11 (rank=10, file=11)
+        let ep_sq = Square::new(10, 11).unwrap();
+        board.set_en_passant(Some(ep_sq), Some(Player::Green));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Yellow on k12 should EP capture Green at l11 near NE cutout"
+        );
+    }
+
+    // ── Cross-player EP near cutouts ──
+
+    #[test]
+    fn test_ep_blue_captures_red_near_sw_cutout() {
+        // Red double-pushes d2→d4, EP target = d3 (rank=2, file=3)
+        // Blue pawn on c4 (rank=3, file=2) should EP capture at d3
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(3, 2).unwrap(), // Blue pawn c4
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(6, 0).unwrap(), // Blue king safe
+            Piece::new(PieceType::King, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(3, 3).unwrap(), // Red pawn d4 (landed)
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        // EP target d3 = (rank=2, file=3)
+        let ep_sq = Square::new(2, 3).unwrap();
+        board.set_en_passant(Some(ep_sq), Some(Player::Red));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Blue on c4 should EP capture Red at d3 near SW cutout"
+        );
+        assert_eq!(ep_moves[0].to_sq(), ep_sq);
+    }
+
+    #[test]
+    fn test_ep_blue_captures_red_near_sw_cutout_c4_d4() {
+        // Blue pawn on c4 (rank=3, file=2), Red double-pushes d2→d4
+        // EP target = d3 (rank=2, file=3)
+        // Blue's SE delta (-1,1): pawn at (2+1, 3-1) = (3,2) = c4 ✓
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(3, 2).unwrap(), // Blue pawn c4
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(6, 0).unwrap(), // Blue king safe
+            Piece::new(PieceType::King, Player::Blue),
+        );
+        board.set_piece(
+            Square::new(3, 3).unwrap(), // Red pawn d4 (landed)
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        let ep_sq = Square::new(2, 3).unwrap(); // d3
+        board.set_en_passant(Some(ep_sq), Some(Player::Red));
+        board.set_side_to_move(Player::Blue);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Blue on c4 should EP capture Red at d3 near SW cutout"
+        );
+        assert_eq!(ep_moves[0].to_sq(), ep_sq);
+    }
+
+    #[test]
+    fn test_ep_red_captures_blue_near_nw_cutout() {
+        // Blue double-pushes b11→d11, EP target = c11 (rank=10, file=2)
+        // Red pawn on d10 (rank=9, file=3): Red NW delta (1,-1) → (10,2) = c11 ✓
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(9, 3).unwrap(), // Red pawn d10
+            Piece::new(PieceType::Pawn, Player::Red),
+        );
+        board.set_piece(
+            Square::new(0, 7).unwrap(), // Red king safe
+            Piece::new(PieceType::King, Player::Red),
+        );
+        board.set_piece(
+            Square::new(10, 3).unwrap(), // Blue pawn d11 (landed)
+            Piece::new(PieceType::Pawn, Player::Blue),
+        );
+        let ep_sq = Square::new(10, 2).unwrap(); // c11
+        board.set_en_passant(Some(ep_sq), Some(Player::Blue));
+        board.set_side_to_move(Player::Red);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Red on d10 should EP capture Blue at c11 near NW cutout"
+        );
+    }
+
+    #[test]
+    fn test_ep_yellow_captures_green_near_se_cutout() {
+        // Green double-pushes m4→k4, EP target = l4 (rank=3, file=11)
+        // Yellow pawn on k5 (rank=4, file=10): Yellow SE delta (-1,1) → (3,11) = l4 ✓
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(4, 10).unwrap(), // Yellow pawn k5
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(), // Yellow king safe
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(3, 10).unwrap(), // Green pawn k4 (landed)
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        let ep_sq = Square::new(3, 11).unwrap(); // l4
+        board.set_en_passant(Some(ep_sq), Some(Player::Green));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Yellow on k5 should EP capture Green at l4 near SE cutout"
+        );
+    }
+
+    #[test]
+    fn test_ep_yellow_captures_blue_near_ne_cutout() {
+        // Blue double-pushes b11→d11, EP target = c11 (rank=10, file=2)
+        // But near NE: Blue double-pushes l11→n11? No, n is file 13, and
+        // NE cutout blocks rank>10 file>10. Instead test:
+        // Green double-pushes m11→k11, EP target = l11 (rank=10, file=11)
+        // Yellow pawn on k10 (rank=9, file=10): Yellow SW delta (-1,-1) → (10,11)? No.
+        // Yellow deltas: (-1,1) SE and (-1,-1) SW
+        // For EP at l11 (10,11): pawn at (10+1, 11-1) = (11,10) = k12 — NE cutout!
+        //                        pawn at (10+1, 11+1) = (11,12) = m12 — NE cutout!
+        // BOTH blocked by cutout! This is a genuine blind spot.
+        // Yellow CANNOT EP capture Green at l11 because both approach angles
+        // are in the NE cutout. This is correct geometry — the cutout is real.
+        // Mark this test as verifying the blind spot exists.
+        let mut board = Board::empty();
+        board.set_piece(
+            Square::new(11, 10).unwrap(), // Yellow pawn k12 — NE cutout!
+            Piece::new(PieceType::Pawn, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(13, 7).unwrap(), // Yellow king safe
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        board.set_piece(
+            Square::new(10, 10).unwrap(), // Green pawn k11 (landed)
+            Piece::new(PieceType::Pawn, Player::Green),
+        );
+        let ep_sq = Square::new(10, 11).unwrap(); // l11
+        board.set_en_passant(Some(ep_sq), Some(Player::Green));
+        board.set_side_to_move(Player::Yellow);
+        board.set_castling_rights(0);
+
+        let moves = generate_legal_moves(&mut board);
+        let ep_moves: Vec<_> = moves
+            .iter()
+            .filter(|m| m.flags() == MoveFlags::EnPassant)
+            .collect();
+        // k12 = (rank=11, file=10) is NOT in the NE cutout (file 10 is not > 10)
+        // Yellow CAN EP capture at l11 from k12
+        assert_eq!(
+            ep_moves.len(),
+            1,
+            "Yellow on k12 should EP capture Green at l11 near NE cutout"
+        );
+    }
+
+    /// Exhaustive EP near all 4 corners: 8 capturer→pusher pairs × 8 edge positions.
+    /// Odin passes this with 59. Freyja should match.
+    #[test]
+    fn test_ep_near_all_corners_exhaustive() {
+        use crate::board::is_valid_square;
+
+        // Helper: set up board, verify EP capture is generated.
+        fn check_ep(
+            capturer: Player,
+            cap_sq: (u8, u8),
+            pusher: Player,
+            landed_sq: (u8, u8),
+            ep_target: (u8, u8),
+        ) -> bool {
+            let mut board = Board::empty();
+            board.set_piece(
+                Square::from_rank_file_unchecked(cap_sq.0, cap_sq.1),
+                Piece::new(PieceType::Pawn, capturer),
+            );
+            board.set_piece(
+                Square::from_rank_file_unchecked(landed_sq.0, landed_sq.1),
+                Piece::new(PieceType::Pawn, pusher),
+            );
+            let ep_sq = Square::from_rank_file_unchecked(ep_target.0, ep_target.1);
+            board.set_en_passant(Some(ep_sq), Some(pusher));
+
+            // Place 4 kings well-separated (≥3 squares apart) so they
+            // don't attack each other or interfere with EP legality.
+            let king_candidates: &[(u8, u8)] = &[
+                (4, 4), (4, 9), (9, 4), (9, 9), // 5 squares apart
+                (5, 4), (5, 9), (8, 4), (8, 9), // fallback
+                (4, 5), (4, 8), (9, 5), (9, 8), // fallback 2
+            ];
+            let mut placed = 0usize;
+            for &(r, f) in king_candidates {
+                if placed >= 4 { break; }
+                let sq = Square::from_rank_file_unchecked(r, f);
+                if board.piece_at(sq).is_some() { continue; }
+                board.set_piece(sq, Piece::new(PieceType::King, Player::all()[placed]));
+                placed += 1;
+            }
+            if placed < 4 { return false; }
+
+            board.set_side_to_move(capturer);
+            board.set_castling_rights(0);
+
+            let moves = generate_legal_moves(&mut board);
+            let ep_moves: Vec<_> = moves
+                .iter()
+                .filter(|m| m.flags() == MoveFlags::EnPassant)
+                .collect();
+            ep_moves.len() == 1 && ep_moves[0].to_sq() == ep_sq
+        }
+
+        // Each entry: (capturer, pusher, push_delta, capture_delta_toward_cutout,
+        //              fixed_is_rank, fixed_val)
+        // Walk the free coordinate from 3 to 10 (8 positions per pair).
+        struct Pair {
+            cap: Player, push: Player,
+            push_dr: i8, push_df: i8,
+            cap_dr: i8, cap_df: i8,
+            fixed_rank: bool, fixed_val: u8,
+        }
+
+        // Capture deltas: the capturer's diagonal that reaches the EP target
+        // from the SAFE side (away from the cutout). This is the angle that works.
+        //
+        // Red captures NE(1,1) NW(1,-1). Blue captures NE(1,1) SE(-1,1).
+        // Yellow captures SE(-1,1) SW(-1,-1). Green captures NW(1,-1) SW(-1,-1).
+        //
+        // For each pair, the capturer pawn is at (ep_r - cap_dr, ep_f - cap_df).
+
+        let pairs = [
+            // Red→Blue (SW): Blue pushes E(0,+1), EP at file 2, walk rank 3-10
+            // Red NW(1,-1): pawn at (rank-1, 3) — safe side
+            Pair { cap: Player::Red, push: Player::Blue,
+                push_dr: 0, push_df: 1, cap_dr: 1, cap_df: -1,
+                fixed_rank: false, fixed_val: 2 },
+            // Blue→Red (SW): Red pushes N(1,0), EP at rank 2, walk file 3-10
+            // Blue SE(-1,1): pawn at (3, file-1) — safe side
+            Pair { cap: Player::Blue, push: Player::Red,
+                push_dr: 1, push_df: 0, cap_dr: -1, cap_df: 1,
+                fixed_rank: true, fixed_val: 2 },
+            // Blue→Yellow (NW): Yellow pushes S(-1,0), EP at rank 11, walk file 3-10
+            // Blue NE(1,1): pawn at (10, file-1) — safe side
+            Pair { cap: Player::Blue, push: Player::Yellow,
+                push_dr: -1, push_df: 0, cap_dr: 1, cap_df: 1,
+                fixed_rank: true, fixed_val: 11 },
+            // Yellow→Blue (NW): Blue pushes E(0,+1), EP at file 2, walk rank 3-10
+            // Yellow SW(-1,-1): pawn at (rank+1, 3) — safe side
+            Pair { cap: Player::Yellow, push: Player::Blue,
+                push_dr: 0, push_df: 1, cap_dr: -1, cap_df: -1,
+                fixed_rank: false, fixed_val: 2 },
+            // Yellow→Green (NE): Green pushes W(0,-1), EP at file 11, walk rank 3-10
+            // Yellow SE(-1,1): pawn at (rank+1, 10) — safe side
+            Pair { cap: Player::Yellow, push: Player::Green,
+                push_dr: 0, push_df: -1, cap_dr: -1, cap_df: 1,
+                fixed_rank: false, fixed_val: 11 },
+            // Green→Yellow (NE): Yellow pushes S(-1,0), EP at rank 11, walk file 3-10
+            // Green NW(1,-1): pawn at (10, file+1) — safe side
+            Pair { cap: Player::Green, push: Player::Yellow,
+                push_dr: -1, push_df: 0, cap_dr: 1, cap_df: -1,
+                fixed_rank: true, fixed_val: 11 },
+            // Green→Red (SE): Red pushes N(1,0), EP at rank 2, walk file 3-10
+            // Green SW(-1,-1): pawn at (3, file+1) — safe side
+            Pair { cap: Player::Green, push: Player::Red,
+                push_dr: 1, push_df: 0, cap_dr: -1, cap_df: -1,
+                fixed_rank: true, fixed_val: 2 },
+            // Red→Green (SE): Green pushes W(0,-1), EP at file 11, walk rank 3-10
+            // Red NE(1,1): pawn at (rank-1, 10) — safe side
+            Pair { cap: Player::Red, push: Player::Green,
+                push_dr: 0, push_df: -1, cap_dr: 1, cap_df: 1,
+                fixed_rank: false, fixed_val: 11 },
+        ];
+
+        let mut pass = 0u32;
+        let mut skip = 0u32;
+        let mut fails: Vec<String> = Vec::new();
+
+        for p in &pairs {
+            for walk in 3u8..=10 {
+                let (ep_r, ep_f) = if p.fixed_rank { (p.fixed_val, walk) } else { (walk, p.fixed_val) };
+                let landed_r = ep_r as i8 + p.push_dr;
+                let landed_f = ep_f as i8 + p.push_df;
+                let cap_r = ep_r as i8 - p.cap_dr;
+                let cap_f = ep_f as i8 - p.cap_df;
+
+                // Bounds + validity
+                if cap_r < 0 || cap_r >= 14 || cap_f < 0 || cap_f >= 14
+                    || landed_r < 0 || landed_r >= 14 || landed_f < 0 || landed_f >= 14
+                { skip += 1; continue; }
+                if !is_valid_square(cap_r as u8, cap_f as u8)
+                    || !is_valid_square(landed_r as u8, landed_f as u8)
+                    || !is_valid_square(ep_r, ep_f)
+                { skip += 1; continue; }
+
+                if check_ep(
+                    p.cap, (cap_r as u8, cap_f as u8),
+                    p.push, (landed_r as u8, landed_f as u8),
+                    (ep_r, ep_f),
+                ) {
+                    pass += 1;
+                } else {
+                    fails.push(format!(
+                        "{:?}({},{})→EP {:?} landed({},{}) target({},{})",
+                        p.cap, cap_r, cap_f, p.push, landed_r, landed_f, ep_r, ep_f,
+                    ));
+                }
+            }
+        }
+
+        if !fails.is_empty() {
+            panic!(
+                "EP corners: {}/{} pass, {} skip, {} FAIL:\n{}",
+                pass, pass + fails.len() as u32, skip, fails.len(),
+                fails.join("\n"),
+            );
+        }
+
+        eprintln!("EP near all corners: {} pass, {} skip, 0 fail", pass, skip);
+        assert!(pass >= 56, "Expected ≥56 valid EP cases, got {}", pass);
+    }
+
     // ── Knight center moves ──
 
     #[test]

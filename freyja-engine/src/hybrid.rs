@@ -643,4 +643,126 @@ mod tests {
         // persistent TT can cause best_move=None on the second call (TT hit returns
         // cached result immediately). This is expected Max^n behavior, not a hybrid bug.
     }
+
+    // ── Stress test: Max^n → MCTS handoff at ply boundary ──
+
+    #[test]
+    fn test_mcts_handoff_at_cutover_ply() {
+        // Play a game up to ply 31 (Max^n territory), then search at ply 32
+        // (MCTS territory). Verify the transition doesn't crash or produce
+        // invalid results. This tests the exact boundary where the engine
+        // switches from Max^n to Gumbel MCTS.
+        let mut searcher = make_searcher();
+        let mut state = make_state();
+
+        // Play 32 moves (8 per player) at depth 2 to reach the cutover
+        for ply in 0..32 {
+            if state.is_game_over() {
+                eprintln!("Game ended at ply {} before cutover", ply);
+                return; // Game over before cutover — can't test handoff
+            }
+            let limits = SearchLimits {
+                max_depth: Some(2),
+                game_ply: ply,
+                ..Default::default()
+            };
+            let result = searcher.search(&mut state, &limits);
+            if let Some(mv) = result.best_move {
+                state.apply_move(mv);
+            } else {
+                eprintln!("No legal move at ply {} — stalemate/checkmate", ply);
+                return;
+            }
+        }
+
+        // Now at ply 32 — this should trigger MCTS phase
+        assert!(!state.is_game_over(), "Game should still be in progress at ply 32");
+
+        let limits = SearchLimits {
+            max_time_ms: Some(1000),
+            game_ply: 32,
+            ..Default::default()
+        };
+        let result = searcher.search(&mut state, &limits);
+
+        assert!(
+            result.best_move.is_some(),
+            "MCTS at ply 32 must return a legal move"
+        );
+        assert!(
+            result.nodes > 0,
+            "MCTS should have run simulations, got 0 nodes"
+        );
+
+        // Verify the move is actually legal
+        let legal = crate::move_gen::generate_legal_moves(state.board_mut());
+        assert!(
+            legal.contains(&result.best_move.unwrap()),
+            "MCTS best move must be legal"
+        );
+
+        eprintln!(
+            "MCTS handoff at ply 32: {} sims, best_move={:?}, scores={:?}",
+            result.nodes, result.best_move, result.scores
+        );
+    }
+
+    #[test]
+    fn test_mcts_handoff_consecutive_searches() {
+        // Search at ply 31 (Max^n), then ply 32 (MCTS), then ply 33 (MCTS).
+        // Verifies the engine handles repeated phase transitions cleanly.
+        let mut searcher = make_searcher();
+        let mut state = make_state();
+
+        // Advance to ply 31
+        for ply in 0..31 {
+            if state.is_game_over() { return; }
+            let limits = SearchLimits {
+                max_depth: Some(2),
+                game_ply: ply,
+                ..Default::default()
+            };
+            let result = searcher.search(&mut state, &limits);
+            if let Some(mv) = result.best_move {
+                state.apply_move(mv);
+            } else { return; }
+        }
+
+        if state.is_game_over() { return; }
+
+        // Ply 31: Max^n
+        let r31 = searcher.search(&mut state, &SearchLimits {
+            max_time_ms: Some(500),
+            game_ply: 31,
+            ..Default::default()
+        });
+        assert!(r31.best_move.is_some(), "Max^n at ply 31 must produce a move");
+        state.apply_move(r31.best_move.unwrap());
+
+        if state.is_game_over() { return; }
+
+        // Ply 32: MCTS (first time)
+        let r32 = searcher.search(&mut state, &SearchLimits {
+            max_time_ms: Some(500),
+            game_ply: 32,
+            ..Default::default()
+        });
+        assert!(r32.best_move.is_some(), "MCTS at ply 32 must produce a move");
+        state.apply_move(r32.best_move.unwrap());
+
+        if state.is_game_over() { return; }
+
+        // Ply 33: MCTS (second time)
+        let r33 = searcher.search(&mut state, &SearchLimits {
+            max_time_ms: Some(500),
+            game_ply: 33,
+            ..Default::default()
+        });
+        assert!(r33.best_move.is_some(), "MCTS at ply 33 must produce a move");
+
+        eprintln!(
+            "Consecutive handoff: ply31 depth={}, ply32 sims={}, ply33 sims={}",
+            r31.depth, r32.nodes, r33.nodes
+        );
+    }
 }

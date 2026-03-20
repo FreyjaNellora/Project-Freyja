@@ -505,6 +505,10 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         // Eliminated player skip — do NOT decrement depth
         if is_player_eliminated_in_search(board, current) {
+            // Guard: prevent ply from exceeding pv_table bounds
+            if ply >= MAX_DEPTH - 1 {
+                return self.eval_4vec_search(state);
+            }
             let board = state.board_mut();
             let next = current.next();
             board.set_side_to_move(next);
@@ -678,6 +682,10 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         // Skip eliminated players (shouldn't happen in 2p but be safe)
         if is_player_eliminated_in_search(board, current) {
+            // Guard: prevent ply from exceeding pv_table bounds
+            if ply >= MAX_DEPTH - 1 {
+                return 0; // neutral score at depth limit
+            }
             let board = state.board_mut();
             let next = current.next();
             board.set_side_to_move(next);
@@ -810,6 +818,10 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         // Eliminated player skip
         if is_player_eliminated_in_search(board, current) {
+            // Guard: prevent ply from exceeding pv_table bounds
+            if ply >= MAX_DEPTH - 1 {
+                return self.eval_4vec_search(state);
+            }
             let board = state.board_mut();
             let next = current.next();
             board.set_side_to_move(next);
@@ -954,6 +966,10 @@ impl<E: Evaluator> MaxnSearcher<E> {
 
         // Skip eliminated players
         if is_player_eliminated_in_search(board, current) {
+            // Guard: prevent ply from exceeding pv_table bounds
+            if ply >= MAX_DEPTH - 1 {
+                return 0; // neutral score at depth limit
+            }
             let board = state.board_mut();
             let next = current.next();
             board.set_side_to_move(next);
@@ -1866,5 +1882,143 @@ mod tests {
                 break;
             }
         }
+    }
+
+    // ── Stress test: qsearch with eliminated players (ply bounds) ──
+
+    #[test]
+    fn test_qsearch_with_eliminated_players_no_crash() {
+        // Set up a position where 2 players are eliminated, then run a deep
+        // search. The eliminated-player skip in qsearch could cause ply to
+        // exceed MAX_DEPTH without the bounds guard. This test verifies the
+        // guard prevents buffer overrun.
+        use crate::board::ELIMINATED_KING_SENTINEL;
+
+        let mut gs = GameState::new_standard_ffa();
+
+        // Eliminate Yellow and Green by removing their kings
+        // (simulates mid-game eliminations)
+        let yellow_ks = gs.board().king_square(Player::Yellow);
+        if yellow_ks != ELIMINATED_KING_SENTINEL {
+            gs.board_mut().remove_piece(Square(yellow_ks));
+            gs.board_mut().set_king_eliminated(Player::Yellow);
+        }
+        let green_ks = gs.board().king_square(Player::Green);
+        if green_ks != ELIMINATED_KING_SENTINEL {
+            gs.board_mut().remove_piece(Square(green_ks));
+            gs.board_mut().set_king_eliminated(Player::Green);
+        }
+
+        // Search at depth 4 — this creates deep recursion with eliminated
+        // player skips that could exceed pv_table bounds without the guard.
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(4),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+
+        assert!(
+            result.best_move.is_some(),
+            "Search with 2 eliminated players must return a move"
+        );
+        assert!(result.nodes > 0);
+        assert!(result.qnodes > 0, "Qsearch should have run");
+
+        eprintln!(
+            "Qsearch + 2 eliminated: depth={} nodes={} qnodes={} best={:?}",
+            result.depth, result.nodes, result.qnodes, result.best_move
+        );
+    }
+
+    #[test]
+    fn test_qsearch_with_3_eliminated_players_no_crash() {
+        // Extreme case: 3 eliminated, only Red remains.
+        // Every level of search hits eliminated-player skips.
+        use crate::board::ELIMINATED_KING_SENTINEL;
+
+        let mut gs = GameState::new_standard_ffa();
+
+        for p in [Player::Blue, Player::Yellow, Player::Green] {
+            let ks = gs.board().king_square(p);
+            if ks != ELIMINATED_KING_SENTINEL {
+                gs.board_mut().remove_piece(Square(ks));
+                gs.board_mut().set_king_eliminated(p);
+            }
+        }
+
+        let mut searcher = make_searcher();
+        let limits = SearchLimits {
+            max_depth: Some(4),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+
+        // With only 1 player active, search should terminate quickly
+        // (active_count <= 1 is the terminal condition).
+        assert!(
+            result.best_move.is_some() || result.nodes > 0,
+            "Search should complete without crash"
+        );
+
+        eprintln!(
+            "Qsearch + 3 eliminated: depth={} nodes={} qnodes={}",
+            result.depth, result.nodes, result.qnodes
+        );
+    }
+
+    #[test]
+    fn test_search_deep_with_captures_and_eliminations() {
+        // Play a game for 20 plies to create a position with captures,
+        // then eliminate a player and search deeper. This exercises the
+        // qsearch ply guard under realistic conditions.
+        use crate::board::ELIMINATED_KING_SENTINEL;
+
+        let mut gs = GameState::new_standard_ffa();
+        let mut searcher = make_searcher();
+
+        // Play 20 plies at depth 2 to get a realistic midgame
+        for _ply in 0..20 {
+            if gs.is_game_over() { break; }
+            let limits = SearchLimits {
+                max_depth: Some(2),
+                ..Default::default()
+            };
+            let result = searcher.search(&mut gs, &limits);
+            if let Some(mv) = result.best_move {
+                gs.apply_move(mv);
+            } else { break; }
+        }
+
+        if gs.is_game_over() { return; }
+
+        // Eliminate Green (simulate checkmate)
+        let green_ks = gs.board().king_square(Player::Green);
+        if green_ks != ELIMINATED_KING_SENTINEL {
+            gs.board_mut().remove_piece(Square(green_ks));
+            gs.board_mut().set_king_eliminated(Player::Green);
+        }
+
+        // Now search deeper — depth 4 with one eliminated player
+        // and a complex midgame position with many captures in qsearch
+        let limits = SearchLimits {
+            max_depth: Some(4),
+            ..Default::default()
+        };
+        let result = searcher.search(&mut gs, &limits);
+
+        assert!(
+            result.best_move.is_some(),
+            "Deep search after elimination must produce a move"
+        );
+        assert!(
+            result.qnodes > 0,
+            "Qsearch should have run in midgame position"
+        );
+
+        eprintln!(
+            "Deep search + elimination: depth={} nodes={} qnodes={} best={:?}",
+            result.depth, result.nodes, result.qnodes, result.best_move
+        );
     }
 }
