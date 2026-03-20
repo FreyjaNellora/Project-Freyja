@@ -1,14 +1,14 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-18
-**Updated By:** Session 20
+**Last Updated:** 2026-03-19
+**Updated By:** Session 21
 
 ---
 
 ## Current Stage
 
-**Stage:** 14 -- NOT STARTED
-**Status:** Stage 13 complete. Ready to begin Stage 14.
+**Stage:** 14 -- AWAITING USER SIGN-OFF
+**Status:** Implementation complete. A/B tested. Awaiting user UI testing.
 
 ---
 
@@ -30,7 +30,7 @@
 | 11 | Phase-Separated Hybrid Controller | Complete | `stage-11-complete` / `v1.11` | 2026-03-15 |
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Complete | `stage-13-complete` / `v1.13` | 2026-03-18 |
-| 14 | MCTS Opponent Move Abstraction (OMA) | Not Started | -- | -- |
+| 14 | MCTS Opponent Move Abstraction (OMA) | Awaiting Sign-off | -- | -- |
 | 15 | Progressive Widening + Zone Control | Not Started | -- | -- |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
 | 17 | NNUE Integration | Not Started | -- | -- |
@@ -66,7 +66,8 @@
 | Self-play: 20 games @ d4 | 0 crashes | Opp ratio 0.25, 80 ply each |
 | A/B: opp ratio 0.25 vs 0.5 | 0.25 stronger | Elo -28.6, p=0.04, 6 pairs |
 | A/B: beam 30 vs 15 | No difference | p=0.59, 10 pairs |
-| Unit tests | 398 pass | |
+| A/B: OMA on vs off | No difference | Elo -4.8, p=0.993, 10 pairs |
+| Unit tests | 408 pass | 9 new OMA tests |
 
 ---
 
@@ -76,5 +77,6 @@
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
 | Stages complete | 14 (Stages 0-13) | 2026-03-18 |
-| Open blocking issues | 0 | 2026-03-18 |
+| Stage 14 status | Awaiting sign-off | 2026-03-19 |
+| Open blocking issues | 0 | 2026-03-19 |
 | Open warning issues | 1 | 2026-03-07 |
