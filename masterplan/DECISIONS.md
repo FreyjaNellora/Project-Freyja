@@ -446,4 +446,80 @@ Zone Control features move to Stage 15 (combined with Progressive Widening).
 
 ---
 
+## ADR-019: Progressive Widening at Root-Player Nodes (Paper-Faithful)
+
+**Date:** 2026-03-20
+**Status:** Accepted
+**Stage:** Stage 15
+
+**Context:**
+The Stage 15 spec says "Progressive widening at opponent nodes." However, research (Baier & Kaisers 2020) applies PW at root-player nodes, with OMA handling opponents entirely. PW at opponent nodes would fight OMA's design (fixed stored moves per node).
+
+**Decision:**
+PW applies at root-player tree nodes only. OMA stays fixed at opponent nodes. They are complementary: OMA shrinks tree depth (skipping opponents), PW shrinks tree width (limiting root-player children). Formula: `available_children = floor(k * visits^alpha)`, children sorted by prior descending so PW exposes best moves first.
+
+**Rationale:**
+- Paper-faithful: proven in literature
+- Simpler: no OMA-to-tree transition complexity
+- Children sorted by prior ensures PW window contains highest-quality moves
+- Configurable via setoption (PWConstant, PWExponent) for A/B testing
+
+**Consequences:**
+- PW naturally applies only to root-player nodes (OMA intercepts opponents)
+- k=2 vs k=4 to be empirically tested via A/B
+
+---
+
+## ADR-020: Ray-Attenuated Influence Over Distance-Decay
+
+**Date:** 2026-03-20
+**Status:** Accepted
+**Stage:** Stage 15
+
+**Context:**
+Initial influence map implementation used exponential distance decay in a Chebyshev radius-3 circle around each piece. This is fundamentally wrong for chess: pieces project force along specific vectors (rays), not in circles. A rook controls a cross, a bishop an X, a pawn two forward diagonals — none of these are circles.
+
+**Decision:**
+Replace distance-decay with ray-attenuated influence. Each piece projects influence along its actual movement vectors. Influence attenuates through blockers: `influence /= blocker_resistance`, where resistance depends on whether the blocker is friendly (mild: 1.5x) or enemy (strong: 2.0 + piece_value_scaled). Non-slider pieces (knight, pawn, king) project to their specific attack squares without attenuation.
+
+**Rationale:**
+- Directionally correct for all piece types
+- Obstacle-aware: blocked lines reduce influence
+- Friendly/enemy blocker asymmetry captures real chess dynamics
+- Builds on existing ray-tracing infrastructure in attacks.rs
+
+**Consequences:**
+- Influence maps are now per-ray, not per-circle
+- Performance may be higher than distance-decay (more ray traversals)
+- Tension/vulnerability scoring uses the same grid interface
+
+---
+
+## ADR-021: Swarm Model Planned to Replace BFS Voronoi Territory
+
+**Date:** 2026-03-20
+**Status:** Proposed (not yet implemented)
+**Stage:** Stage 15
+
+**Context:**
+BFS Voronoi territory assigns squares to the nearest player by piece distance. This has known limitations: all pieces seed equally (pawn = queen), ignores obstacles, and the result is a geometric partition that doesn't capture how chess piece groups actually project collective influence. User proposed swarm mechanics as a more organic model.
+
+**Decision:**
+Implement a swarm-based zone control model as an alternative to BFS Voronoi. Swarm features: cluster cohesion (how tightly pieces are grouped), mutual defense density (pieces protecting each other), attack coordination (squares attacked by 2+ pieces), pawn chain backbone. Ray-attenuation (ADR-020) provides the individual force projection; swarm captures the collective reinforcement.
+
+Both models will be A/B tested against each other and against a baseline (no zone features). The empirically stronger model wins.
+
+**Rationale:**
+- Chess IS about coordinated piece groups, not geometric territory
+- Swarm captures emergent group strength from overlapping force vectors
+- In 4PC, the 3-opponent dynamic makes group cohesion even more important
+- A/B testing provides empirical answer rather than theoretical argument
+
+**Consequences:**
+- BFS Voronoi may be removed if swarm wins A/B decisively
+- Or both may coexist as complementary NNUE features
+- Implementation and testing deferred to next session
+
+---
+
 *New ADRs should be added below this line, following the same format.*

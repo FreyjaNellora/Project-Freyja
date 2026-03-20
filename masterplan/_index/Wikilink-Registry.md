@@ -82,6 +82,8 @@
 | [[Component-MoveGen]] | `masterplan/components/Component-MoveGen.md` | Move generation (Stage 2) |
 | [[Component-GameState]] | `masterplan/components/Component-GameState.md` | Game state management (Stage 3) |
 | [[Component-Protocol]] | `masterplan/components/Component-Protocol.md` | Engine-UI protocol (Stage 4) |
+| [[Component-ProgressiveWidening]] | `masterplan/components/Component-ProgressiveWidening.md` | PW at root-player MCTS nodes (Stage 15) |
+| [[Component-RayAttenuation]] | `masterplan/components/Component-RayAttenuation.md` | Ray-attenuated influence maps (Stage 15) |
 
 ---
 
