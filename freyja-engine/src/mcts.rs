@@ -447,11 +447,25 @@ impl SequentialHalving {
 
         self.round += 1;
 
-        // Score each candidate: sigma(g(a) + log(pi(a)) - Q(a))
+        // Normalize Q-values to [0, 1] across candidates so they're on the same
+        // scale as Gumbel noise (~[-2, +5]) and log-prior (~[-3, 0]).
+        // Without this, centipawn-scale Q-values saturate the sigma transform,
+        // killing Gumbel exploration entirely.
+        let q_values: Vec<f64> = self
+            .candidates
+            .iter()
+            .map(|&idx| root.children[idx].q_value(self.root_player_idx))
+            .collect();
+        let q_min = q_values.iter().copied().fold(f64::INFINITY, f64::min);
+        let q_max = q_values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let q_range = q_max - q_min;
+
+        // Score each candidate: sigma(g(a) + log(pi(a)) - q_normalized(a))
         let mut scored: Vec<(usize, f64)> = self
             .candidates
             .iter()
-            .map(|&idx| {
+            .zip(q_values.iter())
+            .map(|(&idx, &q)| {
                 let child = &root.children[idx];
                 let g = child.gumbel as f64;
                 let log_prior = if child.prior > 0.0 {
@@ -459,9 +473,13 @@ impl SequentialHalving {
                 } else {
                     f64::NEG_INFINITY
                 };
-                let q = child.q_value(self.root_player_idx);
+                let q_norm = if q_range > 0.0 {
+                    (q - q_min) / q_range
+                } else {
+                    0.5
+                };
                 // sigma(x) = 1 / (1 + exp(-x))
-                let x = g + log_prior - q / 100.0; // Scale Q from centipawns
+                let x = g + log_prior - q_norm;
                 let sigma = 1.0 / (1.0 + (-x).exp());
                 (idx, sigma)
             })

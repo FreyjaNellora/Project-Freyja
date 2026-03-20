@@ -1,23 +1,21 @@
 {
   "engine": "../target/release/freyja.exe",
   "games_per_config": 10,
-  "max_ply": 400,
+  "max_ply": 200,
   "config_a": {
     "label": "oma_on",
-    "movetime": 5000,
+    "movetime": 2000,
     "setoptions": {
       "OpponentAbstraction": "true",
-      "MoveNoise": "40",
-      "PhaseCutoverPly": "0"
+      "MoveNoise": "40"
     }
   },
   "config_b": {
     "label": "oma_off",
-    "movetime": 5000,
+    "movetime": 2000,
     "setoptions": {
       "OpponentAbstraction": "false",
-      "MoveNoise": "40",
-      "PhaseCutoverPly": "0"
+      "MoveNoise": "40"
     }
   },
   "output_dir": "reports/ab_oma"

@@ -170,13 +170,17 @@ async function playGame(engine, gameNum, gameConfig) {
         }
       }
 
-      const eliminated = new Set(record.eliminations.map((e) => e.player));
-      let next = PLAYERS[(PLAYERS.indexOf(currentPlayer) + 1) % 4];
-      for (let i = 0; i < 3; i++) {
-        if (!eliminated.has(next)) break;
-        next = PLAYERS[(PLAYERS.indexOf(next) + 1) % 4];
+      // Note: currentPlayer is already updated by the nextturn event above.
+      // If no nextturn event was received (no FEN4), advance manually.
+      if (!fen4) {
+        const eliminated = new Set(record.eliminations.map((e) => e.player));
+        let next = PLAYERS[(PLAYERS.indexOf(currentPlayer) + 1) % 4];
+        for (let i = 0; i < 3; i++) {
+          if (!eliminated.has(next)) break;
+          next = PLAYERS[(PLAYERS.indexOf(next) + 1) % 4];
+        }
+        currentPlayer = next;
       }
-      currentPlayer = next;
     }
 
     if (gameOver) break;
