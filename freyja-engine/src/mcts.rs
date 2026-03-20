@@ -536,8 +536,12 @@ pub struct MctsSearcher<E: Evaluator> {
     last_sps: u32,
     /// OMA metrics: total OMA moves across all simulations.
     oma_moves_total: u64,
-    /// OMA metrics: total root-player tree decisions across all simulations.
-    root_decisions_total: u64,
+    /// Total tree moves (all players) across all simulations.
+    tree_moves_total: u64,
+    /// Root-player-only tree decisions across all simulations.
+    root_player_decisions: u64,
+    /// PW metrics: times selection was PW-limited (available_children < total_children).
+    pw_limited_selections: u64,
 }
 
 impl<E: Evaluator> MctsSearcher<E> {
@@ -553,7 +557,9 @@ impl<E: Evaluator> MctsSearcher<E> {
             last_sims: 0,
             last_sps: 0,
             oma_moves_total: 0,
-            root_decisions_total: 0,
+            tree_moves_total: 0,
+            root_player_decisions: 0,
+            pw_limited_selections: 0,
         }
     }
 
@@ -710,6 +716,13 @@ impl<E: Evaluator> MctsSearcher<E> {
             self.total_nodes += 1;
         }
 
+        // Sort children by prior descending so progressive widening exposes best-first.
+        node.children.sort_by(|a, b| {
+            b.prior
+                .partial_cmp(&a.prior)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
         node.expanded = true;
         moves.len()
     }
@@ -854,7 +867,16 @@ impl<E: Evaluator> MctsSearcher<E> {
             if let Some(mv) = child.mv {
                 let undo = make_move(state.board_mut(), mv);
                 path.push(SimStep::TreeMove { child_idx, undo });
-                self.root_decisions_total += 1;
+                self.tree_moves_total += 1;
+                if player_idx == root_player_idx {
+                    self.root_player_decisions += 1;
+                }
+                // Track PW-limited selections
+                let total_children = node.children.len();
+                let avail = node.available_children(self.config.pw_k, self.config.pw_alpha);
+                if avail < total_children {
+                    self.pw_limited_selections += 1;
+                }
                 current = &mut node.children[child_idx] as *mut MctsNode;
             } else {
                 break;
@@ -970,7 +992,9 @@ impl<E: Evaluator> MctsSearcher<E> {
         // Create root and expand
         self.total_nodes = 0;
         self.oma_moves_total = 0;
-        self.root_decisions_total = 0;
+        self.tree_moves_total = 0;
+        self.root_player_decisions = 0;
+        self.pw_limited_selections = 0;
         let mut root = MctsNode::new_root();
 
         // Compute priors for root children
@@ -1083,13 +1107,18 @@ impl<E: Evaluator> MctsSearcher<E> {
                         } else {
                             0.0
                         };
-                        let avg_root = if total_sims > 0 {
-                            self.root_decisions_total as f32 / total_sims as f32
+                        let avg_tree = if total_sims > 0 {
+                            self.tree_moves_total as f32 / total_sims as f32
+                        } else {
+                            0.0
+                        };
+                        let avg_root_depth = if total_sims > 0 {
+                            self.root_player_decisions as f32 / total_sims as f32
                         } else {
                             0.0
                         };
                         tracing::debug!(
-                            "info sims {} sps {} nodes {} halving_round {}/{} candidates {} oma_avg {:.1} root_avg {:.1}",
+                            "info sims {} sps {} nodes {} halving_round {}/{} candidates {} oma_avg {:.1} tree_avg {:.1} root_depth {:.1} pw_lim {}",
                             total_sims,
                             sps,
                             self.total_nodes,
@@ -1097,7 +1126,9 @@ impl<E: Evaluator> MctsSearcher<E> {
                             halving.total_rounds,
                             halving.candidates.len(),
                             avg_oma,
-                            avg_root,
+                            avg_tree,
+                            avg_root_depth,
+                            self.pw_limited_selections,
                         );
                     }
                 }
@@ -2143,9 +2174,9 @@ mod tests {
             searcher.oma_moves_total
         );
         assert!(
-            searcher.root_decisions_total > 0,
-            "Root decisions should be counted (got {})",
-            searcher.root_decisions_total
+            searcher.tree_moves_total > 0,
+            "Tree moves should be counted (got {})",
+            searcher.tree_moves_total
         );
     }
 
@@ -2209,5 +2240,222 @@ mod tests {
         // MctsConfig wiring
         let mcts_config = opts.mcts_config();
         assert!(mcts_config.use_oma);
+    }
+
+    // ── Stage 15: Progressive Widening at root-player nodes ──
+
+    #[test]
+    fn test_pw_children_sorted_by_prior_after_expand() {
+        // After expansion, children should be sorted by prior descending
+        // so PW's limited window exposes the highest-prior moves first.
+        let config = MctsConfig::default();
+        let mut searcher: MctsSearcher<BootstrapEvaluator> =
+            MctsSearcher::new(BootstrapEvaluator::new(), config);
+
+        let mut state = starting_state();
+        let mut root = MctsNode::new_root();
+        searcher.expand(&mut root, &mut state);
+
+        assert!(root.children.len() > 1, "Should have multiple children");
+
+        // Verify prior is sorted descending
+        for i in 1..root.children.len() {
+            assert!(
+                root.children[i - 1].prior >= root.children[i].prior,
+                "Children not sorted by prior: [{}]={} < [{}]={}",
+                i - 1,
+                root.children[i - 1].prior,
+                i,
+                root.children[i].prior,
+            );
+        }
+    }
+
+    #[test]
+    fn test_pw_constant_affects_available_children() {
+        // k=4 should allow more children than k=2 at the same visit count
+        let mut node = MctsNode::new_root();
+        for i in 0..20 {
+            node.children.push(MctsNode::new_child(
+                Move::new(Square(i), Square(i + 14), PieceType::Pawn),
+                0.05,
+            ));
+        }
+        node.expanded = true;
+        node.visits = 4;
+
+        let avail_k2 = node.available_children(2.0, 0.5); // 2 * 4^0.5 = 4
+        let avail_k4 = node.available_children(4.0, 0.5); // 4 * 4^0.5 = 8
+
+        assert!(
+            avail_k4 > avail_k2,
+            "k=4 should allow more children than k=2: {} vs {}",
+            avail_k4,
+            avail_k2,
+        );
+    }
+
+    #[test]
+    fn test_pw_full_width_at_high_visits() {
+        // At very high visit counts, PW should expose all children
+        let mut node = MctsNode::new_root();
+        for i in 0..10 {
+            node.children.push(MctsNode::new_child(
+                Move::new(Square(i), Square(i + 14), PieceType::Pawn),
+                0.1,
+            ));
+        }
+        node.expanded = true;
+        node.visits = 10000; // Very high visits
+
+        let avail = node.available_children(2.0, 0.5); // 2 * 100 = 200, clamped to 10
+        assert_eq!(
+            avail, 10,
+            "At high visits, all children should be available"
+        );
+    }
+
+    #[test]
+    fn test_pw_does_not_affect_oma_nodes() {
+        // When OMA is on, opponent nodes use OMA path, not select_child.
+        // Run a search and verify OMA moves are counted (opponent nodes used OMA).
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+        let limits = SearchLimits {
+            max_nodes: Some(100),
+            ..Default::default()
+        };
+
+        let _ = searcher.search(&mut state, &limits);
+
+        // OMA moves should be counted (opponent nodes used OMA, not PW)
+        assert!(
+            searcher.oma_moves_total > 0,
+            "OMA moves should be counted when OMA is on"
+        );
+    }
+
+    #[test]
+    fn test_pw_root_player_decisions_counted_separately() {
+        // tree_moves_total counts all tree moves, root_player_decisions
+        // counts only moves where the side to move was the root player.
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+        let limits = SearchLimits {
+            max_nodes: Some(200),
+            ..Default::default()
+        };
+
+        let _ = searcher.search(&mut state, &limits);
+
+        // With OMA on, only root-player moves create tree nodes,
+        // so tree_moves == root_player_decisions.
+        assert!(
+            searcher.tree_moves_total > 0,
+            "Tree moves should be counted"
+        );
+        // With OMA on, all tree moves are root-player moves
+        assert_eq!(
+            searcher.tree_moves_total, searcher.root_player_decisions,
+            "With OMA on, tree moves should equal root player decisions"
+        );
+    }
+
+    #[test]
+    fn test_pw_limited_selections_tracked() {
+        // With PW active (default k=2, alpha=0.5), selections at root-player
+        // nodes with many children should be PW-limited.
+        let mut searcher = make_searcher_with_seed(42);
+        let mut state = starting_state();
+        let limits = SearchLimits {
+            max_nodes: Some(200),
+            ..Default::default()
+        };
+
+        let _ = searcher.search(&mut state, &limits);
+
+        // Starting position has many legal moves (>2), so PW should limit
+        assert!(
+            searcher.pw_limited_selections > 0,
+            "PW should limit selections at nodes with many children"
+        );
+    }
+
+    #[test]
+    fn test_pw_setoption_wiring() {
+        use crate::protocol::options::{EngineOptions, SetOptionResult, apply_option};
+
+        let mut opts = EngineOptions::default();
+        assert!(
+            (opts.pw_constant - 2.0).abs() < 0.001,
+            "Default pw_constant"
+        );
+        assert!(
+            (opts.pw_exponent - 0.5).abs() < 0.001,
+            "Default pw_exponent"
+        );
+
+        // Set PWConstant
+        assert!(matches!(
+            apply_option(&mut opts, "PWConstant", "4.0"),
+            SetOptionResult::Ok
+        ));
+        assert!((opts.pw_constant - 4.0).abs() < 0.001);
+
+        // Set PWExponent
+        assert!(matches!(
+            apply_option(&mut opts, "PWExponent", "0.3"),
+            SetOptionResult::Ok
+        ));
+        assert!((opts.pw_exponent - 0.3).abs() < 0.001);
+
+        // Invalid values
+        assert!(matches!(
+            apply_option(&mut opts, "PWConstant", "-1.0"),
+            SetOptionResult::InvalidValue(_)
+        ));
+        assert!(matches!(
+            apply_option(&mut opts, "PWExponent", "1.5"),
+            SetOptionResult::InvalidValue(_)
+        ));
+
+        // MctsConfig wiring
+        let mcts_config = opts.mcts_config();
+        assert!((mcts_config.pw_k - 4.0).abs() < 0.001);
+        assert!((mcts_config.pw_alpha - 0.3).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_zone_weight_setoption_wiring() {
+        use crate::protocol::options::{EngineOptions, SetOptionResult, apply_option};
+
+        let mut opts = EngineOptions::default();
+        assert_eq!(opts.territory_weight, 2, "Default territory weight");
+        assert_eq!(opts.influence_weight, 1, "Default influence weight");
+        assert_eq!(opts.tension_weight, 1, "Default tension weight");
+
+        assert!(matches!(
+            apply_option(&mut opts, "TerritoryWeight", "5"),
+            SetOptionResult::Ok
+        ));
+        assert_eq!(opts.territory_weight, 5);
+
+        assert!(matches!(
+            apply_option(&mut opts, "InfluenceWeight", "0"),
+            SetOptionResult::Ok
+        ));
+        assert_eq!(opts.influence_weight, 0);
+
+        assert!(matches!(
+            apply_option(&mut opts, "TensionWeight", "3"),
+            SetOptionResult::Ok
+        ));
+        assert_eq!(opts.tension_weight, 3);
+
+        // Invalid
+        assert!(matches!(
+            apply_option(&mut opts, "TerritoryWeight", "-1"),
+            SetOptionResult::InvalidValue(_)
+        ));
     }
 }

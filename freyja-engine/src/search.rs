@@ -1979,7 +1979,9 @@ mod tests {
 
         // Play 20 plies at depth 2 to get a realistic midgame
         for _ply in 0..20 {
-            if gs.is_game_over() { break; }
+            if gs.is_game_over() {
+                break;
+            }
             let limits = SearchLimits {
                 max_depth: Some(2),
                 ..Default::default()
@@ -1987,10 +1989,14 @@ mod tests {
             let result = searcher.search(&mut gs, &limits);
             if let Some(mv) = result.best_move {
                 gs.apply_move(mv);
-            } else { break; }
+            } else {
+                break;
+            }
         }
 
-        if gs.is_game_over() { return; }
+        if gs.is_game_over() {
+            return;
+        }
 
         // Eliminate Green (simulate checkmate)
         let green_ks = gs.board().king_square(Player::Green);

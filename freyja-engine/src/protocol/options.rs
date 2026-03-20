@@ -48,6 +48,18 @@ pub struct EngineOptions {
     // ── Stage 14: OMA ──
     /// Enable Opponent Move Abstraction in MCTS.
     pub opponent_abstraction: bool,
+
+    // ── Stage 15: Progressive Widening + Zone Control ──
+    /// Progressive widening constant (k). Higher = more children early.
+    pub pw_constant: f32,
+    /// Progressive widening exponent (alpha). 0.5 = square-root growth.
+    pub pw_exponent: f32,
+    /// Territory weight for zone control eval (0 = disabled).
+    pub territory_weight: i16,
+    /// Influence map weight for zone control eval (0 = disabled).
+    pub influence_weight: i16,
+    /// Tension/vulnerability weight for zone control eval (0 = disabled).
+    pub tension_weight: i16,
 }
 
 impl Default for EngineOptions {
@@ -71,6 +83,11 @@ impl Default for EngineOptions {
             ph_weight: mcts_defaults.ph_weight,
             c_prior: mcts_defaults.c_prior,
             opponent_abstraction: true,
+            pw_constant: crate::mcts::DEFAULT_PW_K,
+            pw_exponent: crate::mcts::DEFAULT_PW_ALPHA,
+            territory_weight: 2,
+            influence_weight: 1,
+            tension_weight: 1,
         }
     }
 }
@@ -108,6 +125,8 @@ impl EngineOptions {
             ph_weight: self.ph_weight,
             c_prior: self.c_prior,
             use_oma: self.opponent_abstraction,
+            pw_k: self.pw_constant,
+            pw_alpha: self.pw_exponent,
             ..MctsConfig::default()
         }
     }
@@ -311,6 +330,53 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
             }
             _ => SetOptionResult::InvalidValue(format!(
                 "OpponentAbstraction must be true/false, got '{value}'"
+            )),
+        },
+
+        // ── Stage 15: Progressive Widening + Zone Control ──
+        "PWConstant" => match value.parse::<f32>() {
+            Ok(k) if k > 0.0 => {
+                options.pw_constant = k;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "PWConstant must be a positive float, got '{value}'"
+            )),
+        },
+        "PWExponent" => match value.parse::<f32>() {
+            Ok(a) if (0.0..=1.0).contains(&a) => {
+                options.pw_exponent = a;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "PWExponent must be a float in [0.0, 1.0], got '{value}'"
+            )),
+        },
+        "TerritoryWeight" => match value.parse::<i16>() {
+            Ok(w) if w >= 0 => {
+                options.territory_weight = w;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "TerritoryWeight must be a non-negative integer, got '{value}'"
+            )),
+        },
+        "InfluenceWeight" => match value.parse::<i16>() {
+            Ok(w) if w >= 0 => {
+                options.influence_weight = w;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "InfluenceWeight must be a non-negative integer, got '{value}'"
+            )),
+        },
+        "TensionWeight" => match value.parse::<i16>() {
+            Ok(w) if w >= 0 => {
+                options.tension_weight = w;
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "TensionWeight must be a non-negative integer, got '{value}'"
             )),
         },
 

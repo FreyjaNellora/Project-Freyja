@@ -1840,19 +1840,34 @@ mod tests {
             // Place 4 kings well-separated (≥3 squares apart) so they
             // don't attack each other or interfere with EP legality.
             let king_candidates: &[(u8, u8)] = &[
-                (4, 4), (4, 9), (9, 4), (9, 9), // 5 squares apart
-                (5, 4), (5, 9), (8, 4), (8, 9), // fallback
-                (4, 5), (4, 8), (9, 5), (9, 8), // fallback 2
+                (4, 4),
+                (4, 9),
+                (9, 4),
+                (9, 9), // 5 squares apart
+                (5, 4),
+                (5, 9),
+                (8, 4),
+                (8, 9), // fallback
+                (4, 5),
+                (4, 8),
+                (9, 5),
+                (9, 8), // fallback 2
             ];
             let mut placed = 0usize;
             for &(r, f) in king_candidates {
-                if placed >= 4 { break; }
+                if placed >= 4 {
+                    break;
+                }
                 let sq = Square::from_rank_file_unchecked(r, f);
-                if board.piece_at(sq).is_some() { continue; }
+                if board.piece_at(sq).is_some() {
+                    continue;
+                }
                 board.set_piece(sq, Piece::new(PieceType::King, Player::all()[placed]));
                 placed += 1;
             }
-            if placed < 4 { return false; }
+            if placed < 4 {
+                return false;
+            }
 
             board.set_side_to_move(capturer);
             board.set_castling_rights(0);
@@ -1869,10 +1884,14 @@ mod tests {
         //              fixed_is_rank, fixed_val)
         // Walk the free coordinate from 3 to 10 (8 positions per pair).
         struct Pair {
-            cap: Player, push: Player,
-            push_dr: i8, push_df: i8,
-            cap_dr: i8, cap_df: i8,
-            fixed_rank: bool, fixed_val: u8,
+            cap: Player,
+            push: Player,
+            push_dr: i8,
+            push_df: i8,
+            cap_dr: i8,
+            cap_df: i8,
+            fixed_rank: bool,
+            fixed_val: u8,
         }
 
         // Capture deltas: the capturer's diagonal that reaches the EP target
@@ -1886,44 +1905,100 @@ mod tests {
         let pairs = [
             // Red→Blue (SW): Blue pushes E(0,+1), EP at file 2, walk rank 3-10
             // Red NW(1,-1): pawn at (rank-1, 3) — safe side
-            Pair { cap: Player::Red, push: Player::Blue,
-                push_dr: 0, push_df: 1, cap_dr: 1, cap_df: -1,
-                fixed_rank: false, fixed_val: 2 },
+            Pair {
+                cap: Player::Red,
+                push: Player::Blue,
+                push_dr: 0,
+                push_df: 1,
+                cap_dr: 1,
+                cap_df: -1,
+                fixed_rank: false,
+                fixed_val: 2,
+            },
             // Blue→Red (SW): Red pushes N(1,0), EP at rank 2, walk file 3-10
             // Blue SE(-1,1): pawn at (3, file-1) — safe side
-            Pair { cap: Player::Blue, push: Player::Red,
-                push_dr: 1, push_df: 0, cap_dr: -1, cap_df: 1,
-                fixed_rank: true, fixed_val: 2 },
+            Pair {
+                cap: Player::Blue,
+                push: Player::Red,
+                push_dr: 1,
+                push_df: 0,
+                cap_dr: -1,
+                cap_df: 1,
+                fixed_rank: true,
+                fixed_val: 2,
+            },
             // Blue→Yellow (NW): Yellow pushes S(-1,0), EP at rank 11, walk file 3-10
             // Blue NE(1,1): pawn at (10, file-1) — safe side
-            Pair { cap: Player::Blue, push: Player::Yellow,
-                push_dr: -1, push_df: 0, cap_dr: 1, cap_df: 1,
-                fixed_rank: true, fixed_val: 11 },
+            Pair {
+                cap: Player::Blue,
+                push: Player::Yellow,
+                push_dr: -1,
+                push_df: 0,
+                cap_dr: 1,
+                cap_df: 1,
+                fixed_rank: true,
+                fixed_val: 11,
+            },
             // Yellow→Blue (NW): Blue pushes E(0,+1), EP at file 2, walk rank 3-10
             // Yellow SW(-1,-1): pawn at (rank+1, 3) — safe side
-            Pair { cap: Player::Yellow, push: Player::Blue,
-                push_dr: 0, push_df: 1, cap_dr: -1, cap_df: -1,
-                fixed_rank: false, fixed_val: 2 },
+            Pair {
+                cap: Player::Yellow,
+                push: Player::Blue,
+                push_dr: 0,
+                push_df: 1,
+                cap_dr: -1,
+                cap_df: -1,
+                fixed_rank: false,
+                fixed_val: 2,
+            },
             // Yellow→Green (NE): Green pushes W(0,-1), EP at file 11, walk rank 3-10
             // Yellow SE(-1,1): pawn at (rank+1, 10) — safe side
-            Pair { cap: Player::Yellow, push: Player::Green,
-                push_dr: 0, push_df: -1, cap_dr: -1, cap_df: 1,
-                fixed_rank: false, fixed_val: 11 },
+            Pair {
+                cap: Player::Yellow,
+                push: Player::Green,
+                push_dr: 0,
+                push_df: -1,
+                cap_dr: -1,
+                cap_df: 1,
+                fixed_rank: false,
+                fixed_val: 11,
+            },
             // Green→Yellow (NE): Yellow pushes S(-1,0), EP at rank 11, walk file 3-10
             // Green NW(1,-1): pawn at (10, file+1) — safe side
-            Pair { cap: Player::Green, push: Player::Yellow,
-                push_dr: -1, push_df: 0, cap_dr: 1, cap_df: -1,
-                fixed_rank: true, fixed_val: 11 },
+            Pair {
+                cap: Player::Green,
+                push: Player::Yellow,
+                push_dr: -1,
+                push_df: 0,
+                cap_dr: 1,
+                cap_df: -1,
+                fixed_rank: true,
+                fixed_val: 11,
+            },
             // Green→Red (SE): Red pushes N(1,0), EP at rank 2, walk file 3-10
             // Green SW(-1,-1): pawn at (3, file+1) — safe side
-            Pair { cap: Player::Green, push: Player::Red,
-                push_dr: 1, push_df: 0, cap_dr: -1, cap_df: -1,
-                fixed_rank: true, fixed_val: 2 },
+            Pair {
+                cap: Player::Green,
+                push: Player::Red,
+                push_dr: 1,
+                push_df: 0,
+                cap_dr: -1,
+                cap_df: -1,
+                fixed_rank: true,
+                fixed_val: 2,
+            },
             // Red→Green (SE): Green pushes W(0,-1), EP at file 11, walk rank 3-10
             // Red NE(1,1): pawn at (rank-1, 10) — safe side
-            Pair { cap: Player::Red, push: Player::Green,
-                push_dr: 0, push_df: -1, cap_dr: 1, cap_df: 1,
-                fixed_rank: false, fixed_val: 11 },
+            Pair {
+                cap: Player::Red,
+                push: Player::Green,
+                push_dr: 0,
+                push_df: -1,
+                cap_dr: 1,
+                cap_df: 1,
+                fixed_rank: false,
+                fixed_val: 11,
+            },
         ];
 
         let mut pass = 0u32;
@@ -1932,24 +2007,42 @@ mod tests {
 
         for p in &pairs {
             for walk in 3u8..=10 {
-                let (ep_r, ep_f) = if p.fixed_rank { (p.fixed_val, walk) } else { (walk, p.fixed_val) };
+                let (ep_r, ep_f) = if p.fixed_rank {
+                    (p.fixed_val, walk)
+                } else {
+                    (walk, p.fixed_val)
+                };
                 let landed_r = ep_r as i8 + p.push_dr;
                 let landed_f = ep_f as i8 + p.push_df;
                 let cap_r = ep_r as i8 - p.cap_dr;
                 let cap_f = ep_f as i8 - p.cap_df;
 
                 // Bounds + validity
-                if cap_r < 0 || cap_r >= 14 || cap_f < 0 || cap_f >= 14
-                    || landed_r < 0 || landed_r >= 14 || landed_f < 0 || landed_f >= 14
-                { skip += 1; continue; }
+                if cap_r < 0
+                    || cap_r >= 14
+                    || cap_f < 0
+                    || cap_f >= 14
+                    || landed_r < 0
+                    || landed_r >= 14
+                    || landed_f < 0
+                    || landed_f >= 14
+                {
+                    skip += 1;
+                    continue;
+                }
                 if !is_valid_square(cap_r as u8, cap_f as u8)
                     || !is_valid_square(landed_r as u8, landed_f as u8)
                     || !is_valid_square(ep_r, ep_f)
-                { skip += 1; continue; }
+                {
+                    skip += 1;
+                    continue;
+                }
 
                 if check_ep(
-                    p.cap, (cap_r as u8, cap_f as u8),
-                    p.push, (landed_r as u8, landed_f as u8),
+                    p.cap,
+                    (cap_r as u8, cap_f as u8),
+                    p.push,
+                    (landed_r as u8, landed_f as u8),
                     (ep_r, ep_f),
                 ) {
                     pass += 1;
@@ -1965,7 +2058,10 @@ mod tests {
         if !fails.is_empty() {
             panic!(
                 "EP corners: {}/{} pass, {} skip, {} FAIL:\n{}",
-                pass, pass + fails.len() as u32, skip, fails.len(),
+                pass,
+                pass + fails.len() as u32,
+                skip,
+                fails.len(),
                 fails.join("\n"),
             );
         }

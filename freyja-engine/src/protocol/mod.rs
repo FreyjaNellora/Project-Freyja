@@ -215,7 +215,12 @@ impl<W: Write> Protocol<W> {
             phase_cutover_ply: self.options.phase_cutover_ply,
             ..HybridConfig::default()
         };
-        let mut searcher = HybridSearcher::new(BootstrapEvaluator::new(), hybrid_config);
+        let eval = BootstrapEvaluator::with_zone_weights(crate::eval::ZoneWeights {
+            territory: self.options.territory_weight,
+            influence: self.options.influence_weight,
+            tension: self.options.tension_weight,
+        });
+        let mut searcher = HybridSearcher::new(eval, hybrid_config);
         let start = std::time::Instant::now();
         let result = searcher.search(&mut self.game_state, &limits);
         let elapsed_ms = start.elapsed().as_millis() as u64;
