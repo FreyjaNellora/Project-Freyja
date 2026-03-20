@@ -1,0 +1,22 @@
+{
+  "engine": "C:/rust-target/freyja/release/freyja.exe",
+  "game_pairs": 1,
+  "max_ply": 40,
+  "config_a": {
+    "label": "swarm_on",
+    "depth": 3,
+    "setoptions": {
+      "SwarmWeight": "3",
+      "MoveNoise": "40"
+    }
+  },
+  "config_b": {
+    "label": "swarm_off",
+    "depth": 3,
+    "setoptions": {
+      "SwarmWeight": "0",
+      "MoveNoise": "40"
+    }
+  },
+  "output_dir": "reports/duel_smoke"
+}

@@ -1,0 +1,28 @@
+{
+  "engine": "C:/rust-target/freyja/release/freyja.exe",
+  "games_per_config": 10,
+  "max_ply": 160,
+  "config_a": {
+    "label": "swarm_plus_ray",
+    "movetime": 2000,
+    "setoptions": {
+      "TerritoryWeight": "2",
+      "InfluenceWeight": "1",
+      "TensionWeight": "1",
+      "SwarmWeight": "3",
+      "MoveNoise": "40"
+    }
+  },
+  "config_b": {
+    "label": "ray_only",
+    "movetime": 2000,
+    "setoptions": {
+      "TerritoryWeight": "2",
+      "InfluenceWeight": "1",
+      "TensionWeight": "1",
+      "SwarmWeight": "0",
+      "MoveNoise": "40"
+    }
+  },
+  "output_dir": "reports/ab_swarm_vs_ray"
+}

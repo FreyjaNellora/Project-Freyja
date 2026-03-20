@@ -1,0 +1,24 @@
+{
+  "engine": "C:/rust-target/freyja/release/freyja.exe",
+  "games_per_config": 10,
+  "max_ply": 160,
+  "config_a": {
+    "label": "pw_k2",
+    "movetime": 5000,
+    "setoptions": {
+      "PWConstant": "2.0",
+      "PWExponent": "0.5",
+      "MoveNoise": "40"
+    }
+  },
+  "config_b": {
+    "label": "pw_k4",
+    "movetime": 5000,
+    "setoptions": {
+      "PWConstant": "4.0",
+      "PWExponent": "0.5",
+      "MoveNoise": "40"
+    }
+  },
+  "output_dir": "reports/ab_pw_k"
+}
