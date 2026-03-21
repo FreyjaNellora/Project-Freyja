@@ -1,15 +1,19 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-20
-**Updated By:** Session 24
+**Updated By:** Session 25
 
 ---
 
 ## Current Stage
 
-**Stage:** 15 -- COMPLETE (pending user sign-off)
-**Status:** PW + ray-attenuation + swarm all implemented. Duel-tested: swarm+ray beats ray-only 9/15.
-**Next:** User UI testing for sign-off, then Stage 16 (NNUE Training Pipeline)
+**Stage:** 15 -- COMPLETE (pending UI fix + sign-off)
+**Status:** All engine features done. UI blocks at ply 30 due to Tauri IPC hang. Needs FEN4-based position commands or observer architecture.
+**Next:** Fix UI IPC hang, get user sign-off, then Stage 16
+
+## Blocking Issues
+
+- **Tauri IPC hang at ply 30+:** invoke('send_command') never resolves when position command has 30+ moves. Engine works fine via CLI. Fix: use FEN4 or bypass Tauri IPC.
 
 ---
 
