@@ -94,6 +94,9 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   const latestInfoRef = useRef<InfoData | null>(null);
   const slotConfigRef = useRef(slotConfig);
   const gameGenRef = useRef(0);
+  const pendingNextTurnRef = useRef<Player | null>(null);
+  const bestmoveWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playerWhenGoSentRef = useRef<Player>('Red');
 
   // Keep board/currentPlayer refs in sync via useEffect (these are set internally, not from UI callbacks)
   useEffect(() => { boardRef.current = board; }, [board]);
@@ -103,18 +106,34 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   const sendGoFromRef = useCallback(() => {
     if (awaitingBestmoveRef.current) return;
     awaitingBestmoveRef.current = true;
+    playerWhenGoSentRef.current = currentPlayerRef.current;
+
+    // Watchdog: if no bestmove arrives within 30s, recover
+    if (bestmoveWatchdogRef.current) clearTimeout(bestmoveWatchdogRef.current);
+    bestmoveWatchdogRef.current = setTimeout(() => {
+      if (awaitingBestmoveRef.current) {
+        console.error('[Freyja] WATCHDOG: No bestmove received in 30s, recovering');
+        awaitingBestmoveRef.current = false;
+        autoPlayRef.current = false;
+        setAutoPlayState(false);
+      }
+    }, 30000);
 
     const moves = [...moveListRef.current];
     const posCmd = moves.length > 0
       ? `position startpos moves ${moves.join(' ')}`
       : 'position startpos';
 
+    console.log(`[Freyja] sendGo: sending position (${moves.length} moves)`);
     engineSendCommand(posCmd).then(() => {
+      console.log(`[Freyja] sendGo: position sent, sending go`);
       return engineSendCommand('go');
+    }).then(() => {
+      console.log(`[Freyja] sendGo: go sent, awaiting bestmove`);
     }).catch((err: unknown) => {
       console.error('[Freyja] sendGo failed:', err);
       awaitingBestmoveRef.current = false;
-      // Use ref to avoid circular dependency: sendGoFromRef -> setAutoPlay -> sendGoFromRef
+      if (bestmoveWatchdogRef.current) clearTimeout(bestmoveWatchdogRef.current);
       autoPlayRef.current = false;
       setAutoPlayState(false);
     });
@@ -292,16 +311,20 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   // --- Maybe chain next engine move ---
   // Always chains engine→engine. Stops at human unless autoPlay is on.
   const maybeChainEngineMove = useCallback((nextPlayer: Player) => {
-    if (isPausedRef.current) return;
-    if (slotConfigRef.current[nextPlayer] !== 'engine') return;
+    console.log(`[Freyja] maybeChain: player=${nextPlayer} slot=${slotConfigRef.current[nextPlayer]} paused=${isPausedRef.current} awaiting=${awaitingBestmoveRef.current}`);
+    if (isPausedRef.current) { console.log('[Freyja] maybeChain: SKIPPED (paused)'); return; }
+    if (slotConfigRef.current[nextPlayer] !== 'engine') { console.log(`[Freyja] maybeChain: SKIPPED (slot=${slotConfigRef.current[nextPlayer]})`); return; }
 
     const gen = gameGenRef.current;
     const delay = engineDelayRef.current;
     setTimeout(() => {
       // Bail if game was reset since this timeout was queued
-      if (gen !== gameGenRef.current) return;
+      if (gen !== gameGenRef.current) { console.log('[Freyja] timeout: SKIPPED (gen changed)'); return; }
       if (!isPausedRef.current && slotConfigRef.current[nextPlayer] === 'engine') {
+        console.log(`[Freyja] timeout: calling sendGoFromRef, awaiting=${awaitingBestmoveRef.current}`);
         sendGoFromRef();
+      } else {
+        console.log(`[Freyja] timeout: SKIPPED (paused=${isPausedRef.current} slot=${slotConfigRef.current[nextPlayer]})`);
       }
     }, delay);
   }, [sendGoFromRef]);
@@ -318,6 +341,10 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
         }
 
         awaitingBestmoveRef.current = false;
+        if (bestmoveWatchdogRef.current) {
+          clearTimeout(bestmoveWatchdogRef.current);
+          bestmoveWatchdogRef.current = null;
+        }
         const gen = gameGenRef.current;
 
         if (msg.move === null) {
@@ -326,8 +353,9 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
           return;
         }
 
-        // Snapshot before mutation
-        const movingPlayer = currentPlayerRef.current;
+        // The player who made this move is whoever was current when go was sent
+        // (NOT currentPlayerRef, which may have been updated by nextturn already)
+        const movingPlayer = playerWhenGoSentRef.current;
         const prevBoard = boardRef.current;
         const infoSnapshot = latestInfoRef.current ? { ...latestInfoRef.current } : null;
 
@@ -351,7 +379,11 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
           info: infoSnapshot,
         }]);
 
-        // Advance turn (use nextturn from engine if it comes, otherwise local)
+        // Advance turn: always use advancePlayer from the moving player.
+        // Do NOT use pendingNextTurnRef here — it contains the nextturn from
+        // position replay (who is ABOUT to move), not the post-bestmove nextturn
+        // (who moves NEXT). The post-bestmove nextturn arrives AFTER bestmove
+        // and is handled by the nextturn handler separately.
         const nextPlayer = advancePlayer(movingPlayer);
         setCurrentPlayer(nextPlayer);
         currentPlayerRef.current = nextPlayer;
@@ -359,13 +391,20 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
         setSelectedSquare(null);
 
         // Chain auto-play
+        console.log(`[Freyja] bestmove=${msg.move} movingPlayer=${movingPlayer} nextPlayer=${nextPlayer} slot=${slotConfigRef.current[nextPlayer]} paused=${isPausedRef.current} ply=${moveListRef.current.length}`);
         maybeChainEngineMove(nextPlayer);
       }
 
       if (msg.type === 'nextturn') {
-        // Engine's authoritative turn — override local computation
-        setCurrentPlayer(msg.player);
-        currentPlayerRef.current = msg.player;
+        // Only update display if we're NOT in the middle of a go command.
+        // During auto-play, nextturn arrives from BOTH position replay AND
+        // post-bestmove, causing double-updates. The bestmove handler uses
+        // advancePlayer for chaining, so nextturn is only needed for display
+        // when idle (e.g., after human move or game start).
+        if (!awaitingBestmoveRef.current) {
+          setCurrentPlayer(msg.player);
+          currentPlayerRef.current = msg.player;
+        }
       }
 
       if (msg.type === 'info') {
@@ -533,6 +572,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     latestInfoRef.current = null;
     setPlayerStatus({ Red: 'Active', Blue: 'Active', Yellow: 'Active', Green: 'Active' });
     eliminatedPlayersRef.current = new Set();
+    pendingNextTurnRef.current = null;
     setSlotConfig({ Red: 'human', Blue: 'engine', Yellow: 'engine', Green: 'engine' });
     setPendingPromotion(null);
     setIsPaused(false);

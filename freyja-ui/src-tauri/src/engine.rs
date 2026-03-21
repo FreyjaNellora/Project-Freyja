@@ -77,13 +77,17 @@ impl EngineManager {
             for line in reader.lines() {
                 match line {
                     Ok(line) => {
-                        let _ = app_handle.emit("engine-output", EngineOutputPayload { line, gen });
+                        if let Err(e) = app_handle.emit("engine-output", EngineOutputPayload { line, gen }) {
+                            eprintln!("[engine reader] emit failed: {e}");
+                        }
                     }
                     Err(_) => break,
                 }
             }
             // Engine stdout closed — process likely exited
-            let _ = app_handle.emit("engine-exit", gen);
+            if let Err(e) = app_handle.emit("engine-exit", gen) {
+                eprintln!("[engine reader] exit emit failed: {e}");
+            }
         });
 
         self.stdin = Some(BufWriter::new(stdin));
