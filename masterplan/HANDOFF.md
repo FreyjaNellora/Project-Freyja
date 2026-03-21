@@ -1,71 +1,89 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-21
-**Session Number:** 27
+**Session Number:** 28
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 16: NNUE Architecture + Training Pipeline -- COMPLETE (user signed off)**
+**Stage 17: NNUE Integration -- IN PROGRESS (data generation phase)**
 
-Ready for Stage 17 (NNUE Integration).
+Stage 17 has been planned and researched. Training data generation infrastructure is ready. Waiting on 1,000-game self-play run (split across 2 machines, ~29 hours each) before continuing with NNUE code changes.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Rust NNUE inference architecture** (`freyja-engine/src/nnue/`):
-   - Feature encoding: 4488 features per perspective (4480 piece-square + 8 zone)
-   - Accumulator: SIMD-ready (`align(32)`, ADR-012), full refresh per eval
-   - Forward pass: quantized i16/i32 scalar (256→32→1 per perspective)
-   - Weight format: `.fnnue` binary (little-endian i16, ~2.3 MB)
-   - `NnueEvaluator` implementing `Evaluator` trait with `Arc<NnueWeights>` for cheap Clone
-   - 36 new tests, all passing
+1. **Stage 17 research and planning:**
+   - Read AGENT_CONDUCT.md, MASTERPLAN Stage 17 spec, all upstream logs
+   - Diagnosed NNUE score magnitude problem (root cause: training normalization ÷3000 + Q6 quantization → single-digit centipawn outputs)
+   - Identified fix: OUTPUT_MULTIPLIER in forward pass (~600-3000), tunable via NnueScale protocol option
+   - Research on NNUE integration best practices (Stockfish, training data quality, SPRT validation)
 
-2. **Protocol integration:**
-   - `setoption name EvalMode value nnue` / `bootstrap`
-   - `setoption name NnueWeights value <path>` — loads once, cached as `Arc`
-   - Zone control functions made `pub` in eval.rs for direct NNUE access
+2. **Hardware benchmarking:**
+   - Measured: 3 games at depth 4 = 10m 34s → **~3.5 min/game**
+   - Extrapolation: 100 games = ~5.8h, 500 = ~29h, 1000 = ~58h
+   - PC specs documented: i5-10400F, 8GB RAM, GTX 1660 SUPER
 
-3. **Python training pipeline** (`freyja-nnue/`):
-   - FEN4 parser + feature extraction matching Rust encoding exactly
-   - PyTorch `FreyjaNet` (shared weights across 4 perspectives)
-   - Training loop: MSE loss on 4-vector, Adam optimizer, early stopping
-   - Weight export: float32→i16 quantization, `.fnnue` format
-   - Training result: loss 0.298 → 0.002 over 50 epochs on 1050 positions
+3. **Training data generation infrastructure:**
+   - `observer/config_training_d4_500.json` — config for 100 games at depth 4 with MoveNoise=40
+   - `observer/run_training_batches.mjs` — batch runner: runs N batches of 100 games, extracts training data from each, merges and deduplicates into single JSONL file
+   - Supports `--start-batch` for resuming partial runs
+   - Estimated yield: ~60 positions per game → 1,000 games → ~60,000 training positions
 
-4. **Round-trip verification:**
-   - Trained `.fnnue` loads in Rust and produces non-zero differentiated scores
-   - Trained NNUE produces position-sensitive evaluations vs random (all-zero)
-
-5. **Tags:** `stage-15-complete` / `v1.15` (confirmed existing), `stage-16-complete` / `v1.16`
+4. **Stage 17 implementation plan** written at `.claude/plans/ethereal-honking-bee.md`
 
 ---
 
 ## What Was NOT Completed
 
-- **SIMD forward pass** — Scalar only (~27-50us). AVX2 deferred to Stage 20 per plan.
-- **Incremental accumulator** — Full refresh per eval. Incremental make/unmake deferred to Stage 17/20.
-- **Large-scale training** — 1050 positions from existing games. Weights produce small scores (single-digit centipawns). More data + deeper search needed for Stage 17.
-- **Formal A/B self-play** (trained vs random) — Verified qualitatively (differentiated vs flat scores), not via 100-game SPRT.
+- **NNUE code changes** (OUTPUT_MULTIPLIER, NnueScale option) — deferred until training data is collected
+- **Training data generation** — infrastructure ready, run not started
+- **NNUE retraining** — waiting on data
+- **Self-play validation** (NNUE vs bootstrap duel) — waiting on retrained weights
+- **Beam width experiments** — waiting on validated NNUE
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Begin Stage 17: NNUE Integration
-2. Wire `NnueEvaluator` as the default evaluator (replace bootstrap)
-3. Generate more training data at higher depth with NNUE eval for iterative improvement
-4. Beam width experiment: test tighter beam with NNUE ordering
-5. Key concern: trained weights produce small scores — may need higher quantization scale or more training data before NNUE can actually beat bootstrap in self-play
+### IF training data generation is NOT yet running:
+1. Start the 1K-game run split across 2 machines:
+   ```bash
+   cd observer
+   # Machine A (500 games = 5 batches):
+   node run_training_batches.mjs --batches 5 --engine "C:/rust-target/freyja/release/freyja.exe"
+
+   # Machine B (500 games = 5 batches):
+   node run_training_batches.mjs --batches 5 --engine "<path_to_freyja.exe>"
+   ```
+   Each takes ~29 hours. Output: `freyja-nnue/training_d4_all.jsonl`
+
+### IF training data IS collected (merged JSONL exists):
+1. **Phase 0: Fix score magnitude** — Add OUTPUT_MULTIPLIER (default ~600) to `nnue/features.rs`, apply in `nnue/forward.rs` line 64, add NnueScale protocol option
+2. **Phase 2: Retrain NNUE** on expanded dataset:
+   ```bash
+   python -m freyja_nnue.train --data freyja-nnue/training_d4_all.jsonl --output weights_v2.fnnue --epochs 200 --batch-size 512
+   ```
+3. **Phase 3: Integration tests** — `cargo test`, 100 full-game lifecycle test
+4. **Phase 4: Self-play validation** — NNUE vs bootstrap duel, 25 game pairs at depth 3
+5. **Phase 5: Beam width experiments** (if Phase 4 passes)
+6. **Phase 6: Ship decision** — make NNUE default if it wins >55% self-play
+
+### Key technical details for the next agent:
+- **Score magnitude root cause:** Training divides by 3000, Q6 quantization (×64), two ÷64 in forward pass → single-digit cp. Fix: multiply by OUTPUT_MULTIPLIER (~600) after forward pass, before the final ÷WEIGHT_SCALE division
+- **Critical file:** `freyja-engine/src/nnue/forward.rs` line 64: `scores[i] = (raw / WEIGHT_SCALE) as i16` → needs `raw * OUTPUT_MULTIPLIER / WEIGHT_SCALE`
+- **Training data depth:** User requires depth 4 ONLY. No depth 3.
+- **Hardware limits:** 8GB RAM → 100-game batches max. Never run training + self-play simultaneously.
+- **Full plan:** `.claude/plans/ethereal-honking-bee.md`
 
 ---
 
 ## Open Issues
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
-- **NNUE score magnitude (NOTE):** Trained weights produce single-digit centipawn scores. Quantization scale (Q6=64) is conservative for the small learned weights. Stage 17 should investigate higher scale or more training epochs.
+- **NNUE score magnitude (NOTE):** Root cause identified (arithmetic, not training bug). Fix planned but not implemented.
 - **MoveNoise in MCTS:** Still unresolved. Hybrid mode provides diversity.
 
 ---
@@ -81,17 +99,12 @@ Ready for Stage 17 (NNUE Integration).
 
 ---
 
-## Files Modified This Session (Session 27)
+## Files Modified This Session (Session 28)
 
 | File | Changes |
 |------|---------|
-| `freyja-engine/src/nnue/` (new dir) | Full NNUE inference module (5 files) |
-| `freyja-engine/src/lib.rs` | Added `pub mod nnue` |
-| `freyja-engine/src/eval.rs` | Made zone functions `pub` |
-| `freyja-engine/src/protocol/options.rs` | EvalMode, NnueWeights options |
-| `freyja-engine/src/protocol/mod.rs` | NNUE evaluator wiring, weight caching |
-| `freyja-nnue/` (new dir) | Python training pipeline (6 files) |
-| `freyja-nnue/weights.fnnue` | Trained NNUE weights |
-| `freyja-nnue/training_combined.jsonl` | 1050 training records |
+| `observer/config_training_d4_500.json` (new) | Training data generation config (100 games, depth 4, MoveNoise 40) |
+| `observer/run_training_batches.mjs` (new) | Batch runner: 5×100 games, extract, merge, dedup |
 | `masterplan/HANDOFF.md` | This file |
 | `masterplan/STATUS.md` | Updated |
+| `masterplan/sessions/session_028.md` (new) | Session note |

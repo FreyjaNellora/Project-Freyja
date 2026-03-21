@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-21
-**Updated By:** Session 27
+**Updated By:** Session 28
 
 ---
 
 ## Current Stage
 
-**Stage:** 16 -- COMPLETE (user signed off)
-**Status:** Full NNUE pipeline: Rust inference + Python training + .fnnue format + round-trip verified.
-**Next:** Begin Stage 17 (NNUE Integration — swap bootstrap for trained NNUE)
+**Stage:** 17 -- IN PROGRESS (data generation phase)
+**Status:** Planned and researched. Training data generation infrastructure ready. Awaiting 1K-game self-play run (~29h per machine, split across 2 machines).
+**Next:** Run data generation → fix score magnitude → retrain NNUE → validate vs bootstrap
 
 ## Blocking Issues
 
@@ -38,7 +38,7 @@
 | 14 | MCTS Opponent Move Abstraction (OMA) | Complete | `stage-14-complete` / `v1.14` | 2026-03-20 |
 | 15 | Progressive Widening + Zone Control | Complete | `stage-15-complete` / `v1.15` | 2026-03-21 |
 | 16 | NNUE Architecture + Training Pipeline | Complete | `stage-16-complete` / `v1.16` | 2026-03-21 |
-| 17 | NNUE Integration | Not Started | -- | -- |
+| 17 | NNUE Integration | In Progress | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |
 | 19 | Full UI | Not Started | -- | -- |
 | 20 | Optimization | Not Started | -- | -- |
@@ -78,6 +78,6 @@
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
 | Stages complete | 17 (Stages 0-16) | 2026-03-21 |
-| Stage 17 status | Not Started | -- |
+| Stage 17 status | In Progress (data gen) | 2026-03-21 |
 | Open blocking issues | 0 | 2026-03-21 |
 | Open warning issues | 1 | 2026-03-07 |

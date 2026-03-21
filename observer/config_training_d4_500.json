@@ -1,0 +1,10 @@
+{
+  "engine": "C:/rust-target/freyja/release/freyja.exe",
+  "games": 100,
+  "depth": 4,
+  "max_ply": 80,
+  "setoptions": {
+    "MoveNoise": "40"
+  },
+  "output_dir": "reports/training_d4"
+}
