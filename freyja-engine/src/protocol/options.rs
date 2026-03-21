@@ -49,6 +49,12 @@ pub struct EngineOptions {
     /// Enable Opponent Move Abstraction in MCTS.
     pub opponent_abstraction: bool,
 
+    // ── Stage 16: NNUE ──
+    /// Evaluation mode: "bootstrap" or "nnue".
+    pub eval_mode: String,
+    /// Path to .fnnue weights file. Empty = no NNUE loaded.
+    pub nnue_weights_path: String,
+
     // ── Stage 15: Progressive Widening + Zone Control ──
     /// Progressive widening constant (k). Higher = more children early.
     pub pw_constant: f32,
@@ -84,6 +90,8 @@ impl Default for EngineOptions {
             prior_temperature: mcts_defaults.prior_temperature,
             ph_weight: mcts_defaults.ph_weight,
             c_prior: mcts_defaults.c_prior,
+            eval_mode: String::from("bootstrap"),
+            nnue_weights_path: String::new(),
             opponent_abstraction: true,
             pw_constant: crate::mcts::DEFAULT_PW_K,
             pw_exponent: crate::mcts::DEFAULT_PW_ALPHA,
@@ -335,6 +343,25 @@ pub fn apply_option(options: &mut EngineOptions, name: &str, value: &str) -> Set
                 "OpponentAbstraction must be true/false, got '{value}'"
             )),
         },
+
+        // ── Stage 16: NNUE ──
+        "EvalMode" => match value.to_lowercase().as_str() {
+            "bootstrap" => {
+                options.eval_mode = String::from("bootstrap");
+                SetOptionResult::Ok
+            }
+            "nnue" => {
+                options.eval_mode = String::from("nnue");
+                SetOptionResult::Ok
+            }
+            _ => SetOptionResult::InvalidValue(format!(
+                "EvalMode must be 'bootstrap' or 'nnue', got '{value}'"
+            )),
+        },
+        "NnueWeights" => {
+            options.nnue_weights_path = value.to_string();
+            SetOptionResult::Ok
+        }
 
         // ── Stage 15: Progressive Widening + Zone Control ──
         "PWConstant" => match value.parse::<f32>() {

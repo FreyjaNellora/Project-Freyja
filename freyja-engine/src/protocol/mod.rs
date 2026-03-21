@@ -16,7 +16,10 @@ use crate::eval::BootstrapEvaluator;
 use crate::game_state::GameState;
 use crate::hybrid::{HybridConfig, HybridSearcher};
 use crate::move_gen::Move;
+use crate::nnue::NnueEvaluator;
 use crate::search::{SearchLimits, Searcher};
+
+use std::sync::Arc;
 
 use self::commands::Command;
 use self::logfile::LogFile;
@@ -38,6 +41,8 @@ pub struct Protocol<W: Write> {
     logfile: LogFile,
     position_set: bool,
     ply_count: u32,
+    /// Cached NNUE weights (loaded on `setoption NnueWeights`).
+    nnue_weights: Option<Arc<crate::nnue::weights::NnueWeights>>,
 }
 
 impl<W: Write> Protocol<W> {
@@ -50,6 +55,7 @@ impl<W: Write> Protocol<W> {
             logfile: LogFile::new(),
             position_set: false,
             ply_count: 0,
+            nnue_weights: None,
         }
     }
 
@@ -215,15 +221,29 @@ impl<W: Write> Protocol<W> {
             phase_cutover_ply: self.options.phase_cutover_ply,
             ..HybridConfig::default()
         };
-        let eval = BootstrapEvaluator::with_zone_weights(crate::eval::ZoneWeights {
-            territory: self.options.territory_weight,
-            influence: self.options.influence_weight,
-            tension: self.options.tension_weight,
-            swarm: self.options.swarm_weight,
-        });
-        let mut searcher = HybridSearcher::new(eval, hybrid_config);
         let start = std::time::Instant::now();
-        let result = searcher.search(&mut self.game_state, &limits);
+        let result = if self.options.eval_mode == "nnue" {
+            if let Some(ref weights) = self.nnue_weights {
+                let eval = NnueEvaluator::new(Arc::clone(weights));
+                let mut searcher = HybridSearcher::new(eval, hybrid_config);
+                searcher.search(&mut self.game_state, &limits)
+            } else {
+                let msg = format_error(
+                    "NNUE eval mode set but no weights loaded (use setoption NnueWeights)",
+                );
+                self.send(&msg);
+                return;
+            }
+        } else {
+            let eval = BootstrapEvaluator::with_zone_weights(crate::eval::ZoneWeights {
+                territory: self.options.territory_weight,
+                influence: self.options.influence_weight,
+                tension: self.options.tension_weight,
+                swarm: self.options.swarm_weight,
+            });
+            let mut searcher = HybridSearcher::new(eval, hybrid_config);
+            searcher.search(&mut self.game_state, &limits)
+        };
         let elapsed_ms = start.elapsed().as_millis() as u64;
 
         // Send info line
@@ -267,7 +287,26 @@ impl<W: Write> Protocol<W> {
     /// Handle `setoption` command.
     fn handle_setoption(&mut self, name: &str, value: &str) {
         match apply_option(&mut self.options, name, value) {
-            SetOptionResult::Ok => {}
+            SetOptionResult::Ok => {
+                // Load NNUE weights when path is set
+                if name == "NnueWeights" && !value.is_empty() {
+                    match crate::nnue::weights::NnueWeights::from_file(value) {
+                        Ok(w) => {
+                            self.nnue_weights = Some(Arc::new(w));
+                            let msg =
+                                format_info_string(&format!("NNUE weights loaded from '{value}'"));
+                            self.send(&msg);
+                        }
+                        Err(e) => {
+                            self.nnue_weights = None;
+                            let msg = format_error(&format!(
+                                "failed to load NNUE weights from '{value}': {e}"
+                            ));
+                            self.send(&msg);
+                        }
+                    }
+                }
+            }
             SetOptionResult::EnableLogFile(path) => {
                 if let Err(e) = self.logfile.enable(&path) {
                     let msg = format_error(&format!("failed to open log file '{path}': {e}"));

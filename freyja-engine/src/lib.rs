@@ -5,6 +5,7 @@ pub mod hybrid;
 pub mod mcts;
 pub mod move_gen;
 pub mod move_order;
+pub mod nnue;
 pub mod protocol;
 pub mod search;
 pub mod tt;

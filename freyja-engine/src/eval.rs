@@ -245,7 +245,7 @@ fn pst_value(piece_type: PieceType, sq: Square, player: Player) -> i16 {
 /// Check if a player is active for zone control purposes.
 /// Eliminated and DKW players don't project territory or influence.
 #[inline]
-fn is_active_for_zones(state: &GameState, player: Player) -> bool {
+pub fn is_active_for_zones(state: &GameState, player: Player) -> bool {
     matches!(state.player_status(player), PlayerStatus::Active)
 }
 
@@ -271,7 +271,7 @@ pub struct TerritoryInfo {
 }
 
 /// BFS Voronoi territory with frontier and contested square detection.
-fn bfs_territory_enhanced(state: &GameState) -> TerritoryInfo {
+pub fn bfs_territory_enhanced(state: &GameState) -> TerritoryInfo {
     let board = state.board();
 
     // owner[sq_index] = player index, OWNER_CONTESTED, or OWNER_NONE
@@ -511,7 +511,7 @@ fn ray_attenuated(
 ///
 /// This correctly models directional piece influence — a rook projects along
 /// ranks/files, a bishop along diagonals, pawns only forward-diagonal.
-fn compute_influence(state: &GameState) -> InfluenceInfo {
+pub fn compute_influence(state: &GameState) -> InfluenceInfo {
     let board = state.board();
     let mut grid = [[0.0f32; PLAYERS]; TOTAL_SQUARES];
 
@@ -633,7 +633,7 @@ const TENSION_THRESHOLD: f32 = 2.0;
 /// For each player's pieces, check if the piece sits on a contested square
 /// (where multiple players have significant influence). Pieces on contested
 /// squares are penalized (vulnerable); pieces on safe squares get a bonus.
-fn compute_tension(state: &GameState, influence: &InfluenceInfo) -> [i16; PLAYERS] {
+pub fn compute_tension(state: &GameState, influence: &InfluenceInfo) -> [i16; PLAYERS] {
     let board = state.board();
     let mut scores = [0i16; PLAYERS];
 
@@ -694,7 +694,7 @@ pub struct SwarmInfo {
 /// Swarm mechanics model the emergent strength of coordinated piece groups.
 /// Individual piece force comes from ray-attenuation; swarm captures how
 /// those individual forces reinforce each other.
-fn compute_swarm(state: &GameState, influence: &InfluenceInfo) -> SwarmInfo {
+pub fn compute_swarm(state: &GameState, influence: &InfluenceInfo) -> SwarmInfo {
     let board = state.board();
     let mut defended = [0i16; PLAYERS];
     let mut undefended = [0i16; PLAYERS];
