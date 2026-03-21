@@ -20,5 +20,6 @@ export type EngineMessage =
   | { type: 'eliminated'; player: Player; reason: string }
   | { type: 'nextturn'; player: Player }
   | { type: 'error'; message: string }
+  | { type: 'fen4'; fen: string }
   | { type: 'info_string'; message: string }
   | { type: 'unknown'; raw: string };

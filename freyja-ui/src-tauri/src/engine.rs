@@ -66,6 +66,20 @@ impl EngineManager {
             .take()
             .ok_or_else(|| "Failed to capture engine stdout".to_string())?;
 
+        // Drain stderr in a background thread to prevent the OS pipe buffer
+        // from filling up and blocking the engine process.
+        if let Some(stderr) = child.stderr.take() {
+            thread::spawn(move || {
+                let reader = BufReader::new(stderr);
+                for line in reader.lines() {
+                    match line {
+                        Ok(_) => {} // discard — tracing output goes here
+                        Err(_) => break,
+                    }
+                }
+            });
+        }
+
         // Spawn a thread to read stdout line-by-line and emit events.
         // The thread captures `gen` so every event is tagged with the engine
         // instance that produced it. When the engine is killed and respawned,

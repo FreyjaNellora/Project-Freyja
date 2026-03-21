@@ -4,7 +4,7 @@
   "max_ply": 120,
   "config_a": {
     "label": "swarm_plus_ray",
-    "movetime": 2000,
+    "depth": 4,
     "setoptions": {
       "TerritoryWeight": "2",
       "InfluenceWeight": "1",
@@ -15,7 +15,7 @@
   },
   "config_b": {
     "label": "ray_only",
-    "movetime": 2000,
+    "depth": 4,
     "setoptions": {
       "TerritoryWeight": "2",
       "InfluenceWeight": "1",

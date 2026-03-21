@@ -29,6 +29,11 @@ export function parseEngineLine(raw: string): EngineMessage {
     return { type: 'readyok' };
   }
 
+  // FEN4 response from 'd' command: "fen4 <fen_string>"
+  if (first === 'fen4') {
+    return { type: 'fen4', fen: tokens.slice(1).join(' ') };
+  }
+
   // Best move: "bestmove d2d4" or "bestmove (none)"
   if (first === 'bestmove') {
     const moveStr = tokens[1];

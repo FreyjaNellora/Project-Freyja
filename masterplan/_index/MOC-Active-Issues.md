@@ -2,13 +2,15 @@
 
 > All open bugs, concerns, and tracked items.
 
-**Last scanned:** 2026-03-16 (Session 19)
+**Last scanned:** 2026-03-21 (Session 26)
 
 ---
 
 ## Blocking
 
 *None.*
+
+> [[Issue-Tauri-IPC-Hang]] resolved 2026-03-21 — moved to Recently Resolved.
 
 ---
 
@@ -26,6 +28,7 @@
 
 ## Recently Resolved
 
+- [[Issue-Tauri-IPC-Hang]] — Tauri IPC hung at ply 30+ due to undrained stderr pipe buffer. Fixed Session 26: stderr drain thread + FEN4 position commands. (Resolved 2026-03-21)
 - [[Issue-UI-AutoPlay-Broken]] — Start button did nothing. Fixed Session 12: memoized `useEngine()`, destructured stable callbacks, reordered declarations, switched to release binary. (Resolved 2026-03-07)
 
 ---

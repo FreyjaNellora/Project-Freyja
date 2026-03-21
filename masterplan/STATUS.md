@@ -1,19 +1,19 @@
 # Project Freyja -- STATUS
 
-**Last Updated:** 2026-03-20
-**Updated By:** Session 25
+**Last Updated:** 2026-03-21
+**Updated By:** Session 26
 
 ---
 
 ## Current Stage
 
-**Stage:** 15 -- COMPLETE (pending UI fix + sign-off)
-**Status:** All engine features done. UI blocks at ply 30 due to Tauri IPC hang. Needs FEN4-based position commands or observer architecture.
-**Next:** Fix UI IPC hang, get user sign-off, then Stage 16
+**Stage:** 15 -- COMPLETE (user signed off, ready for tagging)
+**Status:** All engine features done. UI IPC hang fixed. User verified game plays past ply 32.
+**Next:** Tag v1.15, begin Stage 16 (NNUE Training Pipeline)
 
 ## Blocking Issues
 
-- **Tauri IPC hang at ply 30+:** invoke('send_command') never resolves when position command has 30+ moves. Engine works fine via CLI. Fix: use FEN4 or bypass Tauri IPC.
+*None.*
 
 ---
 
@@ -36,7 +36,7 @@
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Complete | `stage-13-complete` / `v1.13` | 2026-03-18 |
 | 14 | MCTS Opponent Move Abstraction (OMA) | Complete | `stage-14-complete` / `v1.14` | 2026-03-20 |
-| 15 | Progressive Widening + Zone Control | In Progress | -- | -- |
+| 15 | Progressive Widening + Zone Control | Complete | -- | 2026-03-21 |
 | 16 | NNUE Training Pipeline | Not Started | -- | -- |
 | 17 | NNUE Integration | Not Started | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |
@@ -63,16 +63,15 @@
 |--------|-------|-------|
 | perft(4) | 152,050 nodes | Starting position, debug build ~0.7s |
 | Search NPS (release, opp ratio 0.25) | ~69k depth 5 | Opponent beam ratio active |
-| Depth 4 total nodes | ~370k | Starting position, opp ratio 0.25 |
+| Search NPS (release, zone features) | ~12k depth 4 | With swarm + ray attenuation |
+| Depth 4 total nodes | ~9-14k | With zone features |
 | Depth 5 total nodes | 409k | 20x reduction from 8M with full beam |
 | Depth 6 total nodes | 2.6M | ~55 seconds |
 | Depth 7 total nodes | 18M | ~7.5 minutes |
 | Depth 8+ | Not practical | Needs NNUE for tighter beam |
 | Self-play: 20 games @ d4 | 0 crashes | Opp ratio 0.25, 80 ply each |
-| A/B: opp ratio 0.25 vs 0.5 | 0.25 stronger | Elo -28.6, p=0.04, 6 pairs |
-| A/B: beam 30 vs 15 | No difference | p=0.59, 10 pairs |
-| A/B: OMA on vs off | No difference | Elo -4.8, p=0.993, 10 pairs |
-| Unit tests | 441 pass | 33 new in Stage 15 (PW + zone control) |
+| Duel: swarm vs ray-only | 9/15 (60%) | All 3 seating arrangements |
+| Unit tests | 441 pass | 33 new in Stage 15 |
 
 ---
 
@@ -81,7 +80,7 @@
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 15 (Stages 0-14) | 2026-03-20 |
-| Stage 15 status | In Progress | 2026-03-20 |
-| Open blocking issues | 0 | 2026-03-20 |
+| Stages complete | 16 (Stages 0-15) | 2026-03-21 |
+| Stage 16 status | Not Started | -- |
+| Open blocking issues | 0 | 2026-03-21 |
 | Open warning issues | 1 | 2026-03-07 |

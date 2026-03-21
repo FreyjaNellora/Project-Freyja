@@ -97,6 +97,8 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   const pendingNextTurnRef = useRef<Player | null>(null);
   const bestmoveWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerWhenGoSentRef = useRef<Player>('Red');
+  const currentFen4Ref = useRef<string | null>(null);
+  const fen4HistoryRef = useRef<string[]>([]);
 
   // Keep board/currentPlayer refs in sync via useEffect (these are set internally, not from UI callbacks)
   useEffect(() => { boardRef.current = board; }, [board]);
@@ -108,26 +110,25 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     awaitingBestmoveRef.current = true;
     playerWhenGoSentRef.current = currentPlayerRef.current;
 
-    // Watchdog: if no bestmove arrives within 30s, recover
+    // Watchdog: if no bestmove arrives within 10 min, recover
     if (bestmoveWatchdogRef.current) clearTimeout(bestmoveWatchdogRef.current);
     bestmoveWatchdogRef.current = setTimeout(() => {
       if (awaitingBestmoveRef.current) {
-        console.error('[Freyja] WATCHDOG: No bestmove received in 30s, recovering');
+        console.error('[Freyja] WATCHDOG: No bestmove received in 10min, recovering');
         awaitingBestmoveRef.current = false;
         autoPlayRef.current = false;
         setAutoPlayState(false);
       }
-    }, 30000);
+    }, 600000);
 
-    const moves = [...moveListRef.current];
-    const posCmd = moves.length > 0
-      ? `position startpos moves ${moves.join(' ')}`
+    const posCmd = currentFen4Ref.current
+      ? `position fen4 ${currentFen4Ref.current}`
       : 'position startpos';
 
-    console.log(`[Freyja] sendGo: sending position (${moves.length} moves)`);
+    console.log(`[Freyja] sendGo: sending position (fen4=${!!currentFen4Ref.current}, ply=${moveListRef.current.length})`);
     engineSendCommand(posCmd).then(() => {
       console.log(`[Freyja] sendGo: position sent, sending go`);
-      return engineSendCommand('go');
+      return engineSendCommand('go depth 4');
     }).then(() => {
       console.log(`[Freyja] sendGo: go sent, awaiting bestmove`);
     }).catch((err: unknown) => {
@@ -390,6 +391,16 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
 
         setSelectedSquare(null);
 
+        // Push current FEN4 to history stack (for undo), then update engine
+        // position with the new move and request fresh FEN4.
+        if (currentFen4Ref.current) {
+          fen4HistoryRef.current = [...fen4HistoryRef.current, currentFen4Ref.current];
+        }
+        const updateCmd = currentFen4Ref.current
+          ? `position fen4 ${currentFen4Ref.current} moves ${msg.move}`
+          : `position startpos moves ${msg.move}`;
+        engineSendCommand(updateCmd).then(() => engineSendCommand('d'));
+
         // Chain auto-play
         console.log(`[Freyja] bestmove=${msg.move} movingPlayer=${movingPlayer} nextPlayer=${nextPlayer} slot=${slotConfigRef.current[nextPlayer]} paused=${isPausedRef.current} ply=${moveListRef.current.length}`);
         maybeChainEngineMove(nextPlayer);
@@ -413,6 +424,10 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
         if (msg.data.scores) {
           setScores(msg.data.scores);
         }
+      }
+
+      if (msg.type === 'fen4') {
+        currentFen4Ref.current = msg.fen;
       }
 
       if (msg.type === 'eliminated') {
@@ -481,13 +496,20 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
   }, [selectedSquare, isGameOver]);
 
   const submitMove = useCallback((moveStr: string) => {
-    const moves = [...moveListRef.current, moveStr];
-    const posCmd = `position startpos moves ${moves.join(' ')}`;
+    // Push current FEN4 to history stack (for undo)
+    if (currentFen4Ref.current) {
+      fen4HistoryRef.current = [...fen4HistoryRef.current, currentFen4Ref.current];
+    }
+
+    const posCmd = currentFen4Ref.current
+      ? `position fen4 ${currentFen4Ref.current} moves ${moveStr}`
+      : `position startpos moves ${moveStr}`;
 
     engineSendCommand(posCmd).then(() => {
       return engineSendCommand('isready');
     }).then(() => {
-      // If we get readyok, the move was accepted
+      // Move accepted — request FEN4 for next position
+      return engineSendCommand('d');
     }).catch((err: unknown) => {
       console.error('[Freyja] submitMove failed:', err);
       setSelectedSquare(null);
@@ -496,6 +518,7 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     // We need to listen for readyok to confirm the move was valid
     // This is handled via the engine message handler
     // For now, optimistically apply it
+    const moves = [...moveListRef.current, moveStr];
     moveListRef.current = moves;
 
     const prevBoard = boardRef.current;
@@ -564,6 +587,8 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     setScores([0, 0, 0, 0]);
     setMoveHistory([]);
     moveListRef.current = [];
+    currentFen4Ref.current = null;
+    fen4HistoryRef.current = [];
     setSelectedSquare(null);
     setLastMoveFrom(null);
     setLastMoveTo(null);
@@ -614,10 +639,14 @@ export function useGameState(engine: UseEngineResult): UseGameStateResult {
     setLastMoveFrom(null);
     setLastMoveTo(null);
 
-    // Sync engine state
-    if (newMoves.length > 0) {
-      engineSendCommand(`position startpos moves ${newMoves.join(' ')}`);
+    // Sync engine state — pop FEN4 from history stack for O(1) undo
+    if (fen4HistoryRef.current.length > 0) {
+      const prevFen = fen4HistoryRef.current[fen4HistoryRef.current.length - 1];
+      fen4HistoryRef.current = fen4HistoryRef.current.slice(0, -1);
+      currentFen4Ref.current = prevFen;
+      engineSendCommand(`position fen4 ${prevFen}`);
     } else {
+      currentFen4Ref.current = null;
       engineSendCommand('position startpos');
     }
     engineSendCommand('isready');

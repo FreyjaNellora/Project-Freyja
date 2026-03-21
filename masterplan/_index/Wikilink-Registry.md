@@ -52,6 +52,8 @@
 | [[Session-015]] | `masterplan/sessions/Session-015.md` | MCTS implementation |
 | [[Session-016]] | `masterplan/sessions/Session-016.md` | Stage 10 closure, Stage 11 hybrid integration |
 | [[Session-019]] | `masterplan/sessions/Session-019.md` | Stage 12 completion, qsearch discussion |
+| [[Session-025]] | `masterplan/sessions/Session-025.md` | Stage 15 wrap-up, UI hang diagnosed |
+| [[Session-026]] | `masterplan/sessions/Session-026.md` | Stage 15 closure, UI IPC fix |
 
 ---
 
@@ -71,6 +73,8 @@
 | [[downstream_log_stage_04]] | `masterplan/downstream_log_stage_04.md` | Stage 4 downstream log |
 | [[audit_log_stage_12]] | `masterplan/audit_log_stage_12.md` | Stage 12 audit log |
 | [[downstream_log_stage_12]] | `masterplan/downstream_log_stage_12.md` | Stage 12 downstream log |
+| [[audit_log_stage_15]] | `masterplan/audit_log_stage_15.md` | Stage 15 audit log |
+| [[downstream_log_stage_15]] | `masterplan/downstream_log_stage_15.md` | Stage 15 downstream log |
 
 ---
 
@@ -116,6 +120,7 @@
 | [[Issue-UI-Feature-Gaps]] | `masterplan/issues/Issue-UI-Feature-Gaps.md` | UI missing components needed for Stages 7-10 |
 | [[Issue-UI-AutoPlay-Broken]] | `masterplan/issues/Issue-UI-AutoPlay-Broken.md` | Start button does nothing — useEngine render cascade |
 | [[Issue-Depth4-Engine-Crash]] | `masterplan/issues/Issue-Depth4-Engine-Crash.md` | Engine crashes at depth 4 from qsearch explosion |
+| [[Issue-Tauri-IPC-Hang]] | `masterplan/issues/Issue-Tauri-IPC-Hang.md` | Tauri IPC hangs at ply 30+ (resolved) |
 
 ---
 
