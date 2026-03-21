@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-21
-**Updated By:** Session 26
+**Updated By:** Session 27
 
 ---
 
 ## Current Stage
 
-**Stage:** 15 -- COMPLETE (user signed off, ready for tagging)
-**Status:** All engine features done. UI IPC hang fixed. User verified game plays past ply 32.
-**Next:** Tag v1.15, begin Stage 16 (NNUE Training Pipeline)
+**Stage:** 16 -- COMPLETE (user signed off)
+**Status:** Full NNUE pipeline: Rust inference + Python training + .fnnue format + round-trip verified.
+**Next:** Begin Stage 17 (NNUE Integration — swap bootstrap for trained NNUE)
 
 ## Blocking Issues
 
@@ -36,8 +36,8 @@
 | 12 | Self-Play Framework | Complete | `stage-12-complete` / `v1.12` | 2026-03-16 |
 | 13 | Time + Beam Tuning | Complete | `stage-13-complete` / `v1.13` | 2026-03-18 |
 | 14 | MCTS Opponent Move Abstraction (OMA) | Complete | `stage-14-complete` / `v1.14` | 2026-03-20 |
-| 15 | Progressive Widening + Zone Control | Complete | -- | 2026-03-21 |
-| 16 | NNUE Training Pipeline | Not Started | -- | -- |
+| 15 | Progressive Widening + Zone Control | Complete | `stage-15-complete` / `v1.15` | 2026-03-21 |
+| 16 | NNUE Architecture + Training Pipeline | Complete | `stage-16-complete` / `v1.16` | 2026-03-21 |
 | 17 | NNUE Integration | Not Started | -- | -- |
 | 18 | Game Mode Tuning | Not Started | -- | -- |
 | 19 | Full UI | Not Started | -- | -- |
@@ -64,14 +64,11 @@
 | perft(4) | 152,050 nodes | Starting position, debug build ~0.7s |
 | Search NPS (release, opp ratio 0.25) | ~69k depth 5 | Opponent beam ratio active |
 | Search NPS (release, zone features) | ~12k depth 4 | With swarm + ray attenuation |
+| Search NPS (release, NNUE eval) | ~7k depth 1 | NNUE scalar forward pass |
 | Depth 4 total nodes | ~9-14k | With zone features |
-| Depth 5 total nodes | 409k | 20x reduction from 8M with full beam |
-| Depth 6 total nodes | 2.6M | ~55 seconds |
-| Depth 7 total nodes | 18M | ~7.5 minutes |
-| Depth 8+ | Not practical | Needs NNUE for tighter beam |
 | Self-play: 20 games @ d4 | 0 crashes | Opp ratio 0.25, 80 ply each |
-| Duel: swarm vs ray-only | 9/15 (60%) | All 3 seating arrangements |
-| Unit tests | 441 pass | 33 new in Stage 15 |
+| NNUE training loss | 0.002 | 50 epochs, 1050 positions |
+| Unit tests | 477 pass | 36 new in Stage 16 |
 
 ---
 
@@ -80,7 +77,7 @@
 | Metric | Value | Since |
 |--------|-------|-------|
 | Total stages | 21 (0-20) | -- |
-| Stages complete | 16 (Stages 0-15) | 2026-03-21 |
-| Stage 16 status | Not Started | -- |
+| Stages complete | 17 (Stages 0-16) | 2026-03-21 |
+| Stage 17 status | Not Started | -- |
 | Open blocking issues | 0 | 2026-03-21 |
 | Open warning issues | 1 | 2026-03-07 |

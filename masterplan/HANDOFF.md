@@ -1,59 +1,72 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-21
-**Session Number:** 26
+**Session Number:** 27
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 15: Progressive Widening + Zone Control -- COMPLETE (user signed off)**
+**Stage 16: NNUE Architecture + Training Pipeline -- COMPLETE (user signed off)**
 
-Ready for tagging and Stage 16.
+Ready for Stage 17 (NNUE Integration).
 
 ---
 
 ## What Was Completed This Session
 
-1. **Fixed Tauri IPC ply-30 hang** — Two fixes applied:
-   - **Stderr drain thread** in `engine.rs` — The engine writes tracing output to stderr. Without a reader thread, the 64KB Windows pipe buffer fills and the engine deadlocks. This was the actual root cause.
-   - **FEN4-based position commands** in `useGameState.ts` — Replaced `position startpos moves <growing list>` with `position fen4 <constant-size>`. Defense-in-depth.
+1. **Rust NNUE inference architecture** (`freyja-engine/src/nnue/`):
+   - Feature encoding: 4488 features per perspective (4480 piece-square + 8 zone)
+   - Accumulator: SIMD-ready (`align(32)`, ADR-012), full refresh per eval
+   - Forward pass: quantized i16/i32 scalar (256→32→1 per perspective)
+   - Weight format: `.fnnue` binary (little-endian i16, ~2.3 MB)
+   - `NnueEvaluator` implementing `Evaluator` trait with `Arc<NnueWeights>` for cheap Clone
+   - 36 new tests, all passing
 
-2. **Watchdog timeout 30s → 10min** — Depth 8 takes 7.5+ minutes per move. 30s was too aggressive.
+2. **Protocol integration:**
+   - `setoption name EvalMode value nnue` / `bootstrap`
+   - `setoption name NnueWeights value <path>` — loads once, cached as `Arc`
+   - Zone control functions made `pub` in eval.rs for direct NNUE access
 
-3. **User sign-off obtained** — Game plays past ply 32 at depth 4 with all engine players.
+3. **Python training pipeline** (`freyja-nnue/`):
+   - FEN4 parser + feature extraction matching Rust encoding exactly
+   - PyTorch `FreyjaNet` (shared weights across 4 perspectives)
+   - Training loop: MSE loss on 4-vector, Adam optimizer, early stopping
+   - Weight export: float32→i16 quantization, `.fnnue` format
+   - Training result: loss 0.298 → 0.002 over 50 epochs on 1050 positions
 
-4. **Stage 15 audit log + downstream log written.**
+4. **Round-trip verification:**
+   - Trained `.fnnue` loads in Rust and produces non-zero differentiated scores
+   - Trained NNUE produces position-sensitive evaluations vs random (all-zero)
+
+5. **Tags:** `stage-15-complete` / `v1.15` (confirmed existing), `stage-16-complete` / `v1.16`
 
 ---
 
 ## What Was NOT Completed
 
-- **Odin observer architecture port** — Not needed after stderr fix.
-- **PW k=2 vs k=4 A/B test** — Config exists, not run.
-- **Performance benchmark** — Zone features ~25% slower (12k vs 16k NPS), not formally benchmarked.
+- **SIMD forward pass** — Scalar only (~27-50us). AVX2 deferred to Stage 20 per plan.
+- **Incremental accumulator** — Full refresh per eval. Incremental make/unmake deferred to Stage 17/20.
+- **Large-scale training** — 1050 positions from existing games. Weights produce small scores (single-digit centipawns). More data + deeper search needed for Stage 17.
+- **Formal A/B self-play** (trained vs random) — Verified qualitatively (differentiated vs flat scores), not via 100-game SPRT.
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Tag `stage-15-complete` / `v1.15`
-2. Begin Stage 16: NNUE Training Pipeline
-3. Address eval quality: engine misses obvious defensive/attack positions (e.g., allows queen to be captured when bishop could defend). This is the hand-tuned eval ceiling — NNUE is the fix.
+1. Begin Stage 17: NNUE Integration
+2. Wire `NnueEvaluator` as the default evaluator (replace bootstrap)
+3. Generate more training data at higher depth with NNUE eval for iterative improvement
+4. Beam width experiment: test tighter beam with NNUE ordering
+5. Key concern: trained weights produce small scores — may need higher quantization scale or more training data before NNUE can actually beat bootstrap in self-play
 
 ---
 
 ## Open Issues
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
-- **Eval quality (NOTE):** Engine makes suboptimal moves — misses obvious defenses and attacks. Known limitation of hand-tuned eval at depth 4. NNUE (Stage 16-17) is the intended fix.
-- **MoveNoise in MCTS:** Still unresolved. Hybrid mode provides diversity for testing.
-
----
-
-## Key Observation: Eval Quality
-
-User observed during testing: Red sacrifices its queen by letting Green take it ~move 8. Red could defend with its bishop but moves a knight instead. This is a clear example of the hand-tuned eval's tactical blindness at depth 4. The eval doesn't sufficiently penalize leaving high-value pieces hanging. NNUE training data from deeper searches (or from Odin) should teach proper piece safety.
+- **NNUE score magnitude (NOTE):** Trained weights produce single-digit centipawn scores. Quantization scale (Q6=64) is conservative for the small learned weights. Stage 17 should investigate higher scale or more training epochs.
+- **MoveNoise in MCTS:** Still unresolved. Hybrid mode provides diversity.
 
 ---
 
@@ -68,17 +81,17 @@ User observed during testing: Red sacrifices its queen by letting Green take it 
 
 ---
 
-## Files Modified This Session (Session 26)
+## Files Modified This Session (Session 27)
 
 | File | Changes |
 |------|---------|
-| `freyja-ui/src/hooks/useGameState.ts` | FEN4 position commands, watchdog 30s → 10min, depth 4 |
-| `freyja-ui/src-tauri/src/engine.rs` | Stderr drain thread |
-| `masterplan/audit_log_stage_15.md` | New |
-| `masterplan/downstream_log_stage_15.md` | New |
-| `masterplan/sessions/Session-026.md` | New |
+| `freyja-engine/src/nnue/` (new dir) | Full NNUE inference module (5 files) |
+| `freyja-engine/src/lib.rs` | Added `pub mod nnue` |
+| `freyja-engine/src/eval.rs` | Made zone functions `pub` |
+| `freyja-engine/src/protocol/options.rs` | EvalMode, NnueWeights options |
+| `freyja-engine/src/protocol/mod.rs` | NNUE evaluator wiring, weight caching |
+| `freyja-nnue/` (new dir) | Python training pipeline (6 files) |
+| `freyja-nnue/weights.fnnue` | Trained NNUE weights |
+| `freyja-nnue/training_combined.jsonl` | 1050 training records |
 | `masterplan/HANDOFF.md` | This file |
 | `masterplan/STATUS.md` | Updated |
-| `masterplan/_index/MOC-Active-Issues.md` | Issue resolved |
-| `masterplan/_index/Wikilink-Registry.md` | New entries |
-| `masterplan/issues/Issue-Tauri-IPC-Hang.md` | Resolved |
