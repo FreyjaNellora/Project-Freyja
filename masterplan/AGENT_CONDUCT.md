@@ -31,7 +31,9 @@ This document does not duplicate the masterplan. It references it. If this docum
 
 Before writing a single line of code for any stage, follow these steps in order. Skipping steps causes cascading problems that compound across stages.
 
-**Step 0: Orient yourself.** Read `STATUS.md` ([[STATUS]]) to know where the project is. Read `HANDOFF.md` ([[HANDOFF]]) to know what the previous session was doing. Read `DECISIONS.md` ([[DECISIONS]]) if you're new to the project or working on a stage where architectural decisions were made. This takes 5 minutes and prevents you from duplicating work or re-arguing settled decisions.
+**Step 0: Orient yourself.** Read `STATUS.md` ([[STATUS]]) to know where the project is. Read `HANDOFF.md` ([[HANDOFF]]) to know what the previous session was doing. Read `DECISIONS.md` ([[DECISIONS]]) if you're new to the project or working on a stage where architectural decisions were made. Read `SYSTEM_PROFILE.local.md` to understand the hardware and software constraints of the current development machine. This takes 5 minutes and prevents you from duplicating work, re-arguing settled decisions, or making assumptions about available resources.
+
+> **SYSTEM_PROFILE.local.md** is a gitignored, machine-specific file in the `masterplan/` directory. It contains CPU, RAM, GPU, and storage specs along with their implications for build times, memory budgets, parallelism, and feature feasibility. If this file does not exist, create it by asking the user for their system specs. Never commit it to version control.
 
 **Step 1: Read the stage specification** in `MASTERPLAN.md` ([[MASTERPLAN]]) Section 4. Understand:
 - What this stage builds (deliverables)
@@ -51,23 +53,44 @@ Before writing a single line of code for any stage, follow these steps in order.
 - Performance baselines you must not regress below
 - Open questions that affect your stage
 
-**Step 4: Build and test what exists.** Run:
+**Step 4: Research the work ahead.** Before writing any code, conduct online research on the techniques, algorithms, and concepts relevant to this stage. Understand what problems others have encountered and what solutions exist.
+
+- Search broadly. There is virtually no published research on four-player chess from an engine/coding standpoint, so direct references will be scarce. When chess-specific information comes up lacking, look to adjacent fields: multi-agent game theory, multi-player game tree search, RTS/strategy game AI, swarm intelligence, influence mapping, or whatever domain is closest to the task at hand.
+- Identify potential pitfalls, edge cases, and performance traps before they become bugs.
+- Note any algorithms, papers, or implementations that could inform the design. Record useful findings in the pre-audit section of the audit log under a "Research Notes" heading.
+- This is not optional. Every stage involves concepts that benefit from prior art review. Even well-known techniques (alpha-beta, MCTS, NNUE) have four-player-specific gotchas that only surface through broad reading.
+
+**Step 5: Build and test what exists.** Run:
 ```
 cargo build
 cargo test
 ```
 If anything fails, STOP. Do not proceed with new work on a broken foundation. Record the failure in the pre-audit section of this stage's audit log.
 
-**Step 5: Complete the pre-audit** section of `audit_log_stage_XX.md`. Record:
+**Step 6: Complete the pre-audit** section of `audit_log_stage_XX.md`. Record:
 - Build state (compiles? tests pass?)
 - Findings from upstream logs
+- Research notes (key findings from Step 4)
 - Risks identified for this stage
 
-**Step 6: Begin implementation.**
+**Step 7: Begin implementation.**
 
 ---
 
-### 1.2 The First Law: Do Not Break What Exists
+### 1.2 Search Depth Policy
+
+**Only depths divisible by 4 are valid search depths.** In four-player chess, each player takes one ply per round. A depth that is not a multiple of 4 creates evaluation bias — the last-moving player gets an artificial advantage because opponents don't get to respond.
+
+- **Depth 4:** Minimum acceptable search depth. One full round of play.
+- **Depth 8:** Maximum practical depth given current hardware constraints (see `SYSTEM_PROFILE.local.md`).
+- **Depth 12+:** Not feasible on current hardware. Do not target.
+- **Depth 1, 2, 3, 5, 6, 7:** Never use as a search depth in production code, tests, self-play, benchmarks, or documentation. The only exception is internal iterative deepening loops where intermediate depths are stepping stones to a depth-4 or depth-8 target — but these intermediate results must never be treated as final.
+
+This applies everywhere: engine defaults, test assertions, self-play configurations, observer baselines, training data generation, and documentation examples.
+
+---
+
+### 1.3 The First Law: Do Not Break What Exists
 
 Every commit must leave the project in a compilable, test-passing state. No exceptions. No "I'll fix it in the next commit."
 
@@ -91,7 +114,7 @@ If existing behavior genuinely needs to change (rare), the agent must:
 
 ---
 
-### 1.3 Dependency Handling
+### 1.3a Dependency Handling
 
 **Consume APIs, do not peek at internals.** If Stage 7 needs evaluation, it calls `eval_4vec(state)` through the `Evaluator` trait. It does not reach into the eval module and read piece-square tables directly.
 
@@ -717,13 +740,14 @@ These categories require human or agent judgment.
 ### Appendix A: Quick-Reference Card
 
 **Before starting any stage (Section 1.1):**
-0. Orient: read STATUS.md, HANDOFF.md, DECISIONS.md
+0. Orient: read STATUS.md, HANDOFF.md, DECISIONS.md, SYSTEM_PROFILE.local.md
 1. Read stage spec in MASTERPLAN
 2. Read upstream audit logs
 3. Read upstream downstream logs
-4. `cargo build && cargo test` — all must pass
-5. Fill pre-audit section
-6. Begin work
+4. Research the work ahead (online, broad, adjacent fields)
+5. `cargo build && cargo test` — all must pass
+6. Fill pre-audit section (include research notes)
+7. Begin work
 
 **Decision priority order (Section 1.8):**
 1. Correctness > Performance > Elegance

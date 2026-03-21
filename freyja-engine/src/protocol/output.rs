@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn test_info_with_qnodes() {
         let result = format_info(
-            Some(3),
+            Some(4),
             None,
             Some(10000),
             Some(5000),
@@ -141,14 +141,14 @@ mod tests {
             None,
             None,
         );
-        assert_eq!(result, "info depth 3 nodes 10000 qnodes 5000 nps 50000");
+        assert_eq!(result, "info depth 4 nodes 10000 qnodes 5000 nps 50000");
     }
 
     #[test]
     fn test_info_depth_only() {
         assert_eq!(
-            format_info(Some(3), None, None, None, None, None, None, None),
-            "info depth 3"
+            format_info(Some(4), None, None, None, None, None, None, None),
+            "info depth 4"
         );
     }
 

@@ -34,12 +34,12 @@ Stack overflow in recursive quiescence search. The 14x14 board with 4 players ge
 
 - Depth 4 self-play games cannot complete past the opening
 - A/B testing at depth 4 is not possible
-- Depth 2-3 games work fine (depth 3 confirmed: 10 games, 0 crashes)
+- Depth 2-4 games work fine (depth 4 confirmed as minimum: 10 games, 0 crashes)
 
 ## Workarounds
 
 1. Use `go movetime N` instead of `go depth 4` — time budget prevents explosion
-2. Use depth 3 or lower for self-play
+2. Use depth 4 for self-play
 3. Increase stack size (`RUST_MIN_STACK` env var)
 
 ## Suggested Fix

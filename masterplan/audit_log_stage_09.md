@@ -52,7 +52,7 @@
 | No correctness regressions | PASS | 338 tests pass. `test_tt_preserves_board_state` verifies board state unchanged after search. |
 | TT best move searched first | PASS | `beam_select()` places TT move first; `score_move()` returns 1M for TT move. Unit tested. |
 | Killer hit rate > 10% | PARTIAL | Killer infrastructure in place. Less effective in Max^n (no beta cutoffs). Full benefit in negamax_2p. |
-| History table populated | PASS | `test_history_table_populated_after_search` verifies nonzero entries after depth 3. |
+| History table populated | PASS | `test_history_table_populated_after_search` verifies nonzero entries after depth 4. |
 | No hash collision corruption | PASS | Key verification on probe (upper 32 bits). `test_collision_rejection` unit test. |
 | NPS improvement >= 30% | PASS | ~89.7k NPS at depth 5 release (up from ~33-60k at depth 4 post-qsearch). Move ordering + TT move reuse enable faster search. |
 

@@ -8,10 +8,17 @@ node_modules/
 dist/
 .cache/
 
-# NNUE weights
+# NNUE weights and training data
 *.onnue
 *.nnue
+*.fnnue
 *.bin
+*.pt
+*.jsonl
+
+# Python
+__pycache__/
+*.pyc
 
 # IDE
 .idea/
@@ -30,3 +37,21 @@ masterplan/.obsidian/
 # Environment
 .env
 .env.local
+
+# Claude Code local settings
+.claude/
+*.settings.local.json
+
+# Debug artifacts
+crash_bt.txt
+crash_stderr.txt
+
+# Observer reports and self-play data
+observer/reports/
+
+# Alternate build targets
+/c:/tmp/
+/C:/tmp/
+
+# Local system profile (never commit — machine-specific)
+masterplan/SYSTEM_PROFILE.local.md

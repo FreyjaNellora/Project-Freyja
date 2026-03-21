@@ -1432,15 +1432,15 @@ mod tests {
     // ── Step 5: Iterative deepening ──
 
     #[test]
-    fn test_iterative_deepening_depth_3() {
+    fn test_iterative_deepening_depth_4() {
         let mut gs = GameState::new_standard_ffa();
         let mut searcher = make_searcher();
         let limits = SearchLimits {
-            max_depth: Some(3),
+            max_depth: Some(4),
             ..Default::default()
         };
         let result = searcher.search(&mut gs, &limits);
-        assert_eq!(result.depth, 3);
+        assert_eq!(result.depth, 4);
         assert!(result.nodes > 0);
     }
 
@@ -1591,7 +1591,7 @@ mod tests {
         // Basic sanity: search with quiescence still returns legal moves
         let mut gs = GameState::new_standard_ffa();
         let mut searcher = make_searcher();
-        for depth in 1..=3 {
+        for depth in 1..=4 {
             let limits = SearchLimits {
                 max_depth: Some(depth),
                 ..Default::default()
@@ -1713,17 +1713,17 @@ mod tests {
     // ── Stage 9: TT + Move Ordering ──
 
     #[test]
-    fn test_tt_hit_rate_positive_at_depth_3() {
+    fn test_tt_hit_rate_positive_at_depth_4() {
         let mut gs = GameState::new_standard_ffa();
         let mut searcher = make_searcher();
         let limits = SearchLimits {
-            max_depth: Some(3),
+            max_depth: Some(4),
             ..Default::default()
         };
         let result = searcher.search(&mut gs, &limits);
         assert!(
             result.tt_hit_rate > 0.0,
-            "TT hit rate should be positive at depth 3, got {:.1}%",
+            "TT hit rate should be positive at depth 4, got {:.1}%",
             result.tt_hit_rate
         );
     }
@@ -1733,7 +1733,7 @@ mod tests {
         let mut gs = GameState::new_standard_ffa();
         let mut searcher = make_searcher();
         let limits = SearchLimits {
-            max_depth: Some(3),
+            max_depth: Some(4),
             ..Default::default()
         };
         let _ = searcher.search(&mut gs, &limits);
@@ -1748,7 +1748,7 @@ mod tests {
             .count();
         assert!(
             nonzero > 0,
-            "History table should have nonzero entries after depth 3 search"
+            "History table should have nonzero entries after depth 4 search"
         );
     }
 

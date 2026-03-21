@@ -78,7 +78,7 @@ This is the worst result. S18 is a negative example where Red's king shelter is 
 **Suggested fix:**
 - Add a "king exposure" term: when shelter pawns are missing (especially on the file the king is on), apply a penalty that scales with the number of missing shelter pawns. Currently shelter is a positive bonus; also need a negative penalty for *missing* shelter.
 - Consider a "queen distance to own king" factor — if king shelter is damaged and queen is far away, apply a penalty. This would make `Qg9→m9` (queen moves even further from cracked king) evaluate worse.
-- This is the hardest fix and may require depth 3+ to fully resolve. At depth 2, tactical captures with check will always look attractive.
+- This is the hardest fix and may require depth 4+ to fully resolve. At depth 2, tactical captures with check will always look attractive.
 
 ### Problem 4: Bishop sacrifice not seen (S06)
 

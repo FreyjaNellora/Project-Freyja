@@ -349,8 +349,8 @@ mod tests {
         let mut tt = TranspositionTable::new(1);
         let hash: u64 = 0xDEAD_BEEF_1234_5678;
 
-        // Store at depth 3
-        tt.store(hash, 3, TTFlag::Exact, [100; 4], None);
+        // Store at depth 4
+        tt.store(hash, 4, TTFlag::Exact, [100; 4], None);
 
         // Store at depth 5 (should replace)
         tt.store(hash, 5, TTFlag::Exact, [200; 4], None);
@@ -373,8 +373,8 @@ mod tests {
         // Store at depth 5
         tt.store(hash1, 5, TTFlag::Exact, [100; 4], None);
 
-        // Try to store different position at depth 3 (should NOT replace — deeper wins)
-        tt.store(hash2, 3, TTFlag::Exact, [200; 4], None);
+        // Try to store different position at depth 4 (should NOT replace — deeper wins)
+        tt.store(hash2, 4, TTFlag::Exact, [200; 4], None);
 
         // Original should still be there
         let entry = tt.probe(hash1).unwrap();
