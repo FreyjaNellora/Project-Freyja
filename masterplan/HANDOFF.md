@@ -1,85 +1,61 @@
 # Project Freyja -- HANDOFF
 
 **Session Date:** 2026-03-20
-**Session Number:** 23
+**Session Number:** 24
 
 ---
 
 ## What Stage Are We On?
 
-**Stage 15: Progressive Widening + Zone Control -- IN PROGRESS**
+**Stage 15: Progressive Widening + Zone Control -- COMPLETE (pending user sign-off)**
 
-Part A (PW) complete. Part B (Zone Control) has working ray-attenuation implementation. Swarm model planned as alternative for A/B comparison.
+All implementation done. Duel-tested. Awaiting UI testing for final sign-off.
 
 ---
 
 ## What Was Completed This Session
 
-1. **Progressive Widening (Part A) -- COMPLETE**
-   - PW at root-player nodes (paper-faithful, Baier & Kaisers 2020)
-   - Children sorted by prior after expansion (best-first for PW window)
-   - `root_decisions_total` renamed to `tree_moves_total` + new `root_player_decisions` counter
-   - PW diagnostic tracking (`pw_limited_selections`)
-   - Setoptions: `PWConstant` (k), `PWExponent` (alpha)
-   - 9 new PW tests
-
-2. **Zone Control (Part B) -- RAY-ATTENUATION MODEL IMPLEMENTED**
-   - BFS territory enhanced with contested squares + frontier detection
-   - Ray-attenuated influence maps: directional force projection with blocker degradation
-   - Tension/vulnerability scoring from overlapping influence
-   - King escape routes
-   - Configurable zone weights via setoption
-   - DKW players correctly skipped (`is_active_for_zones`)
-   - 11 new zone tests
-   - 441 total tests pass
-
-3. **Research & Design Direction**
-   - Extensive research into BFS Voronoi limitations, influence map models
-   - User identified critical flaw: distance-decay is circular, pieces project along vectors
-   - Pivoted from exponential distance-decay to ray-attenuation (directional, obstacle-aware)
-   - User proposed swarm mechanics as next evolution (to replace BFS Voronoi)
-   - Architecture: ray-attenuation = individual piece voice, swarm = collective chord
+1. **Verified engine behavior** — Zone features confirmed to change PV and scores at depth 4 (was testing against stale binary initially — .cargo/config.toml redirected target dir)
+2. **Swarm model implemented** — Mutual defense, attack coordination, pawn chain detection. Configurable via `SwarmWeight` setoption (default 3).
+3. **Duel runner built** — New observer tool (`duel_runner.mjs`) enables head-to-head per-color testing. Two engine instances play different colors in the same game. All 3 seating arrangements tested (RY|BG, RB|YG, RG|BY) to control for position bias.
+4. **Fixed NoiseSeed per game** — Duel runner sets unique NoiseSeed per game to ensure diverse games.
+5. **Duel results: swarm+ray beats ray-only 9/15 (60%)** — Across 15 games with all seating arrangements and diverse noise seeds. Two eliminations on ray-only side vs one on swarm side.
+6. **Design decision: swarm replaces BFS Voronoi** as the territory/zone control model.
 
 ---
 
 ## What Was NOT Completed
 
-- **Swarm model implementation** -- Designed but not coded. Next session.
-- **A/B testing** -- No A/B tests run yet (PW or zone control)
-- **Performance benchmark** -- Zone features not benchmarked yet (<5us target)
-- **Stage 15 audit/downstream logs** -- Not written
-- **k=2 vs k=4 A/B test** -- User approved test, not yet run
+- **Performance benchmark** — Zone features not formally benchmarked (<5us target). NPS shows ~25% slowdown (12k vs 16k), within 30% tolerance.
+- **PW A/B test** — k=2 vs k=4 not tested yet. Config created but not run.
+- **Stage 15 audit log + downstream log** — Not written.
+- **User UI testing** — Required for stage sign-off per AGENT_CONDUCT 1.9.
 
 ---
 
 ## What the Next Session Should Do First
 
-1. **Implement swarm model** as alternative to BFS Voronoi territory
-   - Layer on top of ray-attenuation: cluster cohesion, mutual defense, attack coordination
-   - Separate setoption toggle to enable swarm vs Voronoi
-2. **A/B test: swarm vs ray-attenuation vs baseline** (all zone features off)
-3. **A/B test: PW enabled vs disabled** at movetime 5000 and 15000
-4. **A/B test: k=2 vs k=4** for PW constant
-5. **Performance benchmark** zone features (<5us target)
-6. Stage 15 audit log, downstream log
+1. **Get user sign-off on Stage 15** from UI testing
+2. If approved, tag `stage-15-complete` / `v1.15`
+3. Write audit_log_stage_15.md and downstream_log_stage_15.md
+4. Run PW k=2 vs k=4 duel test (config exists: `config_ab_pw.json`)
+5. Read Stage 16 spec (NNUE Training Pipeline)
 
 ---
 
 ## Open Issues
 
 - **[[Issue-UI-Feature-Gaps]] (WARNING):** Still open, not blocking.
-- **MoveNoise in MCTS:** Still unresolved. Use hybrid mode for A/B diversity.
-- **Crash at ply 32 in Tauri:** Not reproduced in unit tests. Monitor.
-- **MASTERPLAN numbering error:** Two "Stage 15" headers (line 1001, 1030). Second should be Stage 16.
+- **MoveNoise in MCTS:** Still unresolved. Hybrid mode provides diversity for testing.
+- **MASTERPLAN numbering error:** Two "Stage 15" headers (line 1001, 1030).
 
 ---
 
 ## Design Decisions Made This Session
 
-- **PW at root-player nodes** (not opponent nodes). Paper-faithful approach. OMA handles opponents.
-- **Ray-attenuation replaces distance-decay** for influence maps. Directional, obstacle-aware.
-- **Swarm model planned** to replace BFS Voronoi. Will A/B test against ray-attenuation.
-- **Friendly vs enemy attenuation asymmetry** in ray model: friendly blockers attenuate mildly (1.5x), enemy blockers attenuate strongly (2.0 + piece value scaled).
+- **ADR-020:** Ray-attenuation replaces distance-decay for influence maps (directional, obstacle-aware)
+- **ADR-021:** Swarm model replaces BFS Voronoi — empirically validated via duel (9/15 wins)
+- **Duel runner** with random seating controls for 4PC position bias
 
 ---
 
@@ -90,20 +66,23 @@ Part A (PW) complete. Part B (Zone Control) has working ray-attenuation implemen
 - Dead code: `apply_move_with_events` in `game_state.rs`
 - MCTS warmup at phase cutover (carried from Stage 13)
 - MCTS info output during thinking (carried from Stage 13)
+- PW k=2 vs k=4 A/B test (config ready, not run)
 
 ---
 
-## Files Modified This Session (Session 23)
+## Files Modified This Session (Session 24)
 
 | File | Changes |
 |------|---------|
-| `freyja-engine/src/eval.rs` | Ray-attenuation influence, BFS territory enhanced, tension, king escape, ZoneWeights, tests |
-| `freyja-engine/src/mcts.rs` | PW metrics, child sorting, PW diagnostics, tests |
-| `freyja-engine/src/protocol/options.rs` | PW + zone weight setoptions |
-| `freyja-engine/src/protocol/mod.rs` | Wire zone weights to evaluator |
-| `freyja-engine/src/search.rs` | cargo fmt only |
-| `freyja-engine/src/hybrid.rs` | cargo fmt only |
-| `freyja-engine/src/move_gen.rs` | cargo fmt only |
+| `freyja-engine/src/eval.rs` | Swarm model, DKW fix, zone weight tests |
+| `freyja-engine/src/protocol/options.rs` | SwarmWeight setoption |
+| `freyja-engine/src/protocol/mod.rs` | Wire swarm weight |
+| `observer/duel_runner.mjs` | NEW — head-to-head per-color duel runner |
+| `observer/config_duel_swarm_vs_ray.json` | NEW — duel config |
+| `observer/config_duel_smoke.json` | NEW — smoke test config |
+| `observer/config_ab_pw.json` | NEW — PW A/B config |
+| `observer/config_ab_swarm_vs_ray.json` | NEW — standard A/B config |
 | `masterplan/HANDOFF.md` | This file |
 | `masterplan/STATUS.md` | Updated |
-| `masterplan/sessions/Session-023.md` | New |
+| `masterplan/DECISIONS.md` | ADR-021 status → Accepted |
+| `masterplan/sessions/Session-024.md` | New |

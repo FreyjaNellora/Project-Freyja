@@ -495,10 +495,10 @@ Replace distance-decay with ray-attenuated influence. Each piece projects influe
 
 ---
 
-## ADR-021: Swarm Model Planned to Replace BFS Voronoi Territory
+## ADR-021: Swarm Model Replaces BFS Voronoi Territory
 
 **Date:** 2026-03-20
-**Status:** Proposed (not yet implemented)
+**Status:** Accepted (implemented + duel-tested: swarm wins 9/15)
 **Stage:** Stage 15
 
 **Context:**

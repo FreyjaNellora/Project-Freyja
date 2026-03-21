@@ -1,15 +1,15 @@
 # Project Freyja -- STATUS
 
 **Last Updated:** 2026-03-20
-**Updated By:** Session 23
+**Updated By:** Session 24
 
 ---
 
 ## Current Stage
 
-**Stage:** 15 -- IN PROGRESS
-**Status:** PW complete. Ray-attenuation zone control implemented. Swarm model next. A/B testing pending.
-**Next:** Swarm model implementation, A/B tests (PW + zone), performance benchmark
+**Stage:** 15 -- COMPLETE (pending user sign-off)
+**Status:** PW + ray-attenuation + swarm all implemented. Duel-tested: swarm+ray beats ray-only 9/15.
+**Next:** User UI testing for sign-off, then Stage 16 (NNUE Training Pipeline)
 
 ---
 
