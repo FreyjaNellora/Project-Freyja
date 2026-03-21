@@ -91,7 +91,9 @@ impl EngineManager {
             for line in reader.lines() {
                 match line {
                     Ok(line) => {
-                        if let Err(e) = app_handle.emit("engine-output", EngineOutputPayload { line, gen }) {
+                        if let Err(e) =
+                            app_handle.emit("engine-output", EngineOutputPayload { line, gen })
+                        {
                             eprintln!("[engine reader] emit failed: {e}");
                         }
                     }
