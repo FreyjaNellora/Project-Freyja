@@ -36,20 +36,29 @@ const config = JSON.parse(readFileSync(configPath, 'utf8'));
 const outDir = resolve(__dirname, config.output_dir);
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
-// Team assignment: which config controls which players
-// In game 1 of a pair: A=Red+Yellow, B=Blue+Green
-// In game 2 of a pair: A=Blue+Green, B=Red+Yellow (swapped)
-function getTeamConfig(playerName, swapped) {
-  const isTeamA = swapped
-    ? (playerName === 'Blue' || playerName === 'Green')
-    : (playerName === 'Red' || playerName === 'Yellow');
-  return isTeamA ? 'a' : 'b';
+// All 3 distinct team pairings for 4 players (seating arrangements).
+// Each pair assigns 2 players to team A and 2 to team B.
+const TEAM_PAIRINGS = [
+  { a: ['Red', 'Yellow'], b: ['Blue', 'Green'] },   // Opposite corners
+  { a: ['Red', 'Blue'],   b: ['Yellow', 'Green'] },  // Adjacent (R+B vs Y+G)
+  { a: ['Red', 'Green'],  b: ['Blue', 'Yellow'] },   // Adjacent (R+G vs B+Y)
+];
+
+// Get team assignment for a player given a pairing index
+function getTeamConfig(playerName, pairingIdx) {
+  const pairing = TEAM_PAIRINGS[pairingIdx % TEAM_PAIRINGS.length];
+  return pairing.a.includes(playerName) ? 'a' : 'b';
+}
+
+// Get the pairing for display
+function getPairing(pairingIdx) {
+  return TEAM_PAIRINGS[pairingIdx % TEAM_PAIRINGS.length];
 }
 
 // ---------------------------------------------------------------------------
 // Play one duel game with two engine instances
 // ---------------------------------------------------------------------------
-async function playDuelGame(gameNum, swapped) {
+async function playDuelGame(gameNum, pairingIdx) {
   const engineA = new Engine(resolve(__dirname, config.engine));
   const engineB = new Engine(resolve(__dirname, config.engine));
 
@@ -60,11 +69,17 @@ async function playDuelGame(gameNum, swapped) {
   if (config.config_a.setoptions) await engineA.sendOptions(config.config_a.setoptions);
   if (config.config_b.setoptions) await engineB.sendOptions(config.config_b.setoptions);
 
+  // Set unique NoiseSeed per game so MoveNoise produces different games
+  const noiseSeed = String(gameNum * 7919 + 42);
+  await engineA.sendOptions({ NoiseSeed: noiseSeed });
+  await engineB.sendOptions({ NoiseSeed: noiseSeed });
+
+  const pairing = getPairing(pairingIdx);
   const record = {
     game: gameNum,
-    swapped,
-    team_a: { label: config.config_a.label, players: swapped ? ['Blue', 'Green'] : ['Red', 'Yellow'] },
-    team_b: { label: config.config_b.label, players: swapped ? ['Red', 'Yellow'] : ['Blue', 'Green'] },
+    pairing: pairingIdx,
+    team_a: { label: config.config_a.label, players: pairing.a },
+    team_b: { label: config.config_b.label, players: pairing.b },
     plies: [],
     eliminations: [],
     scores: null,
@@ -82,7 +97,7 @@ async function playDuelGame(gameNum, swapped) {
 
   while (!gameOver && ply < maxPly) {
     // Determine which engine handles this ply
-    const team = getTeamConfig(currentPlayer, swapped);
+    const team = getTeamConfig(currentPlayer, pairingIdx);
     const engine = team === 'a' ? engineA : engineB;
     const gameConfig = team === 'a' ? config.config_a : config.config_b;
 
@@ -207,24 +222,25 @@ async function playDuelGame(gameNum, swapped) {
 // ---------------------------------------------------------------------------
 async function main() {
   const pairs = config.game_pairs ?? 5;
-  const totalGames = pairs * 2;
+  // Each pair plays all 3 seating arrangements (6 games per pair for full coverage)
+  // Or if fewer pairs requested, cycle through arrangements
+  const gamesPerPair = TEAM_PAIRINGS.length; // 3 arrangements
+  const totalGames = pairs * gamesPerPair;
   const results = [];
 
   console.log(`\n=== DUEL: ${config.config_a.label} vs ${config.config_b.label} ===`);
-  console.log(`${pairs} game pairs (${totalGames} games total), max_ply=${config.max_ply ?? 160}\n`);
+  console.log(`${pairs} rounds × ${gamesPerPair} seatings = ${totalGames} games, max_ply=${config.max_ply ?? 160}`);
+  console.log(`Seatings: RY|BG, RB|YG, RG|BY (tests all seating biases)\n`);
 
-  for (let pair = 0; pair < pairs; pair++) {
-    // Game 1: A=Red+Yellow, B=Blue+Green
-    process.stdout.write(`  Pair ${pair + 1}/${pairs} game 1 (A=RY, B=BG)...`);
-    const g1 = await playDuelGame(pair * 2 + 1, false);
-    results.push(g1);
-    console.log(` ${g1.total_ply} plies${g1.error ? ' ERROR: ' + g1.error : ''}`);
-
-    // Game 2: A=Blue+Green, B=Red+Yellow (swapped)
-    process.stdout.write(`  Pair ${pair + 1}/${pairs} game 2 (A=BG, B=RY)...`);
-    const g2 = await playDuelGame(pair * 2 + 2, true);
-    results.push(g2);
-    console.log(` ${g2.total_ply} plies${g2.error ? ' ERROR: ' + g2.error : ''}`);
+  for (let round = 0; round < pairs; round++) {
+    for (let seat = 0; seat < gamesPerPair; seat++) {
+      const gameNum = round * gamesPerPair + seat + 1;
+      const pairing = getPairing(seat);
+      process.stdout.write(`  Game ${gameNum}/${totalGames} (A=${pairing.a.join('')}, B=${pairing.b.join('')})...`);
+      const g = await playDuelGame(gameNum, seat);
+      results.push(g);
+      console.log(` ${g.total_ply} plies${g.error ? ' ERROR: ' + g.error : ''}`);
+    }
   }
 
   // Compute summary: average scores for team A and team B across all games
