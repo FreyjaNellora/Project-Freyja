@@ -58,8 +58,10 @@ pub fn forward_pass(accumulators: &[Accumulator; 4], weights: &NnueWeights) -> [
     let mut scores = [0i16; 4];
     for i in 0..4 {
         let raw = forward_single(&accumulators[i], weights);
-        // Scale from quantized domain to centipawns
-        scores[i] = (raw / OUTPUT_SCALE) as i16;
+        // Scale from quantized domain to centipawns.
+        // The hidden layer already divides by WEIGHT_SCALE once (line "scaled = activated / WS"),
+        // so the remaining scale is just WEIGHT_SCALE, not WEIGHT_SCALE².
+        scores[i] = (raw / super::features::WEIGHT_SCALE as i32) as i16;
     }
     scores
 }

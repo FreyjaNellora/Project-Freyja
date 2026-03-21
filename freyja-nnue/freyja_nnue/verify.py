@@ -53,7 +53,9 @@ def quantized_eval(fen4, weights):
 
     Returns [i16; 4] scores in centipawns.
     """
-    output_scale = WEIGHT_SCALE * WEIGHT_SCALE  # 4096
+    # The hidden layer already divides by WEIGHT_SCALE once,
+    # so remaining scale is just WEIGHT_SCALE, not WEIGHT_SCALE².
+    output_scale = WEIGHT_SCALE  # 64
 
     feat_weights = weights['feature_weights']  # [4488, 256]
     feat_biases = weights['feature_biases']    # [256]
