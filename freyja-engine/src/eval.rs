@@ -1279,6 +1279,28 @@ impl Evaluator for BootstrapEvaluator {
             scores[player.index()] = total;
         }
 
+        // Zero-center: subtract the mean across all active players.
+        // This removes constant baselines from zone features, which:
+        // - Preserves relative ordering (Max^n correctness unchanged)
+        // - Enables constant-sum pruning (scores sum to zero)
+        // - Keeps MCTS Q-values near zero (healthy exploration/exploitation balance)
+        // - Prevents sigmoid saturation in future NNUE training
+        // - Restores beam search discrimination (wider dynamic range)
+        let active_count = scores.iter().filter(|&&s| s != ELIMINATED_SCORE).count() as i32;
+        if active_count > 1 {
+            let sum: i32 = scores
+                .iter()
+                .filter(|&&s| s != ELIMINATED_SCORE)
+                .map(|&s| s as i32)
+                .sum();
+            let mean = (sum / active_count) as i16;
+            for s in &mut scores {
+                if *s != ELIMINATED_SCORE {
+                    *s -= mean;
+                }
+            }
+        }
+
         scores
     }
 }
